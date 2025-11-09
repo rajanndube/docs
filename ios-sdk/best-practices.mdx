@@ -1,0 +1,443 @@
+---
+title: "Best Practices"
+description: "Production-ready patterns for iOS SDK"
+---
+
+## 1. Initialize in App Init (Not in View)
+
+Initialize the SDK at the app level to avoid blocking the UI and ensure it's available throughout your application.
+
+**✅ Good:**
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "token",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true
+        )
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+**❌ Bad:**
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            Text("Loading...")
+                .onAppear {
+                    // Too late - blocks UI
+                    StringProvider.shared.initialize(...)
+                }
+        }
+    }
+}
+```
+
+Initialize during app startup to ensure the SDK is ready before any view is rendered.
+
+---
+
+## 2. Use @ObservedObject for Reactive UI
+
+Always use `@ObservedObject` to ensure your view automatically updates when the SDK state changes.
+
+**✅ Good:**
+
+```swift
+struct ContentView: View {
+    @ObservedObject var stringProvider = StringProvider.shared
+
+    var body: some View {
+        if stringProvider.isReady {
+            // Automatically updates when state changes
+            mainContent
+        }
+    }
+}
+```
+
+**❌ Bad:**
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        if StringProvider.shared.isReady {
+            // Won't update automatically
+            mainContent
+        }
+    }
+}
+```
+
+Without `@ObservedObject`, changes to published properties won't trigger view updates.
+
+---
+
+## 3. Use SBText for Auto-Updating Strings
+
+Use the `SBText` component for any strings that should update when the language changes.
+
+**✅ Good:**
+
+```swift
+SBText("welcome_message")
+    .font(.title)
+// Auto-updates on language change or network sync
+```
+
+**❌ Bad:**
+
+```swift
+@State var text = ""
+
+Text(text)
+    .onAppear {
+        Task {
+            text = await StringProvider.shared.get("welcome_message", lang: "en")
+            // Won't update if language changes
+        }
+    }
+```
+
+`SBText` automatically handles language changes and network updates, while manual state requires additional synchronization logic.
+
+---
+
+## 4. Handle All Three SDK States
+
+Always provide UI for loading, error, and ready states to create a smooth user experience.
+
+**✅ Good:**
+
+```swift
+Group {
+    if stringProvider.isReady {
+        mainContent
+    } else if let error = stringProvider.initializationError {
+        errorView(error)
+    } else {
+        loadingView
+    }
+}
+```
+
+**❌ Bad:**
+
+```swift
+if stringProvider.isReady {
+    mainContent
+}
+// No loading or error states
+```
+
+Handling all states provides better UX and helps users understand what's happening during initialization.
+
+---
+
+## 5. Disable UI During Language Change
+
+Prevent multiple language change requests by disabling the language picker during the operation.
+
+**✅ Good:**
+
+```swift
+Picker("Language", selection: $selectedLanguage) {
+    // ...
+}
+.disabled(stringProvider.isChangingLanguage)
+.overlay {
+    if stringProvider.isChangingLanguage {
+        languageChangeOverlay
+    }
+}
+```
+
+**❌ Bad:**
+
+```swift
+Picker("Language", selection: $selectedLanguage) {
+    // ...
+}
+// User can tap multiple times, causing issues
+```
+
+Disabling the UI during operations prevents race conditions and improves the user experience with visual feedback.
+
+---
+
+## 6. Persist Language Selection
+
+Save the user's language preference so it's restored on app restart.
+
+**✅ Good:**
+
+```swift
+.onChange(of: stringProvider.currentLanguage) { _, newLang in
+    if let newLang = newLang {
+        selectedLanguage = newLang
+        UserDefaults.standard.set(newLang, forKey: "com.stringboot.currentLanguage")
+    }
+}
+
+// On app launch
+init() {
+    let savedLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
+        ?? StringProvider.shared.deviceLocale()
+    StringProvider.shared.setLocale(savedLang)
+}
+```
+
+**❌ Bad:**
+
+```swift
+// No persistence - language resets on app restart
+```
+
+Persisting the language selection creates a better user experience by remembering preferences across sessions.
+
+---
+
+## 7. Use forceRefresh Sparingly
+
+Only force refresh when the user explicitly requests it, not automatically on every view appearance.
+
+**✅ Good:**
+
+```swift
+// Only force refresh when user explicitly requests it
+Button("Refresh from Network") {
+    Task {
+        await stringProvider.refreshFromNetwork(lang: lang, forceRefresh: true)
+    }
+}
+```
+
+**❌ Bad:**
+
+```swift
+// Force refresh on every view appear
+.onAppear {
+    Task {
+        await stringProvider.refreshFromNetwork(lang: "en", forceRefresh: true)
+    }
+}
+// Wastes bandwidth, battery, and data
+```
+
+Using `forceRefresh: true` bypasses the ETag cache, which is expensive. Only use it when necessary.
+
+---
+
+## 8. Monitor Cache Health
+
+Keep an eye on cache performance metrics to identify issues early.
+
+**✅ Good:**
+
+```swift
+// Display cache stats for debugging
+CacheStatsView()
+
+// In production, log periodically
+let stats = StringProvider.shared.getCacheStats()
+if stats.hitRate < 0.8 {
+    print("Cache hit rate low: \(stats.hitRate)")
+}
+```
+
+**❌ Bad:**
+
+```swift
+// No cache monitoring - issues go unnoticed
+```
+
+Regular cache monitoring helps identify performance problems and optimization opportunities.
+
+---
+
+## Three-Layer Cache Architecture
+
+Understanding the cache system helps you optimize your implementation:
+
+```
+┌─────────────────────────────────┐
+│  Layer 1: In-Memory Cache       │  Access: <1ms
+│  (LRU, 1000 entries by default) │
+└─────────────────────────────────┘
+         ↓ (miss)
+┌─────────────────────────────────┐
+│  Layer 2: Core Data             │  Access: 5-20ms
+│  (Persistent, SQLite-based)     │
+└─────────────────────────────────┘
+         ↓ (miss)
+┌─────────────────────────────────┐
+│  Layer 3: Network Sync          │  Access: 100-500ms
+│  (String-Sync v2 with ETag)     │
+└─────────────────────────────────┘
+```
+
+The SDK automatically uses this layered approach. Your code just needs to work with `SBText` and wait for `isReady`.
+
+---
+
+## Error Handling Patterns
+
+### Handle Initialization Errors
+
+```swift
+if let error = stringProvider.initializationError {
+    VStack {
+        Text("Failed to initialize: \(error)")
+        Button("Retry") {
+            Task {
+                await stringProvider.retryInitialization()
+            }
+        }
+    }
+}
+```
+
+### Handle Language Change Errors
+
+```swift
+.alert("Language Change Failed", isPresented: .constant(stringProvider.languageChangeError != nil)) {
+    Button("OK") {
+        // Reset to current language
+        selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
+    }
+} message: {
+    Text(stringProvider.languageChangeError ?? "Unknown error")
+}
+```
+
+### Disable UI During Language Change
+
+```swift
+Picker("Language", selection: $selectedLanguage) {
+    ForEach(stringProvider.availableLanguages, id: \.code) { language in
+        Text(language.name).tag(language.code)
+    }
+}
+.disabled(stringProvider.isChangingLanguage)
+```
+
+---
+
+## Cache Management
+
+### Get Cache Statistics
+
+```swift
+let stats = StringProvider.shared.getCacheStats()
+print("Memory: \(stats.memorySize) / \(stats.memoryMaxSize)")
+print("Hit rate: \(String(format: "%.2f%%", stats.hitRate * 100))")
+print("Hits: \(stats.memoryHitCount)")
+print("Misses: \(stats.memoryMissCount)")
+print("Evictions: \(stats.memoryEvictionCount)")
+```
+
+### Clear Cache
+
+```swift
+// Clear memory cache only (database intact)
+stringProvider.clearCache(clearDatabase: false)
+
+// Clear everything (memory + database)
+stringProvider.clearCache(clearDatabase: true)
+```
+
+### Refresh from Network
+
+```swift
+Task {
+    let success = await stringProvider.refreshFromNetwork(
+        lang: "en",
+        forceRefresh: true  // Bypass ETag check
+    )
+    if success {
+        print("Strings refreshed")
+    }
+}
+```
+
+---
+
+## Offline-First Development
+
+Test offline functionality to ensure your app works without network:
+
+1. Launch app with network enabled → SDK syncs data
+2. Enable Airplane Mode
+3. Force quit and relaunch the app
+4. All strings load from cache instantly without network
+
+Once strings are cached in Core Data, they persist across app restarts and work completely offline.
+
+---
+
+## Performance Targets
+
+The SDK is optimized for these performance benchmarks:
+
+- **In-memory cache hits:** <1ms
+- **Core Data lookups:** 5-20ms
+- **Network requests:** 100-500ms on 4G
+- **Delta sync metadata:** <100ms
+- **Target overall:** <300ms on 4G networks
+
+---
+
+## Logging for Debugging
+
+Enable detailed logging during development to understand SDK behavior:
+
+```swift
+init() {
+    StringbootLogger.isLoggingEnabled = true
+    StringbootLogger.logLevel = .debug
+
+    StringProvider.shared.initialize(...)
+}
+```
+
+Log levels:
+- `.debug` - All SDK activity
+- `.info` - Important operations
+- `.warning` - Potential issues
+- `.error` - Errors only
+
+Disable logging in production:
+
+```swift
+StringbootLogger.isLoggingEnabled = false
+```
+
+---
+
+## Testing Checklist
+
+Before shipping to production:
+
+- [ ] Initialize SDK in app init (not in views)
+- [ ] All views use `@ObservedObject` for StringProvider
+- [ ] Use `SBText` for all user-facing strings
+- [ ] Handle loading, error, and ready states
+- [ ] Language picker disabled during language change
+- [ ] Language selection persisted across app restarts
+- [ ] Manual refresh uses `forceRefresh: true` sparingly
+- [ ] Cache statistics monitored in development
+- [ ] Offline functionality tested (Airplane Mode)
+- [ ] Error cases tested and handled gracefully
+- [ ] Logging disabled for production build

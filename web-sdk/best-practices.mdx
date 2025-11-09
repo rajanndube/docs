@@ -1,0 +1,312 @@
+---
+title: "Best Practices"
+description: "Production-ready patterns for the Web SDK"
+---
+
+## 1. Initialize Early
+
+Initialize the SDK as early as possible in your application lifecycle to ensure strings are available when needed.
+
+<CodeGroup>
+
+```javascript Good - Main.js
+import StringBoot from '@stringboot/web-sdk';
+
+// Initialize as early as possible
+await StringBoot.initialize({
+  apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
+  baseUrl: import.meta.env.VITE_STRINGBOOT_URL || 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+  debug: import.meta.env.DEV
+});
+
+// Now render your app
+import('./app.js').then(({ App }) => {
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+});
+```
+
+```javascript Bad - Lazy Initialization
+// Avoid initializing SDK inside components
+function App() {
+  // This initializes on every render!
+  StringBoot.initialize({...});
+
+  return <div>App content</div>;
+}
+```
+
+</CodeGroup>
+
+## 2. Use Watchers for Reactive UI
+
+In vanilla JavaScript, set up watchers once during initialization. This ensures your UI automatically updates when languages change.
+
+<CodeGroup>
+
+```javascript Good - Watchers
+import StringBoot from '@stringboot/web-sdk';
+
+// Set up watchers once during initialization
+StringBoot.watch('welcome_message', (value) => {
+  document.getElementById('welcome').textContent = value;
+});
+
+StringBoot.watch('goodbye_message', (value) => {
+  document.getElementById('goodbye').textContent = value;
+});
+
+// Language changes automatically trigger watchers
+await StringBoot.changeLanguage('es');
+// UI updates automatically via watchers
+```
+
+```javascript Bad - No Watchers
+// Avoid manually fetching strings
+function updateUI() {
+  const welcome = await StringBoot.get('welcome_message');
+  document.getElementById('welcome').textContent = welcome;
+}
+
+// You'd have to call this manually on language change
+// Easy to miss and causes inconsistent UI updates
+```
+
+</CodeGroup>
+
+## 3. Always Use try/catch/finally
+
+Complete error handling is essential for reliable applications. Never leave async operations unhandled.
+
+<CodeGroup>
+
+```javascript Good - Complete Error Handling
+button.addEventListener('click', async () => {
+  button.disabled = true;
+  try {
+    await StringBoot.syncNow();
+    showSuccess();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+```
+
+```javascript Bad - No Error Handling
+button.addEventListener('click', async () => {
+  await StringBoot.syncNow(); // Unhandled promise rejection!
+});
+```
+
+</CodeGroup>
+
+## 4. Use React Hooks for React Apps
+
+In React applications, leverage the built-in hooks for state management instead of manual state handling.
+
+<CodeGroup>
+
+```jsx Good - React Hooks
+import { useString } from '@stringboot/web-sdk/react';
+
+function MyComponent() {
+  const title = useString('page_title');
+  return <h1>{title}</h1>;
+}
+// Hook handles loading, errors, and updates automatically
+```
+
+```jsx Bad - Manual State Management
+import { useState, useEffect } from 'react';
+
+function MyComponent() {
+  const [title, setTitle] = useState('');
+
+  useEffect(() => {
+    StringBoot.get('page_title').then(setTitle);
+  }, []);
+
+  // You're managing state manually - error prone!
+  return <h1>{title}</h1>;
+}
+```
+
+</CodeGroup>
+
+## 5. Handle Button Disabled States
+
+Always disable buttons during async operations to prevent duplicate requests and give visual feedback to users.
+
+<CodeGroup>
+
+```javascript Good - Proper State Management
+syncBtn.addEventListener('click', async () => {
+  syncBtn.disabled = true;
+  syncBtn.textContent = 'Syncing...';
+
+  try {
+    await StringBoot.syncNow();
+    showSuccess('Sync completed!');
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    syncBtn.disabled = false;
+    syncBtn.textContent = 'Sync Now';
+  }
+});
+```
+
+```javascript Bad - Uncontrolled Button
+syncBtn.addEventListener('click', async () => {
+  // User can click multiple times!
+  await StringBoot.syncNow();
+  showSuccess('Sync completed!');
+  // Button never gets re-enabled if error occurs
+});
+```
+
+</CodeGroup>
+
+## 6. Show Loading/Error States
+
+Provide clear visual feedback to users about initialization, loading, and error states.
+
+<CodeGroup>
+
+```jsx Good - Handle All States
+import { useStringBoot } from '@stringboot/web-sdk/react';
+
+function App() {
+  const { initialized, error } = useStringBoot({
+    apiToken: 'token',
+    baseUrl: 'url',
+  });
+
+  if (!initialized) return <Loading />;
+  if (error) return <Error message={error} />;
+
+  return <MainContent />;
+}
+```
+
+```jsx Bad - No State Handling
+import { useStringBoot } from '@stringboot/web-sdk/react';
+
+function App() {
+  useStringBoot({ apiToken: 'token', baseUrl: 'url' });
+
+  // User sees blank screen or errors during loading!
+  return <MainContent />;
+}
+```
+
+</CodeGroup>
+
+## 7. Use Status Indicators
+
+Provide visual feedback for all async operations using status elements or toast notifications.
+
+<CodeGroup>
+
+```javascript Good - Status Indicators
+const statusEl = document.getElementById('status');
+
+statusEl.className = 'status loading';
+statusEl.textContent = 'Syncing with server...';
+
+try {
+  await StringBoot.syncNow();
+  statusEl.className = 'status success';
+  statusEl.textContent = '✓ Sync completed successfully';
+} catch (error) {
+  statusEl.className = 'status error';
+  statusEl.textContent = `✗ Sync failed: ${error.message}`;
+}
+```
+
+```javascript Bad - Silent Operations
+// User doesn't know what's happening
+try {
+  await StringBoot.syncNow();
+} catch (error) {
+  console.error(error); // Only in dev tools!
+}
+```
+
+</CodeGroup>
+
+## 8. Environment-Based Configuration
+
+Use environment variables for different configurations across development, staging, and production environments.
+
+<CodeGroup>
+
+```javascript Good - Environment Variables
+const config = {
+  apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
+  baseUrl: import.meta.env.DEV
+    ? 'http://localhost:8000'           // Local development
+    : 'https://api.stringboot.com',     // Production
+  debug: import.meta.env.DEV,
+  defaultLanguage: 'en',
+};
+
+await StringBoot.initialize(config);
+```
+
+```javascript Bad - Hardcoded Values
+await StringBoot.initialize({
+  apiToken: 'sk_live_123456789',  // Exposed in code!
+  baseUrl: 'https://api.stringboot.com',
+  debug: true,  // Debug enabled in production!
+});
+```
+
+</CodeGroup>
+
+<Warning>
+Never hardcode API tokens in your source code. Always use environment variables and ensure production tokens are only available during deployment.
+</Warning>
+
+## Summary Checklist
+
+Use this checklist when implementing Stringboot in your application:
+
+- [ ] Initialize SDK early in application lifecycle
+- [ ] Use watchers (vanilla JS) or hooks (React) for reactive updates
+- [ ] Always use try/catch/finally for async operations
+- [ ] Prefer React hooks over manual state management
+- [ ] Disable buttons during async operations
+- [ ] Handle and display loading/error states
+- [ ] Provide status feedback for user actions
+- [ ] Use environment variables for configuration
+- [ ] Never hardcode API tokens
+- [ ] Enable debug mode only in development
+- [ ] Test language switching thoroughly
+- [ ] Test offline behavior
+
+## Performance Tips
+
+<Accordion title="Optimize String Fetching">
+Use `useStrings` in React to batch-fetch multiple strings instead of multiple `useString` hooks. This reduces the number of hook calls and improves performance.
+</Accordion>
+
+<Accordion title="Cache Management">
+Monitor cache usage with `getCacheStats()` to understand your application's memory footprint. The SDK automatically manages cache eviction.
+</Accordion>
+
+<Accordion title="Debug Mode in Development">
+Enable `debug: true` during development to see detailed logging. Always disable for production to reduce console noise and potential security issues.
+</Accordion>
+
+<Accordion title="Network Optimization">
+The SDK uses delta sync to only download changed strings. Minimize API calls by batching operations and avoiding excessive manual sync calls.
+</Accordion>
+
+## What's Next?
+
+- Review the [Installation & Setup](/web-sdk/installation) guide
+- Explore [Usage Examples](/web-sdk/usage) for your use case
+- Check out [React Hooks](/web-sdk/react-hooks) for React applications

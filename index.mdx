@@ -1,97 +1,192 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Introduction to Stringboot"
+description: "High-performance internationalization (i18n) SDK for Web, Android, and iOS applications"
 ---
 
-## Setting up
+## What is Stringboot?
 
-Get your documentation site up and running in minutes.
+Stringboot is a powerful internationalization (i18n) SDK that provides high-performance string localization for modern applications across Web, Android, and iOS platforms. It features smart multi-layered caching, offline support, and reactive string updates with minimal overhead.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+### Key Features
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Offline-First" icon="wifi-slash">
+    Works seamlessly without network connectivity using smart caching
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Smart Caching" icon="database">
+    Multi-layer caching with LRU memory management and persistent storage
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Delta Sync" icon="arrows-rotate">
+    Only downloads changed strings using String-Sync v2 protocol
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Fast Lookups" icon="bolt">
+    Target &lt;300ms string lookups on 4G networks
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Platform Support
 
-Everything you need to create world-class documentation.
+Stringboot provides native SDKs for all major platforms:
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+<Tabs>
+  <Tab title="Web">
+    **Zero Dependencies** • Lightweight SDK with no external dependencies
 
-## Need inspiration?
+    **React Integration** • 6 optimized hooks with built-in state management
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+    **Browser Support** • Chrome 87+, Firefox 78+, Safari 14+, Edge 88+
+
+    <Card title="Web SDK Guide" icon="globe" href="/web-sdk/installation">
+      Get started with the Web SDK
+    </Card>
+  </Tab>
+
+  <Tab title="Android">
+    **Min SDK 24** • Android 7.0 and above
+
+    **XML Integration** • Zero-code integration with `applyStringbootTags()`
+
+    **Flow API** • Reactive updates for automatic UI refresh
+
+    <Card title="Android SDK Guide" icon="android" href="/android-sdk/installation">
+      Get started with the Android SDK
+    </Card>
+  </Tab>
+
+  <Tab title="iOS">
+    **iOS 14+** • Swift 5.9+ with async/await support
+
+    **SwiftUI Native** • Auto-updating SBText components
+
+    **Combine Publishers** • Reactive string updates
+
+    <Card title="iOS SDK Guide" icon="apple" href="/ios-sdk/installation">
+      Get started with the iOS SDK
+    </Card>
+  </Tab>
+</Tabs>
+
+## Get Started
+
+<Steps>
+  <Step title="Choose your platform">
+    Select the SDK for your platform: [Web](/web-sdk/installation), [Android](/android-sdk/installation), or [iOS](/ios-sdk/installation)
+  </Step>
+
+  <Step title="Install the SDK">
+    Follow the installation guide for your chosen platform
+  </Step>
+
+  <Step title="Initialize">
+    Configure the SDK with your API credentials
+  </Step>
+
+  <Step title="Start localizing">
+    Begin using localized strings in your application
+  </Step>
+</Steps>
+
+## Why Stringboot?
+
+<AccordionGroup>
+  <Accordion title="Offline-First Architecture" icon="wifi-slash">
+    Stringboot is designed to work seamlessly offline. After the initial sync, all strings are cached locally, ensuring your app works perfectly without network connectivity.
+  </Accordion>
+
+  <Accordion title="Blazing Fast Performance" icon="bolt">
+    Multi-layer caching ensures sub-millisecond string lookups from memory, with automatic fallback to local database and network when needed.
+  </Accordion>
+
+  <Accordion title="Bandwidth Efficient" icon="chart-line">
+    Delta sync using String-Sync v2 protocol means only changed strings are downloaded. ETag-based caching prevents unnecessary network requests.
+  </Accordion>
+
+  <Accordion title="Developer Friendly" icon="code">
+    Native SDKs for each platform with idiomatic APIs. React hooks for web, Flow API for Android, SwiftUI integration for iOS.
+  </Accordion>
+</AccordionGroup>
+
+## Quick Example
+
+See how easy it is to get started with Stringboot:
+
+<CodeGroup>
+
+```javascript Web SDK
+import StringBoot from '@stringboot/web-sdk';
+
+// Initialize
+await StringBoot.initialize({
+  apiToken: 'your-api-token',
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en'
+});
+
+// Get a string
+const welcome = await StringBoot.get('welcome_message');
+console.log(welcome); // "Welcome to our app!"
+
+// Change language
+await StringBoot.changeLanguage('es');
+// Strings automatically update
+```
+
+```kotlin Android SDK
+// Initialize in Application class
+StringbootExtensions.autoInitialize(this)
+
+// Use in XML
+<TextView
+    android:tag="welcome_message"
+    android:text="@string/welcome_message" />
+
+// Apply strings
+binding.root.applyStringbootTags()
+
+// Or get programmatically
+val text = StringProvider.get("welcome_message")
+```
+
+```swift iOS SDK
+// Initialize in App
+StringProvider.shared.initialize(
+    cacheSize: 1000,
+    apiToken: "your-api-token",
+    baseURL: "https://api.stringboot.com",
+    autoSync: true
+)
+
+// Use in SwiftUI
+SBText("welcome_message")
+    .font(.title)
+```
+
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+
+  <Card title="Core Concepts" icon="book" href="/core-concepts">
+    Learn about caching, sync, and offline behavior
+  </Card>
+
+  <Card title="Web SDK" icon="globe" href="/web-sdk/installation">
+    Build localized web applications
+  </Card>
+
+  <Card title="Android SDK" icon="android" href="/android-sdk/installation">
+    Add i18n to your Android apps
+  </Card>
+
+  <Card title="iOS SDK" icon="apple" href="/ios-sdk/installation">
+    Localize your iOS applications
+  </Card>
+
+  <Card title="Best Practices" icon="star" href="/advanced/best-practices">
+    Production-ready patterns and tips
+  </Card>
+</CardGroup>

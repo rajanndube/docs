@@ -1,0 +1,553 @@
+---
+title: "Caching System"
+description: "Deep dive into Stringboot's multi-layer caching architecture"
+---
+
+## Overview
+
+Stringboot's caching system is designed for maximum performance while minimizing memory usage and network bandwidth. It uses a sophisticated three-layer architecture that automatically manages cache invalidation, eviction, and synchronization.
+
+## Architecture Diagram
+
+```
+┌────────────────────────────────────────┐
+│         Application Request            │
+│      StringProvider.get("key")         │
+└──────────────┬─────────────────────────┘
+               │
+               ▼
+┌────────────────────────────────────────┐
+│  Layer 1: In-Memory LRU Cache          │
+│  • Access time: <1ms                   │
+│  • Size: 1000 entries (configurable)   │
+│  • Frequency-based prioritization      │
+└──────────────┬─────────────────────────┘
+               │ Cache Miss
+               ▼
+┌────────────────────────────────────────┐
+│  Layer 2: Local Database               │
+│  • IndexedDB (Web)                     │
+│  • Room (Android)                      │
+│  • Core Data (iOS)                     │
+│  • Access time: 5-20ms                 │
+│  • Persistent across app restarts      │
+└──────────────┬─────────────────────────┘
+               │ Not Found
+               ▼
+┌────────────────────────────────────────┐
+│  Layer 3: Network Fetch                │
+│  • String-Sync v2 Protocol             │
+│  • ETag-based conditional requests     │
+│  • Delta sync for changed strings      │
+│  • Access time: 100-500ms              │
+└────────────────────────────────────────┘
+```
+
+## Layer 1: In-Memory Cache
+
+### LRU with Access Frequency
+
+The memory cache uses a **Least Recently Used (LRU)** algorithm enhanced with access frequency tracking:
+
+<Tabs>
+  <Tab title="How It Works">
+    ```
+    String Access Pattern:
+    "welcome_message" → 150 accesses → HIGH PRIORITY → Stays in cache
+    "error_msg_rare" → 2 accesses → LOW PRIORITY → Evicted first
+    "logout_confirm" → 50 accesses → MEDIUM PRIORITY → Evicted second
+    ```
+
+    **Eviction Logic:**
+    1. When cache is full (>1000 entries by default)
+    2. Calculate score: `recentAccess * 0.7 + totalAccess * 0.3`
+    3. Evict lowest-scoring entries
+    4. Keep frequently and recently accessed strings
+  </Tab>
+
+  <Tab title="Configuration">
+    <CodeGroup>
+    ```javascript Web
+    await StringBoot.initialize({
+      apiToken: 'token',
+      cacheSize: 2000  // Larger cache for apps with many strings
+    });
+    ```
+
+    ```kotlin Android
+    StringProvider.initialize(
+        context = this,
+        cacheSize = 2000,
+        api = api
+    )
+    ```
+
+    ```swift iOS
+    StringProvider.shared.initialize(
+        cacheSize: 2000,
+        apiToken: "token",
+        baseURL: "url"
+    )
+    ```
+    </CodeGroup>
+
+    **Recommended Sizes:**
+    - Small app (100-500 strings): `cacheSize = 500`
+    - Medium app (500-2000 strings): `cacheSize = 1000` (default)
+    - Large app (2000+ strings): `cacheSize = 2000`
+  </Tab>
+
+  <Tab title="Performance">
+    **Lookup Times:**
+    - Average: `0.1-0.5ms`
+    - 99th percentile: `<1ms`
+    - No disk I/O required
+
+    **Memory Usage:**
+    - ~100KB per 100 strings
+    - ~1MB for 1000 strings
+    - Automatic cleanup on memory pressure
+  </Tab>
+</Tabs>
+
+### Cache Statistics
+
+Monitor cache health with statistics:
+
+<CodeGroup>
+
+```javascript Web
+const stats = await StringBoot.getCacheStats();
+
+console.log({
+  memorySize: stats.memory.size,        // 342
+  memoryMax: stats.memory.maxSize,      // 1000
+  hitRate: (stats.hitRate * 100) + '%', // 94.2%
+  dbStrings: stats.db.totalStrings      // 1250
+});
+```
+
+```kotlin Android
+val stats = StringProvider.getCacheStats()
+
+Log.i("Cache", """
+    Memory: ${stats.memorySize} / ${stats.memoryMaxSize}
+    Hit rate: ${stats.hitRate * 100}%
+    DB entries: ${stats.dbSize}
+""")
+```
+
+```swift iOS
+let stats = StringProvider.shared.getCacheStats()
+
+print("""
+Memory: \(stats.memorySize) / \(stats.memoryMaxSize)
+Hit rate: \(stats.hitRate * 100)%
+Evictions: \(stats.memoryEvictionCount)
+""")
+```
+
+</CodeGroup>
+
+**What the stats mean:**
+
+| Metric | Good | Needs Attention |
+|--------|------|-----------------|
+| **Hit Rate** | >90% | <80% |
+| **Memory Usage** | 60-80% of max | 100% full |
+| **Evictions** | <100/min | >500/min |
+
+<Note>
+  If hit rate is low, consider increasing `cacheSize` or preloading frequently accessed strings.
+</Note>
+
+## Layer 2: Persistent Database
+
+### Platform-Specific Storage
+
+<Tabs>
+  <Tab title="Web - IndexedDB">
+    **Technology:** IndexedDB v2
+
+    **Database Name:** `stringboot_cache`
+
+    **Object Stores:**
+    - `strings` - Actual string content
+    - `metadata` - ETags, timestamps, versioning
+
+    **Storage Limits:**
+    - Chrome: ~60% of available disk space
+    - Firefox: Quota-based, typically 2GB+
+    - Safari: 1GB default
+
+    **Accessing Database:**
+    ```javascript
+    // Open in DevTools → Application → IndexedDB
+    // Database: stringboot_cache
+    // Store: strings
+
+    // Clear database programmatically
+    await StringBoot.forceRefresh();
+    ```
+  </Tab>
+
+  <Tab title="Android - Room">
+    **Technology:** Room Persistence Library (SQLite)
+
+    **Database Name:** `stringboot.db`
+
+    **Tables:**
+    - `cached_strings` - String content
+    - `metadata` - Sync info, ETags
+
+    **Location:** `/data/data/com.yourapp/databases/stringboot.db`
+
+    **Accessing Database:**
+    ```kotlin
+    // View in Android Studio
+    // View → Tool Windows → App Inspection → Database Inspector
+
+    // Clear database
+    StringProvider.clearLanguageCache("en")
+
+    // Check size
+    val dbPath = context.getDatabasePath("stringboot.db")
+    val sizeKB = dbPath.length() / 1024
+    Log.i("DB", "Database size: $sizeKB KB")
+    ```
+
+    **Migrations:** Handled automatically by Room
+  </Tab>
+
+  <Tab title="iOS - Core Data">
+    **Technology:** Core Data (SQLite backed)
+
+    **Model Name:** `StringbootModel`
+
+    **Entities:**
+    - `CachedString` - String entries
+    - `SyncMetadata` - ETag tracking
+
+    **Location:** `Library/Application Support/`
+
+    **Accessing Data:**
+    ```swift
+    // View in Xcode
+    // Window → Organizer → App Data
+
+    // Clear database
+    stringProvider.clearCache(clearDatabase: true)
+
+    // No migrations needed - Core Data handles automatically
+    ```
+  </Tab>
+</Tabs>
+
+### Soft Deletes
+
+Stringboot uses **soft deletes** to avoid data loss:
+
+```
+Regular Delete: ❌ Immediate removal from database
+Soft Delete: ✓ Marked as deleted, removed on next full sync
+```
+
+**Why soft deletes?**
+- Prevents accidental data loss
+- Allows for undo operations
+- Maintains referential integrity
+- Enables offline delete queuing
+
+**Cleanup:**
+```javascript
+// Force cleanup of soft-deleted entries
+await StringBoot.forceRefresh(); // Clears all and re-downloads
+```
+
+## Layer 3: Network Sync
+
+### String-Sync v2 Protocol
+
+Stringboot uses a custom protocol for efficient synchronization:
+
+#### Step 1: Metadata Check (ETag)
+
+```http
+GET https://api.stringboot.com/strings/meta?lang=en
+Authorization: Bearer YOUR_TOKEN
+If-None-Match: "etag-abc123"
+```
+
+**Response A: Not Modified (304)**
+```http
+HTTP/1.1 304 Not Modified
+ETag: "etag-abc123"
+```
+→ **Result:** No download needed, cache is current (~2KB transferred)
+
+**Response B: Modified (200)**
+```http
+HTTP/1.1 200 OK
+ETag: "etag-xyz789"
+Content-Type: application/json
+
+{
+  "etag": "etag-xyz789",
+  "changedKeys": ["welcome_message", "app_title"],
+  "deletedKeys": ["old_feature_msg"]
+}
+```
+→ **Result:** Download only changed strings
+
+#### Step 2: Delta Download
+
+```http
+GET https://api.stringboot.com/strings/delta?keys=welcome_message,app_title&lang=en
+Authorization: Bearer YOUR_TOKEN
+```
+
+**Response:**
+```json
+{
+  "strings": [
+    {
+      "key": "welcome_message",
+      "value": "Welcome to our app!",
+      "lang": "en"
+    },
+    {
+      "key": "app_title",
+      "value": "StringBoot Demo",
+      "lang": "en"
+    }
+  ]
+}
+```
+
+### Bandwidth Comparison
+
+| Scenario | Traditional | String-Sync v2 | Savings |
+|----------|-------------|----------------|---------|
+| **No changes** | 200KB | 2KB | **99%** |
+| **5 strings changed** | 200KB | 10KB | **95%** |
+| **50 strings changed** | 200KB | 80KB | **60%** |
+| **All new (first sync)** | 200KB | 200KB | 0% |
+
+<Check>ETag checks save 99% bandwidth when content hasn't changed</Check>
+<Check>Delta sync downloads only what's needed</Check>
+<Check>Typical monthly bandwidth: 50-200KB vs 3-15MB traditional</Check>
+
+## Cache Invalidation
+
+### When Cache is Cleared
+
+<Tabs>
+  <Tab title="Automatic">
+    1. **Memory pressure** (mobile) - Automatic cleanup
+    2. **Storage quota exceeded** (web) - Oldest entries removed
+    3. **Database corruption** - Automatic rebuild
+    4. **SDK upgrade** - Migration or reset
+  </Tab>
+
+  <Tab title="Manual">
+    <CodeGroup>
+    ```javascript Web
+    // Clear memory cache only
+    StringBoot.clearMemoryCache();
+
+    // Force full refresh (clears everything)
+    await StringBoot.forceRefresh();
+    ```
+
+    ```kotlin Android
+    // Clear memory only
+    StringProvider.clearMemoryCache()
+
+    // Clear specific language
+    StringProvider.clearLanguageCache("en")
+    ```
+
+    ```swift iOS
+    // Clear memory only
+    stringProvider.clearCache(clearDatabase: false)
+
+    // Clear everything
+    stringProvider.clearCache(clearDatabase: true)
+    ```
+    </CodeGroup>
+  </Tab>
+
+  <Tab title="On Errors">
+    **401/403 Unauthorized:**
+    - Cache not cleared
+    - Sync disabled
+    - App works with cached data
+
+    **404 Not Found:**
+    - Language cache cleared
+    - Forces re-sync
+
+    **500+ Server Error:**
+    - Cache preserved
+    - Retry with backoff
+  </Tab>
+</Tabs>
+
+### Cache Warming
+
+Preload strings for instant access:
+
+<CodeGroup>
+
+```javascript Web
+// Preload on app start
+await StringBoot.initialize({ /* config */ });
+
+// Preload specific language
+await StringBoot.changeLanguage('es');
+// Strings are cached automatically
+```
+
+```kotlin Android
+// Preload in Application.onCreate()
+runBlocking {
+    StringProvider.preloadLanguage("en", maxStrings = 500)
+}
+
+// Preload before language switch
+lifecycleScope.launch {
+    StringProvider.preloadLanguage("es", maxStrings = 500)
+    StringProvider.setLocale("es")
+    binding.root.applyStringbootTags()
+}
+```
+
+```swift iOS
+// Preload all available languages
+Task {
+    for lang in ["en", "es", "fr"] {
+        await StringProvider.shared.preloadLanguage(
+            lang,
+            maxStrings: 300
+        )
+    }
+}
+```
+
+</CodeGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Preload on Start" icon="rocket">
+    Preload common strings during app initialization for instant access
+  </Card>
+
+  <Card title="Monitor Hit Rate" icon="chart-line">
+    Aim for >90% cache hit rate. Increase cacheSize if needed.
+  </Card>
+
+  <Card title="Don't Force Refresh" icon="ban">
+    Avoid `forceRefresh()` unless user explicitly requests it
+  </Card>
+
+  <Card title="Use Delta Sync" icon="delta">
+    Let SDK handle ETag checks automatically - saves 99% bandwidth
+  </Card>
+
+  <Card title="Clear on Logout" icon="right-from-bracket">
+    Clear cache when user logs out if strings are user-specific
+  </Card>
+
+  <Card title="Test Offline" icon="wifi-slash">
+    Verify app works perfectly with cached data in airplane mode
+  </Card>
+</CardGroup>
+
+## Advanced: Cache Debugging
+
+### Inspect Cache Contents
+
+<CodeGroup>
+
+```javascript Web
+// Open IndexedDB in Chrome DevTools
+// Application tab → IndexedDB → stringboot_cache → strings
+
+// Or programmatically
+const stats = await StringBoot.getCacheStats();
+console.log('Total cached strings:', stats.db.totalStrings);
+```
+
+```kotlin Android
+// Using Database Inspector in Android Studio
+// View → Tool Windows → App Inspection → Database Inspector
+
+// Or via ADB
+adb shell
+run-as com.yourapp
+cd databases
+sqlite3 stringboot.db
+> SELECT COUNT(*) FROM cached_strings;
+```
+
+```swift iOS
+// Using Core Data model viewer in Xcode
+// Or check stats
+let stats = StringProvider.shared.getCacheStats()
+print("Memory size: \(stats.memorySize)")
+print("DB size: \(stats.dbSize)")
+```
+
+</CodeGroup>
+
+### Force Cache Rebuild
+
+Sometimes you need to completely rebuild the cache:
+
+<CodeGroup>
+
+```javascript Web
+// Clear everything and re-sync
+await StringBoot.forceRefresh();
+
+// Clear IndexedDB manually
+indexedDB.deleteDatabase('stringboot_cache');
+```
+
+```kotlin Android
+// Clear all language caches
+StringProvider.clearLanguageCache("en")
+StringProvider.clearLanguageCache("es")
+
+// Then re-sync
+lifecycleScope.launch {
+    StringProvider.refreshFromNetwork("en")
+}
+```
+
+```swift iOS
+// Clear everything
+stringProvider.clearCache(clearDatabase: true)
+
+// Re-initialize
+await stringProvider.retryInitialization()
+```
+
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Error Handling" icon="shield-check" href="/advanced/error-handling">
+    Handle cache errors gracefully
+  </Card>
+
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Fix cache-related issues
+  </Card>
+
+  <Card title="Core Concepts" icon="book" href="/core-concepts">
+    Back to core concepts
+  </Card>
+</CardGroup>

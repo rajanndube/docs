@@ -1,0 +1,209 @@
+---
+title: "Installation & Setup"
+description: "Install and configure the Stringboot Web SDK"
+---
+
+## Package Installation
+
+Choose your preferred package manager to install the Stringboot Web SDK.
+
+<CodeGroup>
+
+```bash npm
+npm install @stringboot/web-sdk
+```
+
+```bash yarn
+yarn add @stringboot/web-sdk
+```
+
+```bash pnpm
+pnpm add @stringboot/web-sdk
+```
+
+</CodeGroup>
+
+## CDN Installation
+
+For quick prototyping without a build step, you can load the SDK directly from a CDN:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@stringboot/web-sdk@1.0.0/dist/stringboot.umd.js"></script>
+
+<script>
+  const { StringBoot } = window.Stringboot;
+  // SDK is now available globally
+</script>
+```
+
+<Note>
+The CDN version is ideal for quick prototypes and demos, but for production applications, we recommend using npm installation with your build tool.
+</Note>
+
+## Local Development Setup
+
+To run the SDK against a local Stringboot server during development:
+
+<Steps>
+  <Step title="Start your local server">
+    Ensure your local Stringboot server is running on `http://localhost:8000`
+  </Step>
+  <Step title="Configure the SDK">
+    Use the local URL in your initialization configuration (see examples below)
+  </Step>
+  <Step title="Use debug mode">
+    Enable debug logging to see detailed SDK operations
+  </Step>
+</Steps>
+
+## Vanilla JavaScript Initialization
+
+### Basic Setup
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+// Initialize SDK
+async function init() {
+  try {
+    // Local development configuration
+    await StringBoot.initialize({
+      apiToken: '700fdd40-8241-4035-94fe-c7e1713ba9ac',
+      baseUrl: 'http://localhost:8000',
+      defaultLanguage: 'en',
+      debug: true
+    });
+
+    console.log('✓ SDK initialized successfully');
+
+    // Now you can use the SDK
+    await loadStrings();
+
+  } catch (error) {
+    console.error('✗ Initialization failed:', error);
+  }
+}
+
+init();
+```
+
+### Production Configuration
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+await StringBoot.initialize({
+  apiToken: 'your-production-api-token',
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+  debug: false  // Disable debug logging in production
+});
+```
+
+## React Initialization
+
+### Complete App Setup
+
+```jsx
+import React from 'react';
+import {
+  useString,
+  useStrings,
+  useLanguage,
+  useActiveLanguages,
+  useStringBoot,
+  useSync,
+} from '@stringboot/web-sdk/react';
+
+/**
+ * Main App Component with initialization
+ */
+export function App() {
+  // Initialize SDK and handle loading/error states
+  const { initialized, error } = useStringBoot({
+    apiToken: 'sk_live_your_api_token_here',
+    baseUrl: 'http://localhost:8000', // or 'https://api.stringboot.com' for production
+    defaultLanguage: 'en',
+    debug: true,
+  });
+
+  if (!initialized) {
+    return (
+      <div className="loading">
+        <h1>Loading StringBoot SDK...</h1>
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error">
+        <h1>Error initializing SDK</h1>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <Header />
+      <LanguageSwitcher />
+      <MainContent />
+      <SyncControls />
+    </div>
+  );
+}
+```
+
+<Tip>
+Always initialize the SDK as early as possible in your application to ensure strings are available when components render.
+</Tip>
+
+## Environment Variables
+
+For security, store your API token in environment variables:
+
+<CodeGroup>
+
+```javascript Vite
+const token = import.meta.env.VITE_STRINGBOOT_TOKEN;
+const baseUrl = import.meta.env.VITE_STRINGBOOT_URL || 'https://api.stringboot.com';
+```
+
+```javascript Create React App
+const token = process.env.REACT_APP_STRINGBOOT_TOKEN;
+const baseUrl = process.env.REACT_APP_STRINGBOOT_URL || 'https://api.stringboot.com';
+```
+
+```javascript Next.js
+const token = process.env.NEXT_PUBLIC_STRINGBOOT_TOKEN;
+const baseUrl = process.env.NEXT_PUBLIC_STRINGBOOT_URL || 'https://api.stringboot.com';
+```
+
+</CodeGroup>
+
+<Warning>
+Never commit API tokens to source control. Always use environment variables for sensitive credentials.
+</Warning>
+
+## Browser Compatibility
+
+The Stringboot Web SDK supports all modern browsers:
+
+| Browser | Minimum Version | Status |
+|---------|-----------------|--------|
+| **Chrome** | 87+ | Full support |
+| **Firefox** | 78+ | Full support |
+| **Safari** | 14+ | Full support |
+| **Edge** | 88+ | Full support |
+
+## Prerequisites
+
+- **Node.js:** Version 19 or higher (for npm installation)
+- **Modern Browser:** ES2020+ support required
+- **API Token:** Obtain from your Stringboot account
+
+## What's Next?
+
+Now that you have the SDK installed, explore the [Usage Guide](/web-sdk/usage) to learn how to fetch and display translated strings in your application.

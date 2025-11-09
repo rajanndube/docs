@@ -1,0 +1,338 @@
+---
+title: "Best Practices"
+description: "Production-ready patterns for Android SDK"
+---
+
+Follow these proven patterns for production-ready implementation of the Stringboot Android SDK.
+
+## 1. Use autoInitialize() Pattern
+
+Initialize the SDK in your Application class using the `autoInitialize()` method. This is the recommended approach used in the official demo app.
+
+<Tabs>
+<Tab title="Good">
+```kotlin
+class StringbootApplication : Application() {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    override fun onCreate() {
+        super.onCreate()
+        val success = StringbootExtensions.autoInitialize(this)
+
+        if (success) {
+            // Synchronously preload to prevent flash
+            runBlocking {
+                StringProvider.preloadLanguage(StringProvider.deviceLocale(), maxStrings = 500)
+            }
+
+            // Background sync
+            applicationScope.launch {
+                StringProvider.refreshFromNetwork(StringProvider.deviceLocale())
+            }
+        }
+    }
+}
+```
+</Tab>
+<Tab title="Bad">
+```kotlin
+class MainActivity : AppCompatActivity() {
+    override fun onCreate() {
+        super.onCreate()
+        StringProvider.initialize(this, 1000, api)  // Too late, delays first screen
+    }
+}
+```
+</Tab>
+</Tabs>
+
+**Why This Pattern Works:**
+
+- Initializes before Activity creation
+- Prevents UI flashing with synchronous preload
+- Fetches fresh data in background
+- Works with offline mode fallback
+
+---
+
+## 2. Use applyStringbootTags() for XML Integration
+
+Leverage XML tags for zero-code string integration instead of manual TextView updates.
+
+<Tabs>
+<Tab title="Good">
+```xml
+<!-- activity_main.xml -->
+<TextView
+    android:tag="welcome_message"
+    android:text="@string/welcome_message" />
+```
+
+```kotlin
+// MainActivity.kt
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    binding = ActivityMainBinding.inflate(layoutInflater)
+    setContentView(binding.root)
+
+    binding.root.applyStringbootTags()  // Auto-applies to all tagged TextViews
+}
+```
+</Tab>
+<Tab title="Bad">
+```kotlin
+// Manual string loading for each TextView
+binding.textView1.text = StringProvider.get("key1")
+binding.textView2.text = StringProvider.get("key2")
+binding.textView3.text = StringProvider.get("key3")
+// ... and so on for every TextView
+```
+</Tab>
+</Tabs>
+
+**Advantages:**
+
+- Declarative and maintainable
+- Single call updates all tagged views
+- Easier to refactor and audit
+- Better performance than individual calls
+
+---
+
+## 3. Preload on Language Change
+
+Always preload the cache when switching languages to avoid UI flickering.
+
+<Tabs>
+<Tab title="Good">
+```kotlin
+lifecycleScope.launch {
+    StringProvider.setLocale("es")
+    StringProvider.preloadLanguage("es", 500)  // Warm cache
+    // Subsequent accesses are instant
+    binding.root.applyStringbootTags()
+}
+```
+</Tab>
+<Tab title="Bad">
+```kotlin
+StringProvider.setLocale("es")
+// Cache is cold, first 500 strings will be slow
+```
+</Tab>
+</Tabs>
+
+**Benefits:**
+
+- Prevents "flash of stale content"
+- Instant string access after preload
+- Better user experience
+- Only loads most common strings
+
+---
+
+## 4. Use Flow for Reactive UI
+
+Use Kotlin Flow to automatically update UI when language changes or sync completes.
+
+<Tabs>
+<Tab title="Good">
+```kotlin
+lifecycleScope.launch {
+    StringProvider.getFlow("key", "en").collect { text ->
+        binding.textView.text = text  // Auto-updates on language change
+    }
+}
+```
+</Tab>
+<Tab title="Bad">
+```kotlin
+lifecycleScope.launch {
+    binding.textView.text = StringProvider.get("key", "en")
+    // Won't update if language changes or sync completes
+}
+```
+</Tab>
+</Tabs>
+
+**Flow Advantages:**
+
+- Reactive to language changes
+- Updates on network sync completion
+- Lifecycle-aware collection
+- Perfect for dynamic content
+
+---
+
+## 5. Handle Missing Strings Gracefully
+
+Always check for missing strings and provide fallback text.
+
+<Tabs>
+<Tab title="Good">
+```kotlin
+val text = StringProvider.get("key", "en")
+if (text.startsWith("??")) {
+    binding.textView.text = "Default Text"  // Fallback
+} else {
+    binding.textView.text = text
+}
+```
+</Tab>
+<Tab title="Bad">
+```kotlin
+val text = StringProvider.get("key", "en")
+binding.textView.text = text  // Displays "??key??" to user
+```
+</Tab>
+</Tabs>
+
+**Fallback Strategies:**
+
+- Check for `??key??` pattern
+- Provide sensible default text
+- Log warnings for debugging
+- Improve user experience
+
+---
+
+## 6. Use withContext for FAQ Calls
+
+Always fetch FAQs on a background thread to prevent blocking the main thread.
+
+<Tabs>
+<Tab title="Good">
+```kotlin
+lifecycleScope.launch {
+    val faqs = withContext(Dispatchers.IO) {
+        FAQProvider.getFAQs(tag = "payments", lang = "en")
+    }
+    // Update UI with faqs
+    adapter.updateFAQs(faqs)
+}
+```
+</Tab>
+<Tab title="Bad">
+```kotlin
+// On main thread
+val faqs = FAQProvider.getFAQs(tag = "payments", lang = "en")
+// May block UI if network fetch required
+```
+</Tab>
+</Tabs>
+
+**Thread Safety:**
+
+- IO operations off main thread
+- Prevents ANR (Application Not Responding)
+- Better responsiveness
+- Proper coroutine context handling
+
+---
+
+## 7. Save Language Preferences
+
+Persist user language preferences to restore on app restart.
+
+<Tabs>
+<Tab title="Good">
+```kotlin
+private fun switchLanguage(newLanguage: ActiveLanguage) {
+    lifecycleScope.launch {
+        currentLanguage = newLanguage.code
+        StringProvider.setLocale(currentLanguage)
+
+        // Save preference
+        prefs.edit { putString("current_language", currentLanguage) }
+
+        // ... rest of language switching
+    }
+}
+```
+
+Then restore in onCreate:
+
+```kotlin
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+
+    // Restore saved language
+    currentLanguage = prefs.getString("current_language", "en") ?: "en"
+    StringProvider.setLocale(currentLanguage)
+}
+```
+</Tab>
+<Tab title="Bad">
+```kotlin
+// No persistence - language resets on app restart
+StringProvider.setLocale("es")
+// User language preference is lost
+```
+</Tab>
+</Tabs>
+
+**Persistence Benefits:**
+
+- Respects user preferences
+- Consistent experience across sessions
+- Better user satisfaction
+- Minimal storage overhead
+
+---
+
+## 8. Use Appropriate Cache Sizes
+
+Configure cache size based on your app's string count to balance memory and performance.
+
+<Tabs>
+<Tab title="Good">
+```kotlin
+// For apps with 100-500 unique strings
+val cacheSize = 500
+
+// For apps with 1000+ strings
+val cacheSize = 1000
+
+// For large apps with 5000+ strings
+val cacheSize = 2000
+```
+</Tab>
+<Tab title="Bad">
+```kotlin
+cacheSize = 10  // Too small, excessive database hits
+```
+</Tab>
+</Tabs>
+
+**Cache Size Guidelines:**
+
+| String Count | Recommended Cache |
+|-------------|------------------|
+| 100-500    | 500              |
+| 500-1000   | 1000             |
+| 1000-5000  | 1500-2000        |
+| 5000+      | 2000-5000        |
+
+**Cache Strategy:**
+
+- Too small: Frequent DB queries (slow)
+- Too large: Excessive memory use
+- Right-sized: Balance performance and memory
+- Monitor with `getCacheStats()`
+
+---
+
+## Summary
+
+Following these 8 best practices ensures:
+
+✅ Fast app startup without UI flashing
+✅ Responsive language switching
+✅ Graceful offline functionality
+✅ Optimal memory usage
+✅ Better user experience
+✅ Maintainable code structure
+✅ Production-ready implementation
+✅ Easier debugging and troubleshooting
+
+Implement these patterns in your production apps for best results with the Stringboot Android SDK.

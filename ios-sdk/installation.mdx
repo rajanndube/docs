@@ -1,0 +1,128 @@
+---
+title: "Installation & Setup"
+description: "Install and configure the Stringboot iOS SDK"
+---
+
+## Swift Package Manager Installation
+
+### Step 1: Add Swift Package Dependency
+
+In Xcode, navigate to **File → Add Packages** and enter the repository URL:
+
+```
+https://github.com/stringboot/stringboot-ios-sdk.git
+```
+
+Alternatively, add the package directly to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/stringboot/stringboot-ios-sdk.git",
+        from: "2.0.0"
+    )
+]
+```
+
+### Step 2: Link Your App Target
+
+In Xcode, select your app target and navigate to **Build Phases → Link Binary With Libraries**, then add `StringbootSDK`.
+
+Alternatively, in `Package.swift`:
+
+```swift
+targets: [
+    .target(
+        name: "YourApp",
+        dependencies: ["StringbootSDK"]
+    )
+]
+```
+
+### Step 3: Import the SDK
+
+Add the import statement to your code:
+
+```swift
+import StringbootSDK
+```
+
+## Initialization
+
+### App-Level Initialization Pattern
+
+Initialize the SDK in your app's `@main` struct. This is the verified pattern from the working demo app:
+
+```swift
+import SwiftUI
+import StringbootSDK
+
+@main
+struct StringbootDemoApp: App {
+
+    init() {
+        // Configure SDK logging
+        StringbootLogger.isLoggingEnabled = true  // Set to false to disable all SDK logs
+        StringbootLogger.logLevel = .debug        // Verbosity level when logging is enabled
+
+        // Initialize Stringboot SDK
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "9bc7d015-c9e6-42ff-aec2-8c33b13284c0",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true  // Auto-fetch strings on startup
+        )
+
+        // Set saved language or use device locale
+        let currentLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
+            ?? StringProvider.shared.deviceLocale()
+        StringProvider.shared.setLocale(currentLang)
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+### Initialization Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cacheSize` | Int | Maximum number of strings in memory cache (recommended: 1000) |
+| `apiToken` | String | Your Stringboot API token from the dashboard |
+| `baseURL` | String | API endpoint (default: `https://api.stringboot.com`) |
+| `autoSync` | Bool | Automatically sync strings on app launch (recommended: true) |
+
+## Logger Configuration
+
+Configure logging to help debug SDK behavior during development:
+
+```swift
+// Enable detailed logging for debugging
+StringbootLogger.isLoggingEnabled = true
+StringbootLogger.logLevel = .debug  // Options: .debug, .info, .warning, .error
+
+// Disable logging for production
+StringbootLogger.isLoggingEnabled = false
+```
+
+### Log Levels
+
+- **`.debug`** - All SDK activity and detailed tracing
+- **`.info`** - Important operations and state changes
+- **`.warning`** - Potential issues and edge cases
+- **`.error`** - Errors only
+
+## Platform Requirements
+
+| Requirement | Version |
+|------------|---------|
+| **Minimum iOS** | 14.0+ |
+| **Minimum macOS** | 11.0+ |
+| **Swift** | 5.9+ |
+| **Xcode** | 15.0+ |
+| **SDK Version** | 2.0 |
+| **License** | Apache 2.0 |
