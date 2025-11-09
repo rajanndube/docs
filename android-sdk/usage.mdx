@@ -1,0 +1,412 @@
+---
+title: "Usage Guide"
+description: "Learn how to use the Stringboot Android SDK"
+---
+
+Learn how to integrate and use the Stringboot Android SDK in your Android application with practical examples.
+
+## XML Tag-Based Integration (Recommended)
+
+This is the recommended approach for most use cases. Use `android:tag` attributes in your XML layouts and call `applyStringbootTags()` in your Activity.
+
+**XML Layout** (`activity_main.xml`):
+
+```xml
+<!-- Greeting with Stringboot tag -->
+<TextView
+    android:id="@+id/greeting"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/hello_user"
+    android:tag="hello_user"
+    android:textSize="22sp"
+    android:textStyle="bold" />
+
+<!-- Welcome message -->
+<TextView
+    android:id="@+id/welcome"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/welcome_message"
+    android:tag="welcome_message"
+    android:textStyle="bold"
+    android:textSize="22sp" />
+
+<!-- Offer title in card -->
+<TextView
+    android:id="@+id/offer_text1"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:tag="offer_title"
+    android:text="@string/offer_title"
+    android:textColor="@android:color/white"
+    android:textSize="18sp"
+    android:textStyle="bold" />
+```
+
+**Activity Code** (`MainActivity.kt`):
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+    private var currentLanguage = "en"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Load saved language preference
+        currentLanguage = prefs.getString("current_language", "en") ?: "en"
+        StringProvider.setLocale(currentLanguage)
+
+        enableEdgeToEdge()
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Auto-apply Stringboot to all TextViews with android:tag
+        binding.root.applyStringbootTags()
+
+        // Set up UI
+        setupLanguageButton()
+        setupLanguageDisplay()
+        setupFAQButton()
+
+        // Load initial strings
+        loadStrings()
+    }
+}
+```
+
+**How it works:**
+
+1. Set `android:tag="string_key"` on any TextView in XML
+2. Call `binding.root.applyStringbootTags()` in your Activity
+3. All tagged TextViews automatically load strings from StringProvider
+4. UI updates automatically when language changes
+
+---
+
+## Get String (Synchronous)
+
+Use `StringProvider.get()` for synchronous string access. This method is **NOT a suspend function** and returns immediately from cache.
+
+```kotlin
+// Direct synchronous string access
+dialogBinding.dialogTitle.text = StringProvider.get("language_dialog_title")
+dialogBinding.dialogSubtitle.text = StringProvider.get("language_dialog_subtitle")
+```
+
+**Key Points:**
+
+- `get()` is synchronous (not suspend)
+- Returns immediately from cache
+- Falls back to database if not in memory cache
+- Returns `"??key??"` if string not found
+- Can optionally fetch from network with `allowNetworkFetch = true`
+
+**Full Signature:**
+
+```kotlin
+val text = StringProvider.get(
+    key = "welcome_message",
+    lang = "en",  // Optional, defaults to device locale
+    allowNetworkFetch = false  // Optional, defaults to false
+)
+```
+
+---
+
+## Reactive Flow for Auto-Updating UI
+
+Use Kotlin Flow to reactively update UI when language changes or network sync completes.
+
+```kotlin
+private fun setupLanguageDisplay() {
+    // Cancel previous observation if exists
+    languageDisplayJob?.cancel()
+
+    languageDisplayJob = lifecycleScope.launch {
+        // Use Flow to reactively update the language display
+        StringProvider.getFlow("status_current_language", currentLanguage)
+            .collect { template ->
+                val displayText = if (template.contains("%s")) {
+                    template.format(getLanguageDisplayName(currentLanguage))
+                } else {
+                    template
+                }
+                binding.tvCurrentLanguage.text = displayText
+            }
+    }
+}
+```
+
+**Benefits:**
+
+- Automatically updates when language changes
+- Updates when network sync completes
+- Lifecycle-aware (cancels when activity destroyed)
+- Perfect for dynamic content
+
+---
+
+## Complete Language Switching Pattern
+
+Switch languages while maintaining smooth UI transitions and preventing content flashing.
+
+```kotlin
+private fun switchLanguage(newLanguage: ActiveLanguage) {
+    lifecycleScope.launch {
+        try {
+            Toast.makeText(
+                this@MainActivity,
+                "Switching to ${newLanguage.name}...",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            // Update current language
+            currentLanguage = newLanguage.code
+            StringProvider.setLocale(currentLanguage)
+
+            // Preload cache with existing strings to avoid flash
+            StringProvider.preloadLanguage(currentLanguage, maxStrings = 500)
+
+            // Refresh from network in background
+            val refreshSuccess = StringProvider.refreshFromNetwork(currentLanguage)
+            if (!refreshSuccess) {
+                StringbootLogger.w("Network refresh failed, using cached/local strings")
+            }
+
+            // Restart language display observation for new language
+            setupLanguageDisplay()
+
+            // Re-apply tags to refresh UI with new language
+            withContext(Dispatchers.Main) {
+                binding.root.applyStringbootTags()
+            }
+
+            // Save language preference
+            prefs.edit { putString("current_language", currentLanguage) }
+
+        } catch (e: Exception) {
+            StringbootLogger.e("Error switching language", e)
+            Toast.makeText(
+                this@MainActivity,
+                "Failed to switch language",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+}
+```
+
+**Key Steps:**
+
+1. Set locale with `setLocale()`
+2. Preload language to avoid UI flash
+3. Refresh from network (non-blocking)
+4. Restart Flow observations
+5. Re-apply tags to update all TextViews
+6. Save preference for next app launch
+
+---
+
+## Get Available Languages
+
+Retrieve available languages with automatic fallback to cached languages.
+
+```kotlin
+private suspend fun getAvailableLanguages(): List<ActiveLanguage> {
+    return withContext(Dispatchers.IO) {
+        try {
+            // Try to get languages from server first
+            val serverLanguages = StringProvider.getAvailableLanguagesFromServer()
+
+            if (serverLanguages.isNotEmpty()) {
+                StringbootLogger.i("Retrieved ${serverLanguages.size} languages from server")
+                return@withContext serverLanguages
+            }
+
+            // Fallback to locally cached languages
+            val cachedCodes = StringProvider.getAvailableLanguages()
+            if (cachedCodes.isNotEmpty()) {
+                StringbootLogger.i("Using ${cachedCodes.size} cached languages")
+                return@withContext cachedCodes.map { code ->
+                    ActiveLanguage(
+                        code = code,
+                        name = getLanguageDisplayName(code),
+                        isActive = true
+                    )
+                }
+            }
+
+            // Ultimate fallback: English only
+            StringbootLogger.w("No languages available, defaulting to English")
+            listOf(ActiveLanguage(code = "en", name = "English", isActive = true))
+
+        } catch (e: Exception) {
+            StringbootLogger.e("Error getting available languages", e)
+            listOf(ActiveLanguage(code = "en", name = "English", isActive = true))
+        }
+    }
+}
+```
+
+**Three-tier fallback:**
+
+1. Server languages (fresh data)
+2. Cached language codes
+3. English-only fallback
+
+---
+
+## FAQ Management
+
+Load and display FAQs with tag-based filtering and optional language selection.
+
+```kotlin
+private fun loadFAQs() {
+    lifecycleScope.launch {
+        try {
+            // Fetch FAQs using FAQProvider
+            val faqs = withContext(Dispatchers.IO) {
+                FAQProvider.getFAQs(
+                    tag = currentTag,
+                    subTags = selectedSubTags,
+                    lang = currentLanguage,
+                    allowNetworkFetch = true
+                )
+            }
+
+            StringbootLogger.d("Loaded ${faqs.size} FAQs for tag: $currentTag, subTags: $selectedSubTags")
+
+            // Update UI with FAQs
+            faqAdapter.updateFAQs(faqs)
+
+            if (faqs.isEmpty()) {
+                Toast.makeText(
+                    this@FAQDemoActivity,
+                    "No FAQs found for tag: $currentTag",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        } catch (e: Exception) {
+            StringbootLogger.e("Error loading FAQs: ${e.message}", e)
+            Toast.makeText(
+                this@FAQDemoActivity,
+                "Error loading FAQs: ${e.message}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+}
+```
+
+**FAQ Filtering Examples:**
+
+```kotlin
+// Filter by tag only
+FAQProvider.getFAQs(tag = "Identity Verification", lang = "en")
+
+// Filter by tag and subTags
+FAQProvider.getFAQs(
+    tag = "Identity Verification",
+    subTags = listOf("AE", "refunds", "disputes"),
+    lang = "en",
+    allowNetworkFetch = true
+)
+```
+
+---
+
+## Dynamic UI with sbTextView
+
+Create dynamic TextViews that automatically load and update strings programmatically.
+
+```kotlin
+// Create dynamic sbTextView
+val stringView = sbTextView(context).apply {
+    setKey("app_name", "Stringboot")
+    setPadding(16)
+    setBackgroundColor(0xFFEEEEEE.toInt())
+}
+cardContent.addView(stringView)
+```
+
+**sbTextView Features:**
+
+- Loads strings from StringProvider automatically
+- Updates when language changes
+- Handles network fetch and caching
+- Provides fallback text
+
+---
+
+## Language Switching Extension
+
+Simple activity-level extension for quick language switching.
+
+```kotlin
+fun switchLanguageExample(activity: AppCompatActivity) {
+    activity.changeLanguage("fr") { success ->
+        if (success) {
+            // All sbTextViews are already updated automatically!
+        }
+    }
+}
+```
+
+**One-line language switching:**
+
+```kotlin
+// Switch to French
+changeLanguage("fr") { success ->
+    if (success) {
+        Log.i("App", "Language switched successfully")
+    }
+}
+```
+
+---
+
+## Preload Language for Fast Access
+
+Warm up the cache synchronously to ensure instant string access.
+
+```kotlin
+// Synchronously warm cache before UI loads
+runBlocking {
+    val locale = StringProvider.deviceLocale()
+    StringProvider.preloadLanguage(locale, maxStrings = 500)
+    Log.i("Stringboot", "📦 Preloaded ${StringProvider.getStringCount(locale)} cached strings for $locale into memory")
+}
+```
+
+**Usage in Coroutines:**
+
+```kotlin
+lifecycleScope.launch {
+    StringProvider.preloadLanguage("en", maxStrings = 500)
+    // Subsequent string access will be instant (<1ms)
+}
+```
+
+---
+
+## Get String Count and Cache Stats
+
+Monitor cache performance and debug string availability.
+
+```kotlin
+// Get string count for locale
+val count = StringProvider.getStringCount(locale)
+Log.i("Stringboot", "Loaded $count strings for $locale")
+
+// Get cache statistics
+val stats = StringProvider.getCacheStats()
+println("Memory: ${stats.memorySize} / ${stats.memoryMaxSize}")
+println("Hit rate: ${stats.hitRate * 100}%")
+println("DB entries: ${stats.dbSize}")
+```

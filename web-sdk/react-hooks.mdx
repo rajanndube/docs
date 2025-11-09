@@ -1,0 +1,381 @@
+---
+title: "React Hooks"
+description: "Use Stringboot with React hooks for reactive string updates"
+---
+
+## Overview
+
+The Stringboot Web SDK provides six optimized React hooks that integrate with your React components. These hooks handle initialization, string fetching, language management, and synchronization automatically.
+
+## App Setup Pattern
+
+Before using any hooks, you need to initialize the SDK at the app level:
+
+```jsx
+import React from 'react';
+import {
+  useString,
+  useStrings,
+  useLanguage,
+  useActiveLanguages,
+  useStringBoot,
+  useSync,
+} from '@stringboot/web-sdk/react';
+
+/**
+ * Main App Component with initialization
+ */
+export function App() {
+  // Initialize SDK and handle loading/error states
+  const { initialized, error } = useStringBoot({
+    apiToken: 'sk_live_your_api_token_here',
+    baseUrl: 'http://localhost:8000', // or 'https://api.stringboot.com' for production
+    defaultLanguage: 'en',
+    debug: true,
+  });
+
+  if (!initialized) {
+    return (
+      <div className="loading">
+        <h1>Loading StringBoot SDK...</h1>
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error">
+        <h1>Error initializing SDK</h1>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <Header />
+      <LanguageSwitcher />
+      <MainContent />
+      <SyncControls />
+    </div>
+  );
+}
+```
+
+<Tip>
+Always handle the `initialized` and `error` states before rendering child components that use other hooks.
+</Tip>
+
+## useString Hook
+
+Fetch and automatically update a single translated string:
+
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
+
+/**
+ * Header component using single string hook
+ */
+function Header() {
+  const title = useString('app_title');
+  const subtitle = useString('app_subtitle');
+
+  return (
+    <header>
+      <h1>{title}</h1>
+      <p>{subtitle}</p>
+    </header>
+  );
+}
+```
+
+**Key Features:**
+- Automatically updates when language changes
+- Returns empty string if not found
+- Handles loading and errors gracefully
+- Perfect for simple UI text and labels
+
+## useStrings Hook
+
+Fetch multiple strings at once with a single hook:
+
+```jsx
+import { useStrings } from '@stringboot/web-sdk/react';
+
+/**
+ * Main content using multiple strings hook
+ */
+function MainContent() {
+  const strings = useStrings([
+    'welcome_message',
+    'features_title',
+    'feature_1',
+    'feature_2',
+    'feature_3',
+    'cta_button',
+  ]);
+
+  return (
+    <main>
+      <section className="hero">
+        <h2>{strings.welcome_message}</h2>
+      </section>
+
+      <section className="features">
+        <h3>{strings.features_title}</h3>
+        <ul>
+          <li>{strings.feature_1}</li>
+          <li>{strings.feature_2}</li>
+          <li>{strings.feature_3}</li>
+        </ul>
+      </section>
+
+      <section className="cta">
+        <button className="primary">{strings.cta_button}</button>
+      </section>
+    </main>
+  );
+}
+```
+
+**Key Features:**
+- More efficient than multiple `useString` calls
+- Returns object with all requested strings
+- Automatically updates when language changes
+- Good for batch loading related strings
+
+## useLanguage Hook
+
+Manage the current language and switch languages:
+
+```jsx
+import { useLanguage, useActiveLanguages } from '@stringboot/web-sdk/react';
+
+/**
+ * Language switcher using useLanguage hook
+ */
+function LanguageSwitcher() {
+  const [currentLang, setLanguage] = useLanguage();
+  const { languages, loading } = useActiveLanguages();
+
+  if (loading) {
+    return <div>Loading languages...</div>;
+  }
+
+  return (
+    <div className="language-switcher">
+      <label htmlFor="language">Language:</label>
+      <select
+        id="language"
+        value={currentLang}
+        onChange={(e) => setLanguage(e.target.value)}
+      >
+        {languages.map((lang) => (
+          <option key={lang.code} value={lang.code}>
+            {lang.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+```
+
+**Key Features:**
+- Get current language with `currentLang`
+- Change language with `setLanguage()`
+- Integrates with `useActiveLanguages()` to show available options
+- All strings automatically update when language changes
+
+## useActiveLanguages Hook
+
+Get the list of available languages:
+
+```jsx
+import { useActiveLanguages } from '@stringboot/web-sdk/react';
+
+function LanguageSelector() {
+  const { languages, loading, error } = useActiveLanguages();
+
+  if (loading) {
+    return <p>Loading languages...</p>;
+  }
+
+  if (error) {
+    return <p>Error loading languages: {error}</p>;
+  }
+
+  return (
+    <ul>
+      {languages.map((lang) => (
+        <li key={lang.code}>
+          {lang.name} ({lang.code})
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+**Returns:**
+- `languages` - Array of available languages with `code` and `name`
+- `loading` - Boolean indicating if languages are being fetched
+- `error` - Error message if fetching failed
+
+## useSync Hook
+
+Manually control synchronization with the server:
+
+```jsx
+import { useSync, useString } from '@stringboot/web-sdk/react';
+
+/**
+ * Sync controls using useSync hook
+ */
+function SyncControls() {
+  const { sync, syncing } = useSync();
+  const syncLabel = useString('sync_now');
+  const syncingLabel = useString('syncing');
+
+  return (
+    <div className="sync-controls">
+      <button onClick={() => sync()} disabled={syncing}>
+        {syncing ? syncingLabel : syncLabel}
+      </button>
+    </div>
+  );
+}
+```
+
+**Key Features:**
+- `sync()` - Manually trigger synchronization
+- `syncing` - Boolean indicating sync is in progress
+- Disable button while syncing to prevent duplicate requests
+- Shows user feedback during sync operation
+
+## useStringBoot Hook
+
+Initialize the SDK and manage initialization state:
+
+```jsx
+import { useStringBoot } from '@stringboot/web-sdk/react';
+
+function App() {
+  const { initialized, error, initialized: ready } = useStringBoot({
+    apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
+    baseUrl: import.meta.env.VITE_STRINGBOOT_URL || 'https://api.stringboot.com',
+    defaultLanguage: 'en',
+    debug: import.meta.env.DEV,
+  });
+
+  return initialized ? <MainApp /> : <LoadingScreen />;
+}
+```
+
+**Returns:**
+- `initialized` - Boolean indicating if SDK is ready
+- `error` - Error message if initialization failed
+- Handles all initialization logic automatically
+
+## Advanced Patterns
+
+### Conditional Rendering Based on String Values
+
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
+
+/**
+ * Example with conditional rendering based on string value
+ */
+function ConditionalExample() {
+  const featureEnabled = useString('feature_flag_new_ui');
+
+  return (
+    <div>
+      {featureEnabled === 'true' && (
+        <div className="new-feature">
+          <h3>New UI is enabled!</h3>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Formatted Strings with Template Literals
+
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
+
+/**
+ * Example with formatted strings (using template literals)
+ */
+function FormattedExample({ userName }: { userName: string }) {
+  const greetingTemplate = useString('greeting_with_name');
+
+  // Assuming the string is: "Hello, {name}!"
+  const greeting = greetingTemplate.replace('{name}', userName);
+
+  return <h2>{greeting}</h2>;
+}
+```
+
+### Pluralization
+
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
+
+/**
+ * Example with pluralization
+ */
+function PluralExample({ count }: { count: number }) {
+  const singularString = useString('item_singular');
+  const pluralString = useString('item_plural');
+
+  const displayString = count === 1 ? singularString : pluralString;
+
+  return <p>{count} {displayString}</p>;
+}
+```
+
+## Error Handling
+
+React hooks handle errors gracefully with fallback values:
+
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
+
+function SafeComponent() {
+  const title = useString('page_title');
+
+  // Hooks handle errors gracefully
+  // Returns empty string or fallback on error
+  return <h1>{title || 'Default Title'}</h1>;
+}
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Initialize at app level">
+    Use `useStringBoot` in your root component before other hooks
+  </Step>
+  <Step title="Check initialization state">
+    Always verify `initialized` is true before rendering content
+  </Step>
+  <Step title="Use multiple string batches">
+    Group related strings with `useStrings` for better performance
+  </Step>
+  <Step title="Provide fallbacks">
+    Always provide default values or fallbacks for strings
+  </Step>
+  <Step title="Handle language changes">
+    Use `useLanguage` to provide language selection UI
+  </Step>
+</Steps>
+
+## What's Next?
+
+- Explore [Best Practices](/web-sdk/best-practices) for production-ready code
+- Review the [Usage Guide](/web-sdk/usage) for vanilla JavaScript patterns

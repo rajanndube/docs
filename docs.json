@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Stringboot",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -11,58 +11,47 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
               "index",
               "quickstart",
-              "development"
+              "core-concepts"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Web SDK",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "web-sdk/installation",
+              "web-sdk/usage",
+              "web-sdk/react-hooks",
+              "web-sdk/best-practices"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Android SDK",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "android-sdk/installation",
+              "android-sdk/usage",
+              "android-sdk/best-practices"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "iOS SDK",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
+              "ios-sdk/installation",
+              "ios-sdk/usage",
+              "ios-sdk/best-practices"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Advanced",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "advanced/error-handling",
+              "advanced/caching",
+              "advanced/troubleshooting"
             ]
           }
         ]
@@ -71,14 +60,14 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "GitHub",
+          "href": "https://github.com/stringboot",
+          "icon": "github"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Support",
+          "href": "mailto:support@stringboot.com",
+          "icon": "envelope"
         }
       ]
     }
@@ -90,14 +79,14 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "Dashboard",
+        "href": "https://dashboard.stringboot.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Get API Key",
+      "href": "https://dashboard.stringboot.com"
     }
   },
   "contextual": {
@@ -114,9 +103,8 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/stringboot",
+      "linkedin": "https://linkedin.com/company/stringboot"
     }
   }
 }

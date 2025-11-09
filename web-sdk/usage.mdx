@@ -1,0 +1,263 @@
+---
+title: "Usage Guide"
+description: "Learn how to use the Stringboot Web SDK in your application"
+---
+
+## Getting Started with Vanilla JavaScript
+
+The Stringboot Web SDK provides a simple API for fetching and managing translated strings in your web application.
+
+## Reactive Updates with Watchers
+
+Set up watchers to automatically update your UI when strings or language changes:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+// Set up watchers for reactive updates
+// Watchers automatically update the UI when language changes
+StringBoot.watch('welcome_message', (value) => {
+  document.getElementById('welcome').textContent = value;
+});
+
+StringBoot.watch('goodbye_message', (value) => {
+  document.getElementById('goodbye').textContent = value;
+});
+
+StringBoot.watch('app_title', (value) => {
+  document.getElementById('appTitle').textContent = value;
+});
+
+// Load initial strings
+await loadStrings();
+```
+
+<Tip>
+Watchers are the recommended approach for vanilla JavaScript as they automatically update your UI whenever the language changes.
+</Tip>
+
+## Manual String Fetching
+
+For one-off string retrievals, use the `get()` method:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+async function loadStrings() {
+  try {
+    const welcome = await StringBoot.get('welcome_message');
+    const goodbye = await StringBoot.get('faq-page-title');
+    const appTitle = await StringBoot.get('toast_refresh_success');
+
+    document.getElementById('welcome').textContent = welcome;
+    document.getElementById('goodbye').textContent = goodbye;
+    document.getElementById('appTitle').textContent = appTitle;
+  } catch (error) {
+    console.error('Failed to load strings:', error);
+  }
+}
+```
+
+## Language Switching
+
+Change the current language and automatically update all watchers:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+const languageSelect = document.getElementById('language');
+const statusEl = document.getElementById('status');
+
+languageSelect.addEventListener('change', async (e) => {
+  const currentLang = e.target.value;
+
+  try {
+    statusEl.className = 'status loading';
+    statusEl.textContent = `Changing language to ${currentLang}...`;
+
+    await StringBoot.changeLanguage(currentLang);
+
+    statusEl.className = 'status success';
+    statusEl.textContent = `✓ Language changed to ${currentLang}`;
+
+    // Strings will auto-update via watchers
+  } catch (error) {
+    statusEl.className = 'status error';
+    statusEl.textContent = `✗ Language change failed: ${error.message}`;
+  }
+});
+```
+
+## Manual Synchronization
+
+Manually sync with the server to fetch updated strings:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+const syncBtn = document.getElementById('syncBtn');
+const statusEl = document.getElementById('status');
+
+syncBtn.addEventListener('click', async () => {
+  syncBtn.disabled = true;
+  syncBtn.textContent = 'Syncing...';
+  statusEl.className = 'status loading';
+  statusEl.textContent = 'Syncing with server...';
+
+  try {
+    await StringBoot.syncNow();
+    statusEl.className = 'status success';
+    statusEl.textContent = '✓ Sync completed successfully';
+  } catch (error) {
+    statusEl.className = 'status error';
+    statusEl.textContent = `✗ Sync failed: ${error.message}`;
+  } finally {
+    syncBtn.disabled = false;
+    syncBtn.textContent = 'Sync Now';
+  }
+});
+```
+
+## Force Refresh Cache
+
+Clear the cache and force a complete refresh from the server:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+const refreshBtn = document.getElementById('refreshBtn');
+
+refreshBtn.addEventListener('click', async () => {
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = 'Refreshing...';
+  statusEl.className = 'status loading';
+  statusEl.textContent = 'Force refreshing cache...';
+
+  try {
+    await StringBoot.forceRefresh();
+    await loadStrings();
+    statusEl.className = 'status success';
+    statusEl.textContent = '✓ Cache refreshed successfully';
+  } catch (error) {
+    statusEl.className = 'status error';
+    statusEl.textContent = `✗ Refresh failed: ${error.message}`;
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = 'Force Refresh';
+  }
+});
+```
+
+## Complete Error Handling Pattern
+
+Always use try/catch/finally to handle errors and manage UI states:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+async function handleOperation() {
+  const button = document.getElementById('operationBtn');
+
+  // Disable button during operation
+  button.disabled = true;
+  button.textContent = 'Processing...';
+
+  try {
+    // Perform operation
+    await StringBoot.syncNow();
+
+    // Show success
+    showStatus('success', '✓ Operation completed successfully');
+  } catch (error) {
+    // Show error
+    showStatus('error', `✗ Operation failed: ${error.message}`);
+    console.error('Operation error:', error);
+  } finally {
+    // Always re-enable button
+    button.disabled = false;
+    button.textContent = 'Try Again';
+  }
+}
+```
+
+## Network Error Handling
+
+Handle specific error scenarios for better UX:
+
+```javascript
+try {
+  await StringBoot.syncNow();
+} catch (error) {
+  if (error.message.includes('Network')) {
+    console.log('Network error, using cached values');
+    showOfflineMessage();
+  } else if (error.message.includes('timeout')) {
+    console.log('Request timed out, retrying...');
+    retryOperation();
+  } else {
+    console.error('Unexpected error:', error);
+    showErrorMessage(error.message);
+  }
+}
+```
+
+<Note>
+The SDK automatically falls back to cached values when offline, so your application will continue to work even without a network connection.
+</Note>
+
+## Cache Management
+
+### View Cache Statistics
+
+Monitor how much cache your application is using:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+const getCacheBtn = document.getElementById('getCacheBtn');
+
+getCacheBtn.addEventListener('click', async () => {
+  try {
+    const stats = await StringBoot.getCacheStats();
+    alert(`Cache Stats:\n\nMemory: ${stats.memory.size}/${stats.memory.maxSize}\nDB: ${stats.db.totalStrings} strings (${stats.db.deletedStrings} deleted)`);
+    console.log('Cache stats:', stats);
+  } catch (error) {
+    alert(`Failed to get cache stats: ${error.message}`);
+  }
+});
+```
+
+### Cache Statistics Response
+
+```javascript
+{
+  memory: {
+    size: 42,        // Current entries in memory cache
+    maxSize: 1000    // Maximum cache size
+  },
+  db: {
+    totalStrings: 150,      // Total strings in IndexedDB
+    deletedStrings: 3       // Soft-deleted strings
+  }
+}
+```
+
+## Offline Mode
+
+The SDK seamlessly handles offline scenarios:
+
+```javascript
+// Get strings works even when offline
+const message = await StringBoot.get('welcome_message');
+// Returns cached value or empty string if not previously cached
+
+// Check online status before syncing
+if (navigator.onLine) {
+  await StringBoot.syncNow();
+}
+```
+
+## What's Next?
+
+- Learn about [React Hooks](/web-sdk/react-hooks) for React applications
+- Review [Best Practices](/web-sdk/best-practices) for production deployments

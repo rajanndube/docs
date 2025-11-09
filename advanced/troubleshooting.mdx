@@ -1,0 +1,687 @@
+---
+title: "Troubleshooting"
+description: "Common issues and solutions for Stringboot SDK"
+---
+
+## Common Issues
+
+This guide covers the most common issues you might encounter and how to resolve them.
+
+## Initialization Issues
+
+<AccordionGroup>
+  <Accordion title="Strings show '??key??' instead of translations" icon="triangle-exclamation">
+    **Problem:** Strings display as `??welcome_message??` instead of actual content
+
+    **Possible Causes:**
+    - SDK not initialized
+    - String key doesn't exist in backend
+    - Network sync hasn't completed
+    - Invalid API token
+
+    **Solutions:**
+
+    <Tabs>
+      <Tab title="Web">
+        ```javascript
+        // 1. Check if SDK is initialized
+        console.log('SDK initialized:', StringBoot.isReady);
+
+        // 2. Trigger manual sync
+        try {
+          await StringBoot.syncNow();
+        } catch (error) {
+          console.error('Sync failed:', error);
+        }
+
+        // 3. Check if key exists
+        const text = await StringBoot.get('welcome_message');
+        if (text.startsWith('??')) {
+          console.error('String not found:', text);
+        }
+
+        // 4. Verify API token in initialization
+        await StringBoot.initialize({
+          apiToken: 'verify-this-is-correct',
+          baseUrl: 'https://api.stringboot.com'
+        });
+        ```
+      </Tab>
+
+      <Tab title="Android">
+        ```kotlin
+        // 1. Check initialization
+        if (!StringProvider.isInitialized()) {
+            StringbootExtensions.autoInitialize(this)
+        }
+
+        // 2. Trigger manual sync
+        lifecycleScope.launch {
+            val success = StringProvider.refreshFromNetwork("en")
+            Log.i("Stringboot", "Sync success: $success")
+        }
+
+        // 3. Verify key exists in dashboard
+        // 4. Check API token in AndroidManifest.xml
+        ```
+      </Tab>
+
+      <Tab title="iOS">
+        ```swift
+        // 1. Check if SDK is ready
+        if !stringProvider.isReady {
+            print("SDK not ready")
+        }
+
+        // 2. Check for initialization errors
+        if let error = stringProvider.initializationError {
+            print("Init error: \(error)")
+        }
+
+        // 3. Trigger manual sync
+        Task {
+            await stringProvider.refreshFromNetwork(
+                lang: "en",
+                forceRefresh: true
+            )
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="SDK not initializing" icon="xmark-circle">
+    **Problem:** SDK fails to initialize or gets stuck in loading state
+
+    **Common Causes:**
+    - Invalid API token
+    - Wrong baseURL
+    - Network firewall blocking requests
+    - Missing internet permission (mobile)
+
+    **Solutions:**
+
+    **Web:**
+    ```javascript
+    try {
+      await StringBoot.initialize({
+        apiToken: 'check-this-token',
+        baseUrl: 'https://api.stringboot.com', // Check URL is correct
+        defaultLanguage: 'en',
+        debug: true // Enable for more info
+      });
+    } catch (error) {
+      console.error('Init error:', error);
+      // Check browser console for details
+    }
+    ```
+
+    **Android:**
+    ```xml
+    <!-- Verify AndroidManifest.xml -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <meta-data
+        android:name="com.stringboot.api_url"
+        android:value="https://api.stringboot.com" />
+    <meta-data
+        android:name="com.stringboot.api_token"
+        android:value="YOUR_VALID_TOKEN" />
+    ```
+
+    **iOS:**
+    ```swift
+    // Enable logging to see what's happening
+    StringbootLogger.isLoggingEnabled = true
+    StringbootLogger.logLevel = .debug
+
+    StringProvider.shared.initialize(
+        cacheSize: 1000,
+        apiToken: "verify-this-token",
+        baseURL: "https://api.stringboot.com",
+        autoSync: true
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="Slow first load" icon="hourglass">
+    **Problem:** App takes too long to load strings on first launch
+
+    **Cause:** Cache is cold, requires network fetch
+
+    **Solution:** Preload strings synchronously
+
+    <Tabs>
+      <Tab title="Web">
+        ```javascript
+        // Preload during initialization
+        await StringBoot.initialize({ /* config */ });
+
+        // Preload top strings
+        await StringBoot.syncNow();
+        ```
+      </Tab>
+
+      <Tab title="Android">
+        ```kotlin
+        // In Application.onCreate()
+        runBlocking {
+            val locale = StringProvider.deviceLocale()
+            StringProvider.preloadLanguage(locale, maxStrings = 500)
+        }
+        ```
+      </Tab>
+
+      <Tab title="iOS">
+        ```swift
+        // In App init
+        StringProvider.shared.initialize(...)
+
+        // Restore saved language before showing UI
+        let savedLang = UserDefaults.standard.string(
+            forKey: "com.stringboot.currentLanguage"
+        ) ?? StringProvider.shared.deviceLocale()
+
+        StringProvider.shared.setLocale(savedLang)
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+</AccordionGroup>
+
+## Language Switching Issues
+
+<AccordionGroup>
+  <Accordion title="Strings don't update after language change" icon="language">
+    **Problem:** UI still shows old language after calling changeLanguage()
+
+    **Cause:** UI not reacting to language changes
+
+    **Solutions:**
+
+    <Tabs>
+      <Tab title="Web (Vanilla JS)">
+        ```javascript
+        // Use watchers for automatic updates
+        StringBoot.watch('welcome_message', (value) => {
+          document.getElementById('welcome').textContent = value;
+        });
+
+        // Then language change updates automatically
+        await StringBoot.changeLanguage('es');
+        ```
+      </Tab>
+
+      <Tab title="Web (React)">
+        ```jsx
+        // Use hooks instead of manual state
+        function Component() {
+          const title = useString('app_title'); // Auto-updates!
+          return <h1>{title}</h1>;
+        }
+        ```
+      </Tab>
+
+      <Tab title="Android">
+        ```kotlin
+        // Re-apply tags after language change
+        private fun switchLanguage(newLang: String) {
+            lifecycleScope.launch {
+                StringProvider.setLocale(newLang)
+                StringProvider.preloadLanguage(newLang, 500)
+
+                // Must re-apply tags!
+                withContext(Dispatchers.Main) {
+                    binding.root.applyStringbootTags()
+                }
+            }
+        }
+        ```
+      </Tab>
+
+      <Tab title="iOS">
+        ```swift
+        // Use @ObservedObject
+        @ObservedObject var stringProvider = StringProvider.shared
+
+        // Or use SBText which updates automatically
+        SBText("welcome_message")
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="Language picker triggers multiple times" icon="rotate">
+    **Problem:** Language change function called repeatedly
+
+    **Cause:** UI not disabled during language change
+
+    **Solution:**
+
+    <Tabs>
+      <Tab title="Web">
+        ```javascript
+        languageSelect.addEventListener('change', async (e) => {
+          languageSelect.disabled = true; // Disable during change
+
+          try {
+            await StringBoot.changeLanguage(e.target.value);
+          } finally {
+            languageSelect.disabled = false; // Re-enable
+          }
+        });
+        ```
+      </Tab>
+
+      <Tab title="iOS">
+        ```swift
+        Picker("Language", selection: $selectedLanguage) {
+            // ...
+        }
+        .disabled(stringProvider.isChangingLanguage) // Disable during change
+        ```
+      </Tab>
+    </Tabs>
+  </Accordion>
+
+  <Accordion title="Flash of old content when changing language" icon="bolt">
+    **Problem:** Brief flash of old language before new language appears
+
+    **Cause:** Cache is cold for new language
+
+    **Solution:** Preload language before switching
+
+    ```kotlin
+    // Android
+    lifecycleScope.launch {
+        StringProvider.setLocale("es")
+        StringProvider.preloadLanguage("es", maxStrings = 500) // Prevent flash
+        binding.root.applyStringbootTags()
+    }
+    ```
+
+    ```swift
+    // iOS
+    await StringProvider.shared.changeLanguage(to: "es")
+    // SDK automatically preloads
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Platform-Specific Issues
+
+<Tabs>
+  <Tab title="Web">
+    ### Module not found error
+
+    **Problem:** `Cannot find module '@stringboot/web-sdk'`
+
+    **Solution:**
+    ```bash
+    # Reinstall package
+    npm install @stringboot/web-sdk
+
+    # Clear cache if needed
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+
+    ### React hooks not working
+
+    **Problem:** Hooks don't update or crash
+
+    **Solution:**
+    ```jsx
+    // Must initialize SDK before using hooks
+    function App() {
+      const { initialized } = useStringBoot({
+        apiToken: 'token',
+        baseUrl: 'url'
+      });
+
+      if (!initialized) return <Loading />;
+
+      // Now safe to use other hooks
+      return <MainContent />;
+    }
+    ```
+
+    ### CORS errors
+
+    **Problem:** Browser blocks requests to Stringboot API
+
+    **Solution:**
+    - Verify baseUrl is correct: `https://api.stringboot.com`
+    - Check that you're not using `http://` instead of `https://`
+    - Contact support if CORS errors persist
+
+    ### IndexedDB errors
+
+    **Problem:** "Failed to open IndexedDB"
+
+    **Solution:**
+    - Check if private browsing is enabled (not supported)
+    - Verify browser version meets minimum requirements
+    - Clear browser data and try again
+  </Tab>
+
+  <Tab title="Android">
+    ### ProGuard/R8 issues
+
+    **Problem:** App crashes in release build
+
+    **Solution:**
+    ```proguard
+    # Add to proguard-rules.pro
+    -keep class com.stringboot.sdk.** { *; }
+    -keepclassmembers class com.stringboot.sdk.** { *; }
+    ```
+
+    ### Room database migration errors
+
+    **Problem:** "Migration didn't properly handle..."
+
+    **Solution:**
+    ```kotlin
+    // Clear app data and reinstall
+    // Or clear language cache
+    StringProvider.clearLanguageCache("en")
+    ```
+
+    ### applyStringbootTags() not working
+
+    **Problem:** Tags not applying to TextViews
+
+    **Solution:**
+    ```xml
+    <!-- Verify android:tag is set -->
+    <TextView
+        android:id="@+id/myTextView"
+        android:tag="my_string_key"  <!-- Required! -->
+        android:text="@string/my_string_key" />
+    ```
+
+    ```kotlin
+    // Call after setContentView
+    setContentView(binding.root)
+    binding.root.applyStringbootTags() // Must be after setContentView
+    ```
+
+    ### Strings not loading on API 24-26
+
+    **Problem:** Older Android versions not working
+
+    **Solution:**
+    - Verify minSdk is 24 or higher
+    - Test on actual device, not just emulator
+    - Enable logging to see what's happening
+
+    ### Memory leaks
+
+    **Problem:** App memory usage grows over time
+
+    **Solution:**
+    ```kotlin
+    // Cancel coroutines in onDestroy
+    override fun onDestroy() {
+        super.onDestroy()
+        languageDisplayJob?.cancel()
+    }
+
+    // Use lifecycleScope, not GlobalScope
+    lifecycleScope.launch {  // ✓ Good
+        // ...
+    }
+
+    GlobalScope.launch {  // ✗ Bad
+        // ...
+    }
+    ```
+  </Tab>
+
+  <Tab title="iOS">
+    ### SwiftUI previews not working
+
+    **Problem:** Previews crash or show errors
+
+    **Solution:**
+    ```swift
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            // Initialize SDK for preview
+            let _ = StringProvider.shared.initialize(
+                cacheSize: 100,
+                apiToken: "preview-token",
+                baseURL: "https://api.stringboot.com",
+                autoSync: false
+            )
+
+            ContentView()
+        }
+    }
+    ```
+
+    ### View doesn't update after language change
+
+    **Problem:** Text stays in old language
+
+    **Solution:**
+    ```swift
+    // Must use @ObservedObject
+    @ObservedObject var stringProvider = StringProvider.shared  // ✓
+
+    // Not this:
+    let stringProvider = StringProvider.shared  // ✗
+    ```
+
+    ### Core Data errors
+
+    **Problem:** "Core Data migration failed"
+
+    **Solution:**
+    ```swift
+    // Clear cache and restart
+    stringProvider.clearCache(clearDatabase: true)
+
+    // Restart app
+    exit(0) // Only for debugging
+    ```
+
+    ### Simulator vs Device behavior differences
+
+    **Problem:** Works in simulator but not on device
+
+    **Solution:**
+    - Test on actual device early
+    - Check device iOS version meets minimum (14.0+)
+    - Verify internet permission (should work automatically)
+
+    ### Memory warnings
+
+    **Problem:** App crashes with memory warning
+
+    **Solution:**
+    ```swift
+    // SDK handles didReceiveMemoryWarning automatically
+    // But you can manually reduce cache if needed
+    stringProvider.clearCache(clearDatabase: false)
+    ```
+  </Tab>
+</Tabs>
+
+## Network and Connectivity
+
+<AccordionGroup>
+  <Accordion title="Sync fails with network error" icon="wifi-slash">
+    **Problem:** "Network error" or "Request failed"
+
+    **Checklist:**
+    - [ ] Device has internet connection
+    - [ ] baseURL is correct: `https://api.stringboot.com`
+    - [ ] API token is valid (check dashboard)
+    - [ ] No firewall blocking requests
+    - [ ] Not in airplane mode
+
+    **Test Connection:**
+    ```bash
+    # Test from command line
+    curl -H "Authorization: Bearer YOUR_TOKEN" \
+      https://api.stringboot.com/strings/meta
+    ```
+  </Accordion>
+
+  <Accordion title="Very slow sync times" icon="clock">
+    **Problem:** Sync takes >30 seconds
+
+    **Possible Causes:**
+    - Slow network connection
+    - Large number of strings
+    - Server issues
+
+    **Solutions:**
+    - Use delta sync (enabled by default)
+    - Preload during app initialization
+    - Sync in background, don't wait for completion
+    - Check server status
+  </Accordion>
+
+  <Accordion title="Unexpected data usage" icon="chart-line">
+    **Problem:** App using too much data
+
+    **Check:**
+    ```javascript
+    // Verify you're not force-refreshing too often
+    await StringBoot.syncNow(); // ✓ Good - uses ETag
+    await StringBoot.forceRefresh(); // ✗ Bad if done frequently
+    ```
+
+    **Best Practice:**
+    - Let SDK handle automatic sync
+    - Only force-refresh when user explicitly requests
+    - Use delta sync (default)
+  </Accordion>
+</AccordionGroup>
+
+## Debugging Tips
+
+### Enable Debug Logging
+
+<CodeGroup>
+
+```javascript Web
+await StringBoot.initialize({
+  apiToken: 'token',
+  debug: true  // Logs all operations
+});
+```
+
+```kotlin Android
+StringbootLogger.setEnabled(true)
+// Check logs with: adb logcat | grep Stringboot
+```
+
+```swift iOS
+StringbootLogger.isLoggingEnabled = true
+StringbootLogger.logLevel = .debug
+```
+
+</CodeGroup>
+
+### Check Cache Stats
+
+<CodeGroup>
+
+```javascript Web
+const stats = await StringBoot.getCacheStats();
+console.log('Cache stats:', stats);
+// {
+//   memory: { size: 42, maxSize: 1000 },
+//   db: { totalStrings: 150, deletedStrings: 3 }
+// }
+```
+
+```kotlin Android
+val stats = StringProvider.getCacheStats()
+println("Memory: ${stats.memorySize} / ${stats.memoryMaxSize}")
+println("Hit rate: ${stats.hitRate * 100}%")
+```
+
+```swift iOS
+let stats = StringProvider.shared.getCacheStats()
+print("Memory: \(stats.memorySize) / \(stats.memoryMaxSize)")
+print("Hit rate: \(stats.hitRate * 100)%")
+```
+
+</CodeGroup>
+
+### Test Offline Behavior
+
+1. **Enable airplane mode**
+2. **Force quit app**
+3. **Relaunch app**
+4. **Verify**: App should load all previously synced strings from cache
+
+### Inspect Network Requests
+
+**Web (Chrome DevTools):**
+1. Open DevTools → Network tab
+2. Filter by "stringboot" or API domain
+3. Check request/response details
+
+**Android (Logcat):**
+```bash
+adb logcat | grep "OkHttp\|Stringboot"
+```
+
+**iOS (Console App):**
+1. Connect device
+2. Open Console app on Mac
+3. Filter by "Stringboot" or "URLSession"
+
+## Still Having Issues?
+
+<CardGroup cols={2}>
+  <Card title="Check GitHub Issues" icon="github" href="https://github.com/stringboot">
+    See if others have encountered similar issues
+  </Card>
+
+  <Card title="Contact Support" icon="envelope" href="mailto:support@stringboot.com">
+    Email support@stringboot.com with details
+  </Card>
+
+  <Card title="Review Docs" icon="book" href="/">
+    Re-read platform-specific documentation
+  </Card>
+
+  <Card title="Best Practices" icon="star" href="/advanced/best-practices">
+    Ensure you're following recommended patterns
+  </Card>
+</CardGroup>
+
+### When Reporting Issues
+
+Include the following information:
+
+<Check>Platform and version (Web/Android/iOS)</Check>
+<Check>SDK version</Check>
+<Check>Error messages and stack traces</Check>
+<Check>Steps to reproduce</Check>
+<Check>Expected vs actual behavior</Check>
+<Check>Debug logs if available</Check>
+<Check>Network conditions when issue occurred</Check>
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Error Handling" icon="shield-check" href="/advanced/error-handling">
+    Proper error handling patterns
+  </Card>
+
+  <Card title="Best Practices" icon="star" href="/advanced/best-practices">
+    Production-ready tips
+  </Card>
+
+  <Card title="Caching" icon="database" href="/advanced/caching">
+    Understanding the cache system
+  </Card>
+</CardGroup>

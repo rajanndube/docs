@@ -1,0 +1,582 @@
+---
+title: "Error Handling"
+description: "Handle errors and edge cases gracefully in Stringboot"
+---
+
+## Overview
+
+Stringboot is designed to fail gracefully, but it's important to handle errors properly to provide the best user experience. This guide covers error handling patterns for all platforms.
+
+## Common Error Scenarios
+
+<AccordionGroup>
+  <Accordion title="Network Errors" icon="wifi-slash">
+    **When it happens:** No internet connection or server unreachable
+
+    **SDK behavior:** Automatically falls back to cached data
+
+    **User impact:** No visible error if data is cached
+
+    **Action needed:** Inform users that content may be outdated
+  </Accordion>
+
+  <Accordion title="Missing Strings" icon="triangle-exclamation">
+    **When it happens:** String key doesn't exist in any language
+
+    **SDK behavior:** Returns `"??key??"` format
+
+    **User impact:** Visible placeholder text
+
+    **Action needed:** Provide fallback text or log for debugging
+  </Accordion>
+
+  <Accordion title="Authentication Errors (401/403)" icon="lock">
+    **When it happens:** Invalid or expired API token
+
+    **SDK behavior:** Logs error, uses cached data, disables sync
+
+    **User impact:** App works with cached data but won't update
+
+    **Action needed:** Validate API token configuration
+  </Accordion>
+
+  <Accordion title="Rate Limiting (429)" icon="gauge-high">
+    **When it happens:** Too many requests to server
+
+    **SDK behavior:** Automatic retry with exponential backoff (max 3 attempts)
+
+    **User impact:** Slight delay in updates
+
+    **Action needed:** None - handled automatically
+  </Accordion>
+
+  <Accordion title="Server Errors (500+)" icon="server">
+    **When it happens:** Server-side issues
+
+    **SDK behavior:** Retry with backoff, fall back to cache
+
+    **User impact:** May use slightly outdated content
+
+    **Action needed:** Check server status, report if persistent
+  </Accordion>
+</AccordionGroup>
+
+## Platform-Specific Error Handling
+
+<Tabs>
+  <Tab title="Web SDK">
+    ### Initialization Errors
+
+    ```javascript
+    try {
+      await StringBoot.initialize({
+        apiToken: 'your-token',
+        baseUrl: 'https://api.stringboot.com',
+        defaultLanguage: 'en'
+      });
+      console.log('✓ SDK initialized successfully');
+    } catch (error) {
+      console.error('✗ Initialization failed:', error);
+      // Show error to user or use fallback
+    }
+    ```
+
+    ### Operation Errors
+
+    ```javascript
+    const syncBtn = document.getElementById('syncBtn');
+
+    syncBtn.addEventListener('click', async () => {
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing...';
+
+      try {
+        await StringBoot.syncNow();
+        showStatus('success', '✓ Sync completed');
+      } catch (error) {
+        showStatus('error', `✗ Sync failed: ${error.message}`);
+        console.error('Sync error:', error);
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = 'Sync Now';
+      }
+    });
+    ```
+
+    ### React Error Handling
+
+    ```jsx
+    import { useStringBoot } from '@stringboot/web-sdk/react';
+
+    function App() {
+      const { initialized, error } = useStringBoot({
+        apiToken: 'token',
+        baseUrl: 'url',
+      });
+
+      if (error) {
+        return (
+          <div className="error">
+            <h1>Error initializing SDK</h1>
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        );
+      }
+
+      if (!initialized) {
+        return <div>Loading...</div>;
+      }
+
+      return <MainContent />;
+    }
+    ```
+
+    ### Missing String Handling
+
+    ```javascript
+    const text = await StringBoot.get('unknown_key');
+
+    if (text.startsWith('??') && text.endsWith('??')) {
+      // String not found, use fallback
+      document.getElementById('text').textContent = 'Default Text';
+    } else {
+      document.getElementById('text').textContent = text;
+    }
+    ```
+
+    ### Network-Specific Errors
+
+    ```javascript
+    try {
+      await StringBoot.syncNow();
+    } catch (error) {
+      if (error.message.includes('Network')) {
+        console.log('Network error, using cached values');
+        showStatus('warning', 'Offline - using cached content');
+      } else if (error.message.includes('timeout')) {
+        console.log('Request timed out, retrying...');
+        // Implement retry logic
+      } else {
+        console.error('Unexpected error:', error);
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Android SDK">
+    ### Initialization Check
+
+    ```kotlin
+    if (!StringProvider.isInitialized()) {
+        Log.e("Stringboot", "SDK not initialized!")
+        // Initialize or show error
+        StringbootExtensions.autoInitialize(this)
+    }
+    ```
+
+    ### Network Failure Handling
+
+    ```kotlin
+    lifecycleScope.launch {
+        try {
+            val success = StringProvider.refreshFromNetwork("en")
+            if (success) {
+                Toast.makeText(this@MainActivity, "Synced!", Toast.LENGTH_SHORT).show()
+            } else {
+                // SDK automatically uses cached data
+                Toast.makeText(this@MainActivity, "Using cached data", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            StringbootLogger.e("Sync error", e)
+            Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    ```
+
+    ### Missing String Detection
+
+    ```kotlin
+    val text = StringProvider.get("unknown_key", "en")
+
+    if (text.startsWith("??") && text.endsWith("??")) {
+        Log.w("Stringboot", "Missing translation: $text")
+        // Use fallback text
+        binding.textView.text = "Default Text"
+    } else {
+        binding.textView.text = text
+    }
+    ```
+
+    ### Language Switch Error Handling
+
+    ```kotlin
+    private fun switchLanguage(newLanguage: ActiveLanguage) {
+        lifecycleScope.launch {
+            try {
+                currentLanguage = newLanguage.code
+                StringProvider.setLocale(currentLanguage)
+                StringProvider.preloadLanguage(currentLanguage, maxStrings = 500)
+
+                val refreshSuccess = StringProvider.refreshFromNetwork(currentLanguage)
+                if (!refreshSuccess) {
+                    StringbootLogger.w("Network refresh failed, using cached strings")
+                }
+
+                withContext(Dispatchers.Main) {
+                    binding.root.applyStringbootTags()
+                }
+            } catch (e: Exception) {
+                StringbootLogger.e("Error switching language", e)
+                Toast.makeText(
+                    this@MainActivity,
+                    "Failed to switch language: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+                // Revert to previous language
+                StringProvider.setLocale(previousLanguage)
+            }
+        }
+    }
+    ```
+
+    ### FAQ Loading Errors
+
+    ```kotlin
+    private fun loadFAQs() {
+        lifecycleScope.launch {
+            try {
+                val faqs = withContext(Dispatchers.IO) {
+                    FAQProvider.getFAQs(
+                        tag = currentTag,
+                        lang = currentLanguage,
+                        allowNetworkFetch = true
+                    )
+                }
+
+                faqAdapter.updateFAQs(faqs)
+
+                if (faqs.isEmpty()) {
+                    Toast.makeText(
+                        this@FAQActivity,
+                        "No FAQs found for tag: $currentTag",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                StringbootLogger.e("Error loading FAQs: ${e.message}", e)
+                Toast.makeText(
+                    this@FAQActivity,
+                    "Error loading FAQs: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="iOS SDK">
+    ### Three States Pattern
+
+    ```swift
+    @ObservedObject var stringProvider = StringProvider.shared
+
+    var body: some View {
+        Group {
+            if stringProvider.isReady {
+                // SDK ready - show main content
+                mainContent
+            } else if let error = stringProvider.initializationError {
+                // SDK initialization failed
+                errorView(error)
+            } else {
+                // SDK still loading
+                loadingView
+            }
+        }
+    }
+    ```
+
+    ### Error View with Retry
+
+    ```swift
+    private func errorView(_ message: String) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(.orange)
+
+            Text("Initialization Failed")
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text(message)
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Button {
+                Task {
+                    await stringProvider.retryInitialization()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Retry")
+                }
+                .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+    ```
+
+    ### Language Change Error Handling
+
+    ```swift
+    .alert("Language Change Failed", isPresented: .constant(stringProvider.languageChangeError != nil)) {
+        Button("OK") {
+            // Reset to current language
+            selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
+        }
+    } message: {
+        Text(stringProvider.languageChangeError ?? "Unknown error")
+    }
+    ```
+
+    ### Disable UI During Operations
+
+    ```swift
+    Picker("Language", selection: $selectedLanguage) {
+        ForEach(stringProvider.availableLanguages, id: \.code) { language in
+            Text(language.name).tag(language.code)
+        }
+    }
+    .disabled(stringProvider.isChangingLanguage)
+    .overlay {
+        if stringProvider.isChangingLanguage {
+            ProgressView()
+        }
+    }
+    ```
+
+    ### Network Operation Errors
+
+    ```swift
+    Button("Refresh") {
+        Task {
+            do {
+                let success = await stringProvider.refreshFromNetwork(
+                    lang: "en",
+                    forceRefresh: true
+                )
+                if success {
+                    print("Strings refreshed successfully")
+                } else {
+                    print("Refresh failed, using cached data")
+                }
+            } catch {
+                print("Error refreshing: \(error.localizedDescription)")
+            }
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## HTTP Status Code Handling
+
+The SDK automatically handles these HTTP status codes:
+
+| Status Code | Meaning | SDK Response | Retry? |
+|-------------|---------|--------------|--------|
+| **200** | Success | Parse and cache data | N/A |
+| **304** | Not Modified | Use existing cache | No |
+| **401** | Unauthorized | Log error, use cache | No |
+| **403** | Forbidden | Log error, use cache | No |
+| **404** | Not Found | Language doesn't exist | No |
+| **429** | Rate Limited | Exponential backoff | Yes (3x) |
+| **500-599** | Server Error | Retry with backoff | Yes (3x) |
+| **Network Error** | No connection | Use cache immediately | No |
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Always Use try/catch" icon="shield-check">
+    Wrap all SDK operations in try/catch blocks to handle unexpected errors
+  </Card>
+
+  <Card title="Provide Fallbacks" icon="arrow-down-to-line">
+    Always have fallback text for missing strings
+  </Card>
+
+  <Card title="Show Loading States" icon="spinner">
+    Indicate when operations are in progress
+  </Card>
+
+  <Card title="Log Errors" icon="file-lines">
+    Log errors for debugging and monitoring
+  </Card>
+
+  <Card title="Don't Block UI" icon="ban">
+    Never block the main thread waiting for network operations
+  </Card>
+
+  <Card title="Test Offline" icon="wifi-slash">
+    Test your app in airplane mode to ensure offline functionality
+  </Card>
+
+  <Card title="Handle Edge Cases" icon="triangle-exclamation">
+    Account for missing strings, slow networks, and API errors
+  </Card>
+
+  <Card title="Monitor in Production" icon="chart-line">
+    Use error tracking to identify issues in production
+  </Card>
+</CardGroup>
+
+## Error Logging
+
+### Enable Debug Logging
+
+<CodeGroup>
+
+```javascript Web
+// Enable debug mode
+await StringBoot.initialize({
+  apiToken: 'token',
+  baseUrl: 'url',
+  debug: true  // Logs all operations to console
+});
+```
+
+```kotlin Android
+// Enable Stringboot logger
+StringbootLogger.setEnabled(true)
+
+// Check logs
+// I/Stringboot: ✅ Background sync completed: 150 strings for en
+// W/Stringboot: ⚠️ Background sync failed for en - using cached data
+// E/Stringboot: ❌ Background sync error: Network timeout
+```
+
+```swift iOS
+// Enable logging
+StringbootLogger.isLoggingEnabled = true
+StringbootLogger.logLevel = .debug
+
+// Log levels: .debug, .info, .warning, .error
+```
+
+</CodeGroup>
+
+### Production Error Tracking
+
+Integrate with your error tracking service:
+
+```javascript
+try {
+  await StringBoot.syncNow();
+} catch (error) {
+  // Log to your error tracking service
+  Sentry.captureException(error, {
+    tags: {
+      component: 'stringboot',
+      operation: 'sync'
+    }
+  });
+
+  // Still handle gracefully for user
+  console.error('Sync failed, using cached data');
+}
+```
+
+## Testing Error Scenarios
+
+### Simulate Network Errors
+
+<Tabs>
+  <Tab title="Web">
+    ```javascript
+    // Test offline behavior
+    // 1. Open DevTools → Network tab
+    // 2. Select "Offline" from throttling dropdown
+    // 3. Verify app still works with cached data
+
+    // Or use navigator.onLine
+    if (!navigator.onLine) {
+      showStatus('warning', 'You are offline');
+    }
+    ```
+  </Tab>
+
+  <Tab title="Android">
+    ```kotlin
+    // Test offline in emulator
+    // Settings → Network & Internet → Toggle off
+
+    // Or check programmatically
+    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val networkInfo = connectivityManager.activeNetworkInfo
+    if (networkInfo?.isConnected != true) {
+        Log.w("App", "Device is offline")
+    }
+    ```
+  </Tab>
+
+  <Tab title="iOS">
+    ```swift
+    // Test offline in simulator
+    // Settings → Toggle Airplane Mode
+
+    // Or use Network framework
+    import Network
+
+    let monitor = NWPathMonitor()
+    monitor.pathUpdateHandler = { path in
+        if path.status == .satisfied {
+            print("Connected")
+        } else {
+            print("Offline")
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Test Missing Strings
+
+Create test cases for missing keys:
+
+```javascript
+// Test missing string handling
+const missingKey = await StringBoot.get('this_key_does_not_exist');
+console.assert(
+  missingKey === '??this_key_does_not_exist??',
+  'Missing strings should return ??key?? format'
+);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Best Practices" icon="star" href="/advanced/best-practices">
+    Production-ready patterns
+  </Card>
+
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Common issues and solutions
+  </Card>
+
+  <Card title="Caching" icon="database" href="/advanced/caching">
+    Deep dive into caching system
+  </Card>
+
+  <Card title="Web SDK" icon="globe" href="/web-sdk/installation">
+    Back to Web SDK docs
+  </Card>
+</CardGroup>
