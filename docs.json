@@ -60,13 +60,8 @@
     "global": {
       "anchors": [
         {
-          "anchor": "GitHub",
-          "href": "https://github.com/stringboot",
-          "icon": "github"
-        },
-        {
           "anchor": "Support",
-          "href": "mailto:support@stringboot.com",
+          "href": "mailto:developer@stringboot.com",
           "icon": "envelope"
         }
       ]
