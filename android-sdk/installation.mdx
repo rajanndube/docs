@@ -1,0 +1,86 @@
+---
+title: "Installation & Setup"
+description: "Install and configure the Stringboot Android SDK"
+---
+
+Install and configure the Stringboot Android SDK for your Android application.
+
+## Step 1: Add Repository
+
+Add Maven Central to your project's `settings.gradle.kts`:
+
+```kotlin
+// settings.gradle.kts (Kotlin DSL)
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()  // Stringboot SDK is hosted on Maven Central
+    }
+}
+```
+
+## Step 2: Add Dependency
+
+In your app's `build.gradle.kts`:
+
+```kotlin
+dependencies {
+    implementation("com.stringboot:stringboot-android-sdk:1.0.8")
+}
+```
+
+**Latest Version:** Check [Maven Central](https://search.maven.org/artifact/com.stringboot/stringboot-android-sdk) for the latest available version.
+
+## Step 3: Sync Project
+
+Click **Sync Now** in Android Studio or run the following command in your terminal:
+
+```bash
+./gradlew build
+```
+
+## Step 4: Configure AndroidManifest.xml
+
+Add Internet permission and configure your API credentials in your `AndroidManifest.xml`:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".StringbootApplication">
+
+        <!-- Stringboot Configuration -->
+        <meta-data
+            android:name="com.stringboot.api_url"
+            android:value="https://api.stringboot.com" />
+
+        <meta-data
+            android:name="com.stringboot.api_token"
+            android:value="YOUR_API_TOKEN_HERE" />
+
+        <meta-data
+            android:name="com.stringboot.cache_size"
+            android:value="1000" />
+
+        <!-- Optional: Set default locale -->
+        <meta-data
+            android:name="com.stringboot.default_locale"
+            android:value="en" />
+    </application>
+</manifest>
+```
+
+## Platform Support
+
+| Feature | Version |
+|---------|---------|
+| **Min SDK** | 24 (Android 7.0) |
+| **Target SDK** | 34 (Android 14) |
+| **SDK Version** | 1.0.8 |
+| **Kotlin** | 1.9.22+ |
+| **License** | Apache 2.0 |
+
+## Next Steps
+
+After installation, proceed to the [Usage Guide](/android-sdk/usage) to learn how to integrate the SDK into your application.

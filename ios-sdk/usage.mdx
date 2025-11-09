@@ -1,0 +1,554 @@
+---
+title: "Usage Guide"
+description: "Learn how to use the Stringboot iOS SDK with SwiftUI"
+---
+
+## Complete ContentView with Loading States
+
+This production-ready example shows all three SDK states: loading, error, and ready.
+
+```swift
+import SwiftUI
+import Combine
+import StringbootSDK
+
+struct ContentView: View {
+
+    @ObservedObject var stringProvider = StringProvider.shared
+    @State private var selectedLanguage: String = ""
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if stringProvider.isReady {
+                    mainContent
+                } else if let error = stringProvider.initializationError {
+                    errorView(error)
+                } else {
+                    loadingView
+                }
+            }
+            .navigationTitle("Stringboot Demo")
+            .onAppear {
+                selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
+            }
+            .onChange(of: stringProvider.currentLanguage) { _, newLang in
+                if let newLang = newLang {
+                    selectedLanguage = newLang
+                }
+            }
+        }
+    }
+
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(2.0)
+                .padding()
+
+            Text("Loading strings...")
+                .font(.headline)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func errorView(_ message: String) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(.orange)
+                .padding()
+
+            Text("Initialization Failed")
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text(message)
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Button {
+                Task {
+                    await stringProvider.retryInitialization()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Retry")
+                }
+                .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top)
+        }
+    }
+
+    private var mainContent: some View {
+        VStack(spacing: 20) {
+            // Your app content here
+            Text("SDK Ready!")
+        }
+    }
+}
+```
+
+## Language Change with Loading Overlay
+
+Handle language switching with visual feedback to the user:
+
+```swift
+struct ContentView: View {
+
+    @ObservedObject var stringProvider = StringProvider.shared
+    @State private var selectedLanguage: String = ""
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                // Your content here
+            }
+            .alert("Language Change Failed", isPresented: .constant(stringProvider.languageChangeError != nil)) {
+                Button("OK") {
+                    selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
+                }
+            } message: {
+                Text(stringProvider.languageChangeError ?? "Unknown error")
+            }
+            .overlay {
+                if stringProvider.isChangingLanguage {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                                .tint(.white)
+
+                            Text("Changing language...")
+                                .foregroundColor(.white)
+                                .font(.headline)
+                        }
+                        .padding(32)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(16)
+                        .shadow(radius: 20)
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+## Language Picker Integration
+
+Use a language picker with proper state management:
+
+```swift
+struct ContentView: View {
+
+    @ObservedObject var stringProvider = StringProvider.shared
+    @State private var selectedLanguage: String = ""
+
+    var body: some View {
+        VStack {
+            // Language Picker - Just observe and call SDK
+            Picker("Language", selection: $selectedLanguage) {
+                ForEach(stringProvider.availableLanguages, id: \.code) { language in
+                    Text(language.name).tag(language.code)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding()
+            .disabled(stringProvider.isChangingLanguage)
+            .onChange(of: selectedLanguage) { _, newLanguage in
+                Task {
+                    await stringProvider.changeLanguage(to: newLanguage)
+                }
+            }
+        }
+        .onAppear {
+            selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
+        }
+        .onChange(of: stringProvider.currentLanguage) { _, newLang in
+            if let newLang = newLang {
+                selectedLanguage = newLang
+            }
+        }
+    }
+}
+```
+
+## Using SBText for Auto-Updating Strings
+
+The `SBText` component automatically updates when the language changes:
+
+```swift
+import SwiftUI
+import StringbootSDK
+
+struct ContentView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+
+            // Using SBText - SDK handles everything automatically:
+            // - Language detection (follows picker selection)
+            // - Auto-updates when strings refresh from network
+            // - Falls back to Localizable.xcstrings if backend offline
+            SBText("welcome_message")
+                .font(.title)
+                .fontWeight(.bold)
+
+            SBText("title_activity_main")
+                .font(.body)
+                .foregroundColor(.secondary)
+
+            SBText("app_description")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+        }
+        .padding()
+    }
+}
+```
+
+## Refresh from Network and Cache Management
+
+Manually trigger network refreshes and manage the cache:
+
+```swift
+struct ContentView: View {
+
+    @ObservedObject var stringProvider = StringProvider.shared
+    @State private var selectedLanguage: String = ""
+
+    var body: some View {
+        VStack {
+            Button("Refresh from Network") {
+                Task {
+                    let lang = selectedLanguage.isEmpty ? nil : selectedLanguage
+                    StringbootLogger.i("Refresh button: fetching \(lang ?? "device locale")")
+                    let success = await stringProvider.refreshFromNetwork(lang: lang, forceRefresh: true)
+                    StringbootLogger.i("Refresh button: result = \(success)")
+                    // No need to toggle refreshTrigger - SDK auto-updates via lastUpdate
+                }
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button("Clear Cache") {
+                stringProvider.clearCache(clearDatabase: false)
+                // No need to toggle refreshTrigger - SDK auto-updates
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+    }
+}
+```
+
+## Cache Statistics View
+
+Display real-time cache performance metrics:
+
+```swift
+import SwiftUI
+import StringbootSDK
+
+struct CacheStatsView: View {
+
+    @State private var stats: CacheStats?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Cache Statistics")
+                .font(.headline)
+
+            if let stats = stats {
+                HStack {
+                    Text("Size:")
+                    Spacer()
+                    Text("\(stats.memorySize) / \(stats.memoryMaxSize)")
+                }
+
+                HStack {
+                    Text("Hit Rate:")
+                    Spacer()
+                    Text(String(format: "%.2f%%", stats.hitRate * 100))
+                }
+
+                HStack {
+                    Text("Hits:")
+                    Spacer()
+                    Text("\(stats.memoryHitCount)")
+                }
+
+                HStack {
+                    Text("Misses:")
+                    Spacer()
+                    Text("\(stats.memoryMissCount)")
+                }
+
+                HStack {
+                    Text("Evictions:")
+                    Spacer()
+                    Text("\(stats.memoryEvictionCount)")
+                }
+            }
+        }
+        .font(.caption)
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(8)
+        .padding(.horizontal)
+        .onAppear {
+            updateStats()
+        }
+        .onReceive(Timer.publish(every: 2.0, on: .main, in: .common).autoconnect()) { _ in
+            updateStats()
+        }
+    }
+
+    private func updateStats() {
+        stats = StringProvider.shared.getCacheStats()
+    }
+}
+```
+
+## Complete App Structure
+
+Here's a production-ready example combining all patterns:
+
+```swift
+import SwiftUI
+import StringbootSDK
+
+@main
+struct MyApp: App {
+
+    init() {
+        // Configure logging
+        StringbootLogger.isLoggingEnabled = true
+        StringbootLogger.logLevel = .debug
+
+        // Initialize SDK
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_API_TOKEN_HERE",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true
+        )
+
+        // Restore saved language
+        let savedLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
+            ?? StringProvider.shared.deviceLocale()
+        StringProvider.shared.setLocale(savedLang)
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            MainView()
+        }
+    }
+}
+
+struct MainView: View {
+
+    @ObservedObject var stringProvider = StringProvider.shared
+    @State private var selectedLanguage: String = ""
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if stringProvider.isReady {
+                    contentView
+                } else if let error = stringProvider.initializationError {
+                    errorView(error)
+                } else {
+                    loadingView
+                }
+            }
+            .navigationTitle("My App")
+            .onAppear {
+                selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
+            }
+            .onChange(of: stringProvider.currentLanguage) { _, newLang in
+                if let newLang = newLang {
+                    selectedLanguage = newLang
+                    UserDefaults.standard.set(newLang, forKey: "com.stringboot.currentLanguage")
+                }
+            }
+            .alert("Language Change Failed", isPresented: .constant(stringProvider.languageChangeError != nil)) {
+                Button("OK") {
+                    selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
+                }
+            } message: {
+                Text(stringProvider.languageChangeError ?? "Unknown error")
+            }
+            .overlay {
+                if stringProvider.isChangingLanguage {
+                    languageChangeOverlay
+                }
+            }
+        }
+    }
+
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(2.0)
+                .padding()
+
+            Text("Loading strings...")
+                .font(.headline)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func errorView(_ message: String) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(.orange)
+                .padding()
+
+            Text("Initialization Failed")
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text(message)
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Button {
+                Task {
+                    await stringProvider.retryInitialization()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Retry")
+                }
+                .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top)
+        }
+    }
+
+    private var contentView: some View {
+        VStack(spacing: 20) {
+
+            // Language Picker
+            Picker("Language", selection: $selectedLanguage) {
+                ForEach(stringProvider.availableLanguages, id: \.code) { language in
+                    Text(language.name).tag(language.code)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding()
+            .disabled(stringProvider.isChangingLanguage)
+            .onChange(of: selectedLanguage) { _, newLanguage in
+                Task {
+                    await stringProvider.changeLanguage(to: newLanguage)
+                }
+            }
+
+            Divider()
+
+            // Auto-updating string views
+            VStack(alignment: .leading, spacing: 15) {
+                SBText("welcome_message")
+                    .font(.title)
+                    .fontWeight(.bold)
+
+                SBText("app_description")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+
+            Spacer()
+
+            // Cache Statistics
+            CacheStatsView()
+
+            // Actions
+            VStack(spacing: 10) {
+                Button("Refresh from Network") {
+                    Task {
+                        let lang = selectedLanguage.isEmpty ? nil : selectedLanguage
+                        _ = await stringProvider.refreshFromNetwork(lang: lang, forceRefresh: true)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button("Clear Cache") {
+                    stringProvider.clearCache(clearDatabase: false)
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding()
+        }
+    }
+
+    private var languageChangeOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .tint(.white)
+
+                Text("Changing language...")
+                    .foregroundColor(.white)
+                    .font(.headline)
+            }
+            .padding(32)
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .shadow(radius: 20)
+        }
+    }
+}
+```
+
+## Async/Await String Retrieval
+
+For cases where you need direct string access without SwiftUI binding:
+
+```swift
+struct MyView: View {
+    @State private var welcomeText = ""
+
+    var body: some View {
+        Text(welcomeText)
+            .task {
+                // Get string with async/await
+                welcomeText = await StringProvider.shared.get(
+                    "welcome_message",
+                    lang: "en"
+                )
+            }
+    }
+}
+```
+
+## Observable Properties Reference
+
+The `StringProvider` exposes these `@Published` properties for reactive UI updates:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isReady` | Bool | SDK successfully initialized |
+| `initializationError` | String? | Initialization error message |
+| `isChangingLanguage` | Bool | Language change in progress |
+| `languageChangeError` | String? | Language change error message |
+| `currentLanguage` | String? | Current active language code |
+| `availableLanguages` | [ActiveLanguage] | List of available languages |
