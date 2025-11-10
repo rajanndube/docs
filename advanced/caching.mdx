@@ -7,41 +7,53 @@ description: "Deep dive into Stringboot's multi-layer caching architecture"
 
 Stringboot's caching system is designed for maximum performance while minimizing memory usage and network bandwidth. It uses a sophisticated three-layer architecture that automatically manages cache invalidation, eviction, and synchronization.
 
-## Architecture Diagram
+## Cache Lookup Flow
 
-```
-┌────────────────────────────────────────┐
-│         Application Request            │
-│      StringProvider.get("key")         │
-└──────────────┬─────────────────────────┘
-               │
-               ▼
-┌────────────────────────────────────────┐
-│  Layer 1: In-Memory LRU Cache          │
-│  • Access time: <1ms                   │
-│  • Size: 1000 entries (configurable)   │
-│  • Frequency-based prioritization      │
-└──────────────┬─────────────────────────┘
-               │ Cache Miss
-               ▼
-┌────────────────────────────────────────┐
-│  Layer 2: Local Database               │
-│  • IndexedDB (Web)                     │
-│  • Room (Android)                      │
-│  • Core Data (iOS)                     │
-│  • Access time: 5-20ms                 │
-│  • Persistent across app restarts      │
-└──────────────┬─────────────────────────┘
-               │ Not Found
-               ▼
-┌────────────────────────────────────────┐
-│  Layer 3: Network Fetch                │
-│  • String-Sync v2 Protocol             │
-│  • ETag-based conditional requests     │
-│  • Delta sync for changed strings      │
-│  • Access time: 100-500ms              │
-└────────────────────────────────────────┘
-```
+When your application requests a string, Stringboot checks three layers in sequence:
+
+<Steps>
+  <Step title="Application Request" icon="code">
+    Your app calls `StringProvider.get("key")`
+  </Step>
+
+  <Step title="Layer 1: In-Memory LRU Cache" icon="bolt">
+    **Fastest access: &lt;1ms**
+
+    - Size: 1000 entries (configurable)
+    - Frequency-based prioritization
+    - Returns immediately if found
+
+    *If cache miss → Check Layer 2*
+  </Step>
+
+  <Step title="Layer 2: Local Database" icon="database">
+    **Fast persistent storage: 5-20ms**
+
+    <Tabs>
+      <Tab title="Web">IndexedDB</Tab>
+      <Tab title="Android">Room (SQLite)</Tab>
+      <Tab title="iOS">Core Data</Tab>
+    </Tabs>
+
+    - Persistent across app restarts
+    - Automatically synced with memory cache
+
+    *If not found → Fetch from Network*
+  </Step>
+
+  <Step title="Layer 3: Network Fetch" icon="cloud">
+    **Network request: 100-500ms**
+
+    - String-Sync v2 Protocol
+    - ETag-based conditional requests
+    - Delta sync (only changed strings)
+    - Result cached in Layers 1 & 2 for future requests
+  </Step>
+</Steps>
+
+<Info>
+  **99% of requests** are served from Layer 1 (memory) with sub-millisecond latency after initial sync
+</Info>
 
 ## Layer 1: In-Memory Cache
 
