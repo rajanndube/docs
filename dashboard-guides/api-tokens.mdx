@@ -11,34 +11,29 @@ API tokens authenticate your SDK requests to the Stringboot API.
   <Step title="Navigate to API Tokens">
     Go to **API Tokens** page (`/tokens`) from the sidebar
   </Step>
-
   <Step title="Select Application">
     Choose an application from the dropdown
   </Step>
-
   <Step title="Click New Token">
     Click the **New Token** button
   </Step>
-
   <Step title="Configure Token">
     Fill in the form:
+
     - **Token Name** (required, max 50 characters) - Descriptive name
     - **Token Type** - Select one:
       - **Standard** - Server-to-server API access
       - **Plugin** - Browser extensions/plugins (auto-bypass CORS)
     - **Expiry Date** (optional) - Set expiration for security
   </Step>
-
   <Step title="Create">
     Click **Create API Token** to generate
   </Step>
-
   <Step title="Copy Token">
     **IMPORTANT:** Copy the token from the dialog immediately
 
     The token is only shown once and cannot be retrieved later
   </Step>
-
   <Step title="Done">
     Click **Done** to close the dialog
   </Step>
@@ -57,37 +52,25 @@ Choose the right token type for your use case:
 <Tabs>
   <Tab title="Standard Token">
     **Use for:**
-    - Server-to-server communication
-    - Backend services
+
     - Mobile apps (iOS/Android)
     - Desktop applications
-
-    **Features:**
-    - Standard CORS policy
-    - Full API access
-    - Long-lived or time-limited
-
-    **Example:**
-    ```javascript
-    await StringBoot.initialize({
-      apiToken: 'std_1a2b3c4d5e6f...',
-      baseUrl: 'https://api.stringboot.com'
-    });
-    ```
   </Tab>
-
   <Tab title="Plugin Token">
     **Use for:**
+
     - Browser extensions
     - Chrome/Firefox/Edge plugins
     - Web-based tools requiring CORS bypass
 
     **Features:**
+
     - Automatic CORS bypass
     - Same API access as Standard
     - Designed for browser context
 
     **Example:**
+
     ```javascript
     // In browser extension
     await StringBoot.initialize({
@@ -110,9 +93,9 @@ The API Tokens page displays all your tokens with key information:
   <Step title="Navigate to Tokens">
     Go to **API Tokens** page
   </Step>
-
   <Step title="Select Filter">
     Choose from dropdown:
+
     - **All Applications** - Show all tokens
     - **Specific App** - Filter by application
   </Step>
@@ -120,16 +103,16 @@ The API Tokens page displays all your tokens with key information:
 
 ### Token Information
 
-| Column | Description |
-|--------|-------------|
-| **Name** | Token name you specified |
-| **Token** | Masked token value (click to copy) |
-| **Application** | Associated app name |
-| **Type** | Standard or Plugin |
-| **Status** | Active or Revoked |
-| **Created** | Creation date |
-| **Expiry** | Expiration date (if set) |
-| **Actions** | Copy, Revoke, Delete options |
+| Column          | Description                        |
+| --------------- | ---------------------------------- |
+| **Name**        | Token name you specified           |
+| **Token**       | Masked token value (click to copy) |
+| **Application** | Associated app name                |
+| **Type**        | Standard or Plugin                 |
+| **Status**      | Active or Revoked                  |
+| **Created**     | Creation date                      |
+| **Expiry**      | Expiration date (if set)           |
+| **Actions**     | Copy, Revoke, Delete options       |
 
 ---
 
@@ -141,11 +124,9 @@ Retrieve a token value to use in your application:
   <Step title="Find Token">
     Locate the token in the table
   </Step>
-
   <Step title="Click Copy">
     Click the **Copy** icon (clipboard)
   </Step>
-
   <Step title="Confirmation">
     Token copied to clipboard - paste in your SDK configuration
   </Step>
@@ -161,15 +142,12 @@ Disable a token without deleting it:
   <Step title="Navigate to Tokens">
     Go to **API Tokens** page
   </Step>
-
   <Step title="Find Token">
     Locate the token you want to revoke
   </Step>
-
   <Step title="Click Revoke">
     Click the **Revoke** icon (circular arrow)
   </Step>
-
   <Step title="Confirm">
     Confirm revocation in the dialog
   </Step>
@@ -189,11 +167,9 @@ Permanently remove a token:
   <Step title="Find Token">
     Navigate to **API Tokens** and find the token
   </Step>
-
   <Step title="Click Delete">
     Click the **Delete** icon (trash)
   </Step>
-
   <Step title="Confirm">
     Confirm deletion in the dialog
   </Step>
@@ -209,11 +185,9 @@ Quickly revoke all tokens for a specific application:
   <Step title="Select Application">
     Choose a specific application from the dropdown (not "All Applications")
   </Step>
-
   <Step title="Click Revoke All">
     Click the **Revoke All** button at the top
   </Step>
-
   <Step title="Confirm">
     Confirm the action in the dialog
   </Step>
@@ -230,37 +204,27 @@ Quickly revoke all tokens for a specific application:
 <CardGroup cols={2}>
   <Card title="Descriptive Names" icon="tag">
     Use names that indicate:
+
     - Environment (Production, Staging, Dev)
     - Purpose (iOS App, Web Dashboard)
     - Date created (iOS Prod - Jan 2024)
   </Card>
-
   <Card title="Set Expiry Dates" icon="calendar">
     - Use expiry for enhanced security
     - Rotate tokens periodically
     - Set shorter expiry for high-risk environments
   </Card>
-
-  <Card title="Use Plugin Type Wisely" icon="plug">
-    Only use Plugin tokens for:
-    - Browser-based integrations
-    - CORS is genuinely required
-    - Never for server-side apps
-  </Card>
-
   <Card title="Revoke Unused Tokens" icon="ban">
     - Revoke tokens immediately when no longer needed
     - Clean up old tokens regularly
     - Review token list monthly
   </Card>
-
   <Card title="Store Securely" icon="vault">
     - Use environment variables
     - Never commit to version control
     - Use secret management tools
     - Encrypt in databases
   </Card>
-
   <Card title="Monitor Usage" icon="chart-line">
     - Track which tokens are in use
     - Monitor for unexpected activity
@@ -286,7 +250,6 @@ Quickly revoke all tokens for a specific application:
     });
     ```
   </Tab>
-
   <Tab title="Android (BuildConfig)">
     ```kotlin build.gradle.kts
     android {
@@ -304,7 +267,6 @@ Quickly revoke all tokens for a specific application:
     )
     ```
   </Tab>
-
   <Tab title="iOS (Info.plist)">
     ```xml Info.plist
     <key>STRINGBOOT_API_TOKEN</key>
@@ -315,7 +277,7 @@ Quickly revoke all tokens for a specific application:
     let token = Bundle.main.object(
         forInfoDictionaryKey: "STRINGBOOT_API_TOKEN"
     ) as? String ?? ""
-
+    
     StringProvider.shared.initialize(apiToken: token)
     ```
   </Tab>
@@ -328,6 +290,7 @@ Quickly revoke all tokens for a specific application:
 <AccordionGroup>
   <Accordion title="Token Not Working">
     **Check:**
+
     - Token is active (not revoked)
     - Expiry date hasn't passed
     - Using correct application ID in requests
@@ -335,14 +298,15 @@ Quickly revoke all tokens for a specific application:
     - Token copied correctly (no extra spaces)
 
     **Test with cURL:**
+
     ```bash
     curl -H "Authorization: Bearer YOUR_TOKEN" \
          https://api.stringboot.com/api/strings/meta?appId=YOUR_APP_ID
     ```
   </Accordion>
-
   <Accordion title="401 Unauthorized Error">
     **Common causes:**
+
     - Token revoked or expired
     - Incorrect token format
     - Missing Bearer prefix
@@ -350,18 +314,18 @@ Quickly revoke all tokens for a specific application:
 
     **Solution:** Generate new token and verify configuration
   </Accordion>
-
   <Accordion title="CORS Issues with Standard Token">
     **If getting CORS errors:**
+
     - Use Plugin token type for browser-based apps
     - Or configure CORS on your backend
     - Standard tokens don't bypass CORS
 
     **For production web apps:** Use Plugin token or proxy through your backend
   </Accordion>
-
   <Accordion title="Lost Token After Creation">
     **If you didn't copy the token:**
+
     - Token cannot be retrieved again
     - Revoke the lost token
     - Create a new token
@@ -381,7 +345,6 @@ From the main dashboard, quickly create tokens:
   <Card title="Dashboard Shortcut" icon="gauge">
     Click **Generate API Token** on the dashboard
   </Card>
-
   <Card title="Tokens Page" icon="key">
     Use **New Token** button on `/tokens` page
   </Card>
@@ -395,15 +358,12 @@ From the main dashboard, quickly create tokens:
   <Card title="SDK Quickstart" icon="rocket" href="/quickstart">
     Use your token in SDK integration
   </Card>
-
   <Card title="Web SDK Setup" icon="globe" href="/web-sdk/installation">
     Configure Web SDK with token
   </Card>
-
   <Card title="Android SDK" icon="android" href="/android-sdk/installation">
     Configure Android SDK with token
   </Card>
-
   <Card title="iOS SDK" icon="apple" href="/ios-sdk/installation">
     Configure iOS SDK with token
   </Card>
