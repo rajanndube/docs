@@ -57,7 +57,7 @@ The **Stringboot iOS SDK** provides high-performance internationalization (i18n)
 In Xcode: **File → Add Packages → Enter repository URL**
 
 ```
-https://github.com/stringboot/stringboot-ios-sdk.git
+https://github.com/Stringboot-SDK/stringboot-ios-sdk.git
 ```
 
 Or add to `Package.swift`:
@@ -65,7 +65,7 @@ Or add to `Package.swift`:
 ```swift
 dependencies: [
     .package(
-        url: "https://github.com/stringboot/stringboot-ios-sdk.git",
+        url: "https://github.com/Stringboot-SDK/stringboot-ios-sdk.git",
         from: "2.0.0"
     )
 ]
