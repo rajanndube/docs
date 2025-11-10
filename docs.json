@@ -29,8 +29,8 @@
               "dashboard-guides/applications",
               "dashboard-guides/strings",
               "dashboard-guides/languages",
-              "dashboard-guides/api-tokens",
               "dashboard-guides/faqs",
+              "dashboard-guides/api-tokens",
               "dashboard-guides/settings"
             ]
           },

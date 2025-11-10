@@ -29,11 +29,10 @@ Select your platform to get started with Stringboot:
     npm install @stringboot/web-sdk
     ```
   </Step>
-
   <Step title="Initialize">
     ```javascript
     import StringBoot from '@stringboot/web-sdk';
-
+    
     await StringBoot.initialize({
       apiToken: 'your-api-token-here',
       baseUrl: 'https://api.stringboot.com',
@@ -42,30 +41,31 @@ Select your platform to get started with Stringboot:
     });
     ```
   </Step>
-
   <Step title="Use strings">
     **Vanilla JavaScript:**
+
     ```javascript
     // Get a string
     const welcome = await StringBoot.get('welcome_message');
-
+    
     // Watch for changes
     StringBoot.watch('welcome_message', (value) => {
       document.getElementById('welcome').textContent = value;
     });
-
+    
     // Change language
     await StringBoot.changeLanguage('es');
     ```
 
     **React:**
+
     ```jsx
     import { useString, useLanguage } from '@stringboot/web-sdk/react';
-
+    
     function App() {
       const title = useString('app_title');
       const [currentLang, setLanguage] = useLanguage();
-
+    
       return (
         <div>
           <h1>{title}</h1>
@@ -88,18 +88,18 @@ Select your platform to get started with Stringboot:
 <Steps>
   <Step title="Add dependency">
     Add to your `build.gradle.kts`:
+
     ```kotlin
     dependencies {
         implementation("com.stringboot:stringboot-android-sdk:1.0.8")
     }
     ```
   </Step>
-
   <Step title="Configure AndroidManifest.xml">
     ```xml
     <manifest xmlns:android="http://schemas.android.com/apk/res/android">
         <uses-permission android:name="android.permission.INTERNET" />
-
+    
         <application android:name=".StringbootApplication">
             <meta-data
                 android:name="com.stringboot.api_url"
@@ -111,7 +111,6 @@ Select your platform to get started with Stringboot:
     </manifest>
     ```
   </Step>
-
   <Step title="Initialize in Application class">
     ```kotlin
     class StringbootApplication : Application() {
@@ -122,9 +121,9 @@ Select your platform to get started with Stringboot:
     }
     ```
   </Step>
-
   <Step title="Use strings">
     **XML with tags:**
+
     ```xml
     <TextView
         android:tag="welcome_message"
@@ -132,9 +131,10 @@ Select your platform to get started with Stringboot:
     ```
 
     **In Activity:**
+
     ```kotlin
     binding.root.applyStringbootTags()
-
+    
     // Or get programmatically
     val text = StringProvider.get("welcome_message")
     ```
@@ -157,11 +157,10 @@ Select your platform to get started with Stringboot:
     https://github.com/stringboot/stringboot-ios-sdk.git
     ```
   </Step>
-
   <Step title="Initialize in App">
     ```swift
     import StringbootSDK
-
+    
     @main
     struct MyApp: App {
         init() {
@@ -172,7 +171,7 @@ Select your platform to get started with Stringboot:
                 autoSync: true
             )
         }
-
+    
         var body: some Scene {
             WindowGroup {
                 ContentView()
@@ -181,21 +180,20 @@ Select your platform to get started with Stringboot:
     }
     ```
   </Step>
-
   <Step title="Use strings">
     ```swift
     import SwiftUI
     import StringbootSDK
-
+    
     struct ContentView: View {
         @ObservedObject var stringProvider = StringProvider.shared
-
+    
         var body: some View {
             VStack {
                 // Auto-updating text
                 SBText("welcome_message")
                     .font(.title)
-
+    
                 // Language picker
                 Picker("Language", selection: $selectedLanguage) {
                     ForEach(stringProvider.availableLanguages, id: \.code) { lang in
@@ -226,20 +224,17 @@ Select your platform to get started with Stringboot:
   <Card title="Core Concepts" icon="book" href="/core-concepts">
     Learn about caching, offline mode, and delta sync
   </Card>
-
   <Card title="Best Practices" icon="star" href="/advanced/best-practices">
     Production-ready patterns and tips
   </Card>
-
   <Card title="Error Handling" icon="shield-check" href="/advanced/error-handling">
     Handle errors and edge cases
   </Card>
-
   <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
     Common issues and solutions
   </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** Check out our [troubleshooting guide](/advanced/troubleshooting) or contact support at support@stringboot.com
+  **Need help?** Check out our [troubleshooting guide](/advanced/troubleshooting) or contact support at [developer@stringboot.com](mailto:developer@stringboot.com)
 </Note>
