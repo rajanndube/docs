@@ -1,0 +1,369 @@
+---
+title: "Languages"
+description: "Configure languages and use AI-powered translation"
+---
+
+## Add a New Language (Basic)
+
+Set up a new language for your application:
+
+<Steps>
+  <Step title="Navigate to Languages">
+    Go to **Languages** page (`/languages`) from the sidebar
+  </Step>
+
+  <Step title="Select Application">
+    Choose an application from the dropdown
+  </Step>
+
+  <Step title="Click Add Language">
+    Click the **Add Language** button
+  </Step>
+
+  <Step title="Fill in Details">
+    Complete the form:
+    - **Language Code** - Select from standard codes (en, es, fr, hi, etc.)
+    - **Language Name** - Auto-filled based on code selection
+    - **Make Default** - Check if this should be the default language
+  </Step>
+
+  <Step title="Save">
+    Click **Add Language** to create
+  </Step>
+</Steps>
+
+<Note>
+  If marked as default, sample strings will be automatically created for the language.
+</Note>
+
+---
+
+## Add Language with AI Translation
+
+Automatically translate all strings from an existing language using AI.
+
+### Prerequisites
+
+<Check>OpenAI API key configured in Settings</Check>
+<Check>At least one existing language with strings</Check>
+<Check>Internet connection</Check>
+
+### Translation Steps
+
+<Steps>
+  <Step title="Navigate to Languages">
+    Go to **Languages** page and select your app
+  </Step>
+
+  <Step title="Start Add Language">
+    Click **Add Language** button
+  </Step>
+
+  <Step title="Enter Language Details">
+    Fill in the new language code and name
+  </Step>
+
+  <Step title="Enable AI Translation">
+    - Check **Pre-fill with AI-translated strings from existing language**
+    - Select **Source Language** from the dropdown
+  </Step>
+
+  <Step title="Add Language">
+    Click **Add Language** to start translation process
+  </Step>
+
+  <Step title="Review Translations">
+    The AI translation interface appears with:
+    - Real-time progress indicator
+    - Source and target text for each string
+    - Individual approve/reject options
+    - Edit capability before saving
+  </Step>
+
+  <Step title="Manage Translations">
+    During review, you can:
+    - **Edit** individual translations
+    - **Approve All** to accept all translations
+    - **Download CSV** to export for review
+    - Track progress via WebSocket updates
+  </Step>
+
+  <Step title="Save">
+    Click **Save Approved Translations** to finalize
+  </Step>
+</Steps>
+
+### AI Translation Features
+
+<CardGroup cols={2}>
+  <Card title="Real-time Progress" icon="signal-stream">
+    WebSocket-powered live translation progress tracking
+  </Card>
+
+  <Card title="Inline Editing" icon="pen">
+    Edit translations before saving with visual progress
+  </Card>
+
+  <Card title="Transaction Journal" icon="book">
+    Complete tracking of all translation operations
+  </Card>
+
+  <Card title="Submission Report" icon="chart-simple">
+    Detailed success/failure report after completion
+  </Card>
+</CardGroup>
+
+<Tip>
+  Use AI translation as a starting point, then review and refine for accuracy and cultural appropriateness.
+</Tip>
+
+---
+
+## Set Default Language
+
+Define which language is the fallback for your application:
+
+<Steps>
+  <Step title="Navigate to Languages">
+    Go to the **Languages** page
+  </Step>
+
+  <Step title="Select Application">
+    Choose your application from the dropdown
+  </Step>
+
+  <Step title="Find Language">
+    Locate the language you want to set as default
+  </Step>
+
+  <Step title="Set Default">
+    Click the **Set Default** button for that language
+  </Step>
+
+  <Step title="Confirmation">
+    A success toast appears confirming the change
+  </Step>
+</Steps>
+
+<Note>
+  Only one language can be the default per application. Setting a new default automatically removes the flag from the previous default language.
+</Note>
+
+---
+
+## Activate or Deactivate Language
+
+Control which languages are available in your application:
+
+<Steps>
+  <Step title="Navigate to Languages">
+    Go to the **Languages** page
+  </Step>
+
+  <Step title="Find Language">
+    Locate the language in the table
+  </Step>
+
+  <Step title="Toggle Status">
+    Click the **Active/Inactive** toggle switch
+  </Step>
+
+  <Step title="Status Update">
+    The status updates immediately
+  </Step>
+</Steps>
+
+<Info>
+  Inactive languages are hidden from SDK queries but strings are preserved
+</Info>
+
+---
+
+## Edit Language
+
+Modify language configuration:
+
+<Steps>
+  <Step title="Go to Languages">
+    Navigate to **Languages** page
+  </Step>
+
+  <Step title="Click Edit">
+    Click the **Edit** icon (pencil) for a language
+  </Step>
+
+  <Step title="Modify Settings">
+    Update:
+    - Language name
+    - Active status
+    - Default status
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Save Changes** to update
+  </Step>
+</Steps>
+
+---
+
+## Delete Language
+
+<Warning>
+  Deleting a language permanently removes **all strings** for that language. This action cannot be undone.
+</Warning>
+
+### Delete Process
+
+<Steps>
+  <Step title="Navigate to Languages">
+    Go to the **Languages** page
+  </Step>
+
+  <Step title="Click Delete">
+    Click the delete icon (trash) for the language
+  </Step>
+
+  <Step title="Confirm Deletion">
+    Confirm deletion in the dialog that appears
+  </Step>
+</Steps>
+
+### Important Notes
+
+<AccordionGroup>
+  <Accordion title="Cannot Delete Default Language">
+    You must set another language as default before deleting the current default language.
+  </Accordion>
+
+  <Accordion title="Two-Step Process">
+    The system:
+    1. Deletes all strings for the language
+    2. Then removes the language configuration
+  </Accordion>
+
+  <Accordion title="No Recovery">
+    Deleted strings cannot be recovered. Export data before deletion if needed.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Language Management Table
+
+The languages table displays key information:
+
+| Column | Description |
+|--------|-------------|
+| **Language Code** | ISO 639-1 code (en, es, fr, etc.) |
+| **Language Name** | Full language name |
+| **Default** | Badge indicating default language |
+| **Status** | Active or Inactive toggle |
+| **String Count** | Number of strings in this language |
+| **Actions** | Edit, Set Default, Delete options |
+
+---
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Set Default First" icon="flag">
+    Configure your primary language as default before adding others
+  </Card>
+
+  <Card title="Review AI Translations" icon="magnifying-glass">
+    Always review AI-generated translations for accuracy and cultural appropriateness
+  </Card>
+
+  <Card title="Consistent Codes" icon="code">
+    Use ISO 639-1 standard codes (en, es, fr) for consistency
+  </Card>
+
+  <Card title="Don't Delete Active Languages" icon="triangle-exclamation">
+    Check string usage before deleting languages
+  </Card>
+</CardGroup>
+
+---
+
+## AI Translation Tips
+
+<AccordionGroup>
+  <Accordion title="Choose Quality Source Language">
+    Use your most complete and accurate language as the translation source
+  </Accordion>
+
+  <Accordion title="Review Context-Specific Terms">
+    Pay special attention to:
+    - Brand names (should not be translated)
+    - Technical terms
+    - Placeholders and variables
+    - Cultural references
+  </Accordion>
+
+  <Accordion title="Download for Team Review">
+    Export translations as CSV to share with:
+    - Native speakers
+    - Localization team
+    - Product managers
+  </Accordion>
+
+  <Accordion title="Iterative Improvement">
+    - Start with AI translation
+    - Review and edit critical strings
+    - Test in-app
+    - Refine based on feedback
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="AI Translation Not Available">
+    **Check:**
+    - OpenAI API key configured in Settings
+    - API key format is correct (starts with `sk-`)
+    - At least one existing language with strings
+    - Internet connection is active
+  </Accordion>
+
+  <Accordion title="Language Won't Delete">
+    **Possible causes:**
+    - Language is set as default (set another language as default first)
+    - Permission issues
+    - Active strings still associated
+
+    **Solution:** Check default status and ensure you have proper permissions
+  </Accordion>
+
+  <Accordion title="Translation Quality Issues">
+    **Improve results by:**
+    - Using high-quality source strings
+    - Adding clear descriptions to strings
+    - Reviewing and editing output
+    - Consulting native speakers
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Add Strings" icon="font" href="/dashboard-guides/strings">
+    Create string resources for your languages
+  </Card>
+
+  <Card title="Configure OpenAI" icon="key" href="/dashboard-guides/settings#configure-openai-api-key">
+    Set up AI translation in Settings
+  </Card>
+
+  <Card title="API Tokens" icon="shield" href="/dashboard-guides/api-tokens">
+    Generate tokens to access languages via SDK
+  </Card>
+
+  <Card title="SDK Integration" icon="code" href="/quickstart">
+    Use languages in your applications
+  </Card>
+</CardGroup>

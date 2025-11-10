@@ -1,0 +1,363 @@
+---
+title: "String Resources"
+description: "Create, manage, and organize string resources for localization"
+---
+
+## Create a Single String
+
+Add individual string resources to your application:
+
+<Steps>
+  <Step title="Navigate to Strings">
+    Go to **Strings** page (`/strings`) from the sidebar
+  </Step>
+
+  <Step title="Select Application">
+    Choose an application from the dropdown at the top
+  </Step>
+
+  <Step title="Click New String">
+    Click the **New String** button
+  </Step>
+
+  <Step title="Fill in Form">
+    Complete the string details:
+    - **String Key** (required, max 100 characters) - Unique identifier
+    - **Language** - Select from dropdown
+    - **String Value** (required) - The actual text
+    - **Description** (optional) - Context or usage notes
+  </Step>
+
+  <Step title="Create">
+    Click **Create String Resource** to save
+  </Step>
+</Steps>
+
+<Tip>
+  Use consistent key naming like `screen.action.element` (e.g., `home.button.welcome`)
+</Tip>
+
+---
+
+## Bulk Upload Strings
+
+Upload hundreds or thousands of strings at once using CSV, XML, or JSON files.
+
+### Prerequisites
+
+<Check>Application created</Check>
+<Check>CSV, XML, or JSON file prepared with string data</Check>
+<Check>File follows the correct format (see below)</Check>
+
+### File Formats
+
+<Tabs>
+  <Tab title="CSV Format">
+    ```csv
+    key,value,languageCode,description
+    welcome_message,Welcome!,en,Greeting message
+    goodbye_message,Goodbye!,en,Farewell message
+    app_title,My Application,en,Main app title
+    ```
+  </Tab>
+
+  <Tab title="JSON Format">
+    ```json
+    [
+      {
+        "key": "welcome_message",
+        "value": "Welcome!",
+        "languageCode": "en",
+        "description": "Greeting message"
+      },
+      {
+        "key": "goodbye_message",
+        "value": "Goodbye!",
+        "languageCode": "en",
+        "description": "Farewell message"
+      }
+    ]
+    ```
+  </Tab>
+
+  <Tab title="XML Format">
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <resources>
+      <string name="welcome_message" description="Greeting message">Welcome!</string>
+      <string name="goodbye_message" description="Farewell message">Goodbye!</string>
+    </resources>
+    ```
+  </Tab>
+</Tabs>
+
+### Upload Steps
+
+<Steps>
+  <Step title="Navigate and Select">
+    - Go to **Strings** page
+    - Select your application
+  </Step>
+
+  <Step title="Click Bulk Upload">
+    Click the **Bulk Upload** button in the header
+  </Step>
+
+  <Step title="Choose File">
+    Select your CSV, XML, or JSON file
+  </Step>
+
+  <Step title="Review Preview">
+    - Review the data preview
+    - Check for validation errors
+    - Resolve any duplicate conflicts
+  </Step>
+
+  <Step title="Upload">
+    Click **Upload** to complete the import
+  </Step>
+</Steps>
+
+### Bulk Upload Features
+
+<CardGroup cols={2}>
+  <Card title="S3 Integration" icon="cloud">
+    Cloud-native file processing for large uploads
+  </Card>
+
+  <Card title="Real-time Progress" icon="signal-stream">
+    WebSocket-powered progress tracking
+  </Card>
+
+  <Card title="Duplicate Resolution" icon="clone">
+    Bulk resolution system for key conflicts
+  </Card>
+
+  <Card title="Auto Conversion" icon="arrows-rotate">
+    Automatic CSV/XML/JSON format conversion
+  </Card>
+
+  <Card title="Resume Capability" icon="play">
+    Recover from upload interruptions
+  </Card>
+
+  <Card title="Error Resolution" icon="triangle-exclamation">
+    Fix validation errors before final upload
+  </Card>
+</CardGroup>
+
+---
+
+## View and Filter Strings
+
+Find strings quickly using powerful filtering options:
+
+### Filter Options
+
+<AccordionGroup>
+  <Accordion title="By Application">
+    Select **All Applications** or filter by specific app
+  </Accordion>
+
+  <Accordion title="By Language">
+    Filter strings by language code (en, es, fr, etc.)
+  </Accordion>
+
+  <Accordion title="By Search Term">
+    Search by string key or value using the search box
+  </Accordion>
+
+  <Accordion title="By Modified Date">
+    Switch between tabs:
+    - **All Strings** - Complete list
+    - **Recently Modified** - Last 7 days
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Edit a String
+
+Modify existing string values or descriptions:
+
+<Steps>
+  <Step title="Find String">
+    Navigate to **Strings** and locate the string in the table
+  </Step>
+
+  <Step title="Click Edit">
+    Click the **Edit** icon (pencil) for the string
+  </Step>
+
+  <Step title="Modify">
+    Update:
+    - String value
+    - Description
+  </Step>
+
+  <Step title="Save">
+    Click **Save Changes**
+  </Step>
+</Steps>
+
+<Note>
+  You cannot edit the string key or language after creation. Create a new string if you need to change these.
+</Note>
+
+---
+
+## Delete Strings
+
+Remove strings you no longer need:
+
+<Tabs>
+  <Tab title="Single Delete">
+    <Steps>
+      <Step title="Find String">
+        Locate the string in the table
+      </Step>
+
+      <Step title="Click Delete">
+        Click the delete icon (trash)
+      </Step>
+
+      <Step title="Confirm">
+        Confirm deletion in the dialog
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Bulk Delete">
+    <Steps>
+      <Step title="Select Strings">
+        Use checkboxes to select multiple strings
+      </Step>
+
+      <Step title="Click Delete Selected">
+        Click the **Delete Selected** button
+      </Step>
+
+      <Step title="Confirm">
+        Confirm bulk deletion
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+---
+
+## Export Strings
+
+Download your strings for backup or external use:
+
+<Steps>
+  <Step title="Navigate to Strings">
+    Go to the **Strings** page
+  </Step>
+
+  <Step title="Apply Filters">
+    (Optional) Apply filters to export specific strings
+  </Step>
+
+  <Step title="Click Export">
+    Click the **Export** button
+  </Step>
+
+  <Step title="Choose Format">
+    Select CSV or JSON format
+  </Step>
+
+  <Step title="Download">
+    Download begins automatically
+  </Step>
+</Steps>
+
+---
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Consistent Keys" icon="key">
+    Use naming conventions:
+    - `screen.action.element`
+    - `module_feature_component`
+    - `camelCase` or `snake_case`
+  </Card>
+
+  <Card title="Add Descriptions" icon="comment">
+    Document complex strings with:
+    - Usage context
+    - Placeholder meanings
+    - Special formatting notes
+  </Card>
+
+  <Card title="Use Bulk Upload" icon="upload">
+    For large datasets:
+    - Faster than manual entry
+    - Reduces errors
+    - Easy to review in spreadsheet
+  </Card>
+
+  <Card title="Regular Exports" icon="download">
+    Export strings regularly:
+    - Backup your data
+    - Share with translators
+    - Version control
+  </Card>
+</CardGroup>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cannot Create String">
+    **Possible causes:**
+    - Application not selected
+    - Language doesn't exist in app
+    - String key already exists
+    - Required fields missing
+
+    **Solution:** Verify all requirements and use unique keys
+  </Accordion>
+
+  <Accordion title="Bulk Upload Failing">
+    **Possible causes:**
+    - File format doesn't match template
+    - Duplicate keys present
+    - Language codes don't exist
+    - Validation errors in data
+
+    **Solution:** Review preview errors and fix before uploading
+  </Accordion>
+
+  <Accordion title="String Not Appearing in SDK">
+    **Check:**
+    - Correct application selected
+    - String language matches SDK language
+    - API token has correct permissions
+    - SDK cache has been refreshed
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Manage Languages" icon="language" href="/dashboard-guides/languages">
+    Add or configure languages
+  </Card>
+
+  <Card title="AI Translation" icon="wand-magic-sparkles" href="/dashboard-guides/languages#add-language-with-ai-translation">
+    Auto-translate to new languages
+  </Card>
+
+  <Card title="API Tokens" icon="key" href="/dashboard-guides/api-tokens">
+    Generate tokens to access strings via SDK
+  </Card>
+
+  <Card title="Dashboard" icon="gauge" href="/dashboard-guides/dashboard-overview">
+    Return to dashboard overview
+  </Card>
+</CardGroup>

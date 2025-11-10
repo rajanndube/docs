@@ -1,0 +1,417 @@
+---
+title: "Dashboard Settings"
+description: "Configure your account, API integrations, and preferences"
+---
+
+## Configure OpenAI API Key
+
+Enable AI-powered translation features by configuring your OpenAI API key.
+
+### Why Configure?
+
+The OpenAI API key is **required** for:
+- AI translation when adding new languages
+- Automatic translation of existing strings to new languages
+- Bulk translation workflows
+
+<Note>
+  Your API key is stored **locally in your browser** and never sent to Stringboot servers. It's only used for translation requests directly to OpenAI.
+</Note>
+
+### Get Your OpenAI API Key
+
+<Steps>
+  <Step title="Visit OpenAI Platform">
+    Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+  </Step>
+
+  <Step title="Sign In">
+    Sign in to your OpenAI account (or create one)
+  </Step>
+
+  <Step title="Create API Key">
+    - Click **Create new secret key**
+    - Give it a descriptive name (e.g., "Stringboot Translation")
+    - Copy the key immediately
+  </Step>
+
+  <Step title="Store Safely">
+    Save the key securely - you won't be able to see it again
+  </Step>
+</Steps>
+
+### Configure in Stringboot
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Go to **Settings** page (`/settings`) from the sidebar
+  </Step>
+
+  <Step title="Find API Settings">
+    Locate the **API Settings** section
+  </Step>
+
+  <Step title="Enter API Key">
+    Paste your OpenAI API key in the input field
+
+    **Valid formats:**
+    - `sk-...` (standard key)
+    - `sk-live_...` (live key)
+    - `sk-service_...` (service key)
+    - `sk-svcacct-...` (service account key)
+  </Step>
+
+  <Step title="Verify Format">
+    The system validates your key format automatically
+  </Step>
+
+  <Step title="Toggle Visibility">
+    Click the eye icon to show/hide the key while entering
+  </Step>
+
+  <Step title="Save">
+    Click **Save Settings** to store the key
+  </Step>
+</Steps>
+
+<Warning>
+  Invalid key formats will be rejected. Ensure your key starts with one of the valid prefixes.
+</Warning>
+
+---
+
+## API Key Security
+
+<CardGroup cols={2}>
+  <Card title="Local Storage Only" icon="hard-drive">
+    - Stored in browser's local storage
+    - Never transmitted to Stringboot servers
+    - Only sent directly to OpenAI for translations
+  </Card>
+
+  <Card title="Clear Browser Data" icon="eraser">
+    - Clearing browser data removes the key
+    - Re-enter key after clearing storage
+    - Consider using a dedicated browser profile
+  </Card>
+
+  <Card title="Key Rotation" icon="rotate">
+    - Rotate keys periodically for security
+    - Update in Settings when rotated
+    - Old keys stop working immediately
+  </Card>
+
+  <Card title="Limited Scope" icon="shield">
+    - Only used for translation features
+    - No access to other Stringboot data
+    - You control OpenAI API usage costs
+  </Card>
+</CardGroup>
+
+---
+
+## Manage Account Linking
+
+Link external authentication providers to your Stringboot account.
+
+### Link Google Account
+
+Connect your Google account for easier sign-in:
+
+<Steps>
+  <Step title="Go to Settings">
+    Navigate to **Settings** page
+  </Step>
+
+  <Step title="Find Account Linking">
+    Locate the **Account Linking** section
+  </Step>
+
+  <Step title="Link Google">
+    Click **Link Google Account** button
+  </Step>
+
+  <Step title="OAuth Flow">
+    - You'll be redirected to Google
+    - Authorize Stringboot to access your account
+    - Redirect back to Settings after confirmation
+  </Step>
+
+  <Step title="Verify Status">
+    See linked provider status in the Account Linking section
+  </Step>
+</Steps>
+
+### Benefits of Account Linking
+
+<CardGroup cols={2}>
+  <Card title="Faster Login" icon="bolt">
+    One-click sign-in with Google OAuth
+  </Card>
+
+  <Card title="Enhanced Security" icon="shield-check">
+    2FA-like protection through Google
+  </Card>
+
+  <Card title="Account Recovery" icon="life-ring">
+    Additional recovery option if password is forgotten
+  </Card>
+
+  <Card title="Unified Identity" icon="user">
+    Use the same Google account across services
+  </Card>
+</CardGroup>
+
+### Unlink Google Account
+
+<Steps>
+  <Step title="Go to Settings">
+    Navigate to the **Settings** page
+  </Step>
+
+  <Step title="Account Linking Section">
+    Find your linked Google account
+  </Step>
+
+  <Step title="Click Unlink">
+    Click the **Unlink** button
+  </Step>
+
+  <Step title="Confirm">
+    Confirm unlinking in the dialog
+  </Step>
+</Steps>
+
+<Warning>
+  After unlinking, you can only sign in with your email and password. Ensure you remember your password before unlinking.
+</Warning>
+
+---
+
+## Settings Overview
+
+The Settings page contains multiple configuration sections:
+
+| Section | Description |
+|---------|-------------|
+| **API Settings** | Configure OpenAI API key for translations |
+| **Account Linking** | Link/unlink external authentication providers |
+| **Profile Settings** | Update email, password, profile information |
+| **Notification Preferences** | Configure email and in-app notifications |
+
+---
+
+## Update Profile Information
+
+Manage your account details:
+
+<Tabs>
+  <Tab title="Change Email">
+    <Steps>
+      <Step title="Go to Settings">
+        Navigate to Settings page
+      </Step>
+
+      <Step title="Enter New Email">
+        Update your email address
+      </Step>
+
+      <Step title="Verify">
+        Check your new email for verification link
+      </Step>
+
+      <Step title="Confirm">
+        Click the verification link to complete
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Change Password">
+    <Steps>
+      <Step title="Go to Settings">
+        Navigate to Settings page
+      </Step>
+
+      <Step title="Enter Current Password">
+        Verify your identity
+      </Step>
+
+      <Step title="Enter New Password">
+        Create a strong password (8+ characters)
+      </Step>
+
+      <Step title="Confirm New Password">
+        Re-enter to confirm
+      </Step>
+
+      <Step title="Save">
+        Click **Update Password**
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+---
+
+## AI Translation Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Translation Not Working">
+    **Check:**
+    - OpenAI API key is configured in Settings
+    - API key format is valid (starts with `sk-`)
+    - You have OpenAI API credits available
+    - Internet connection is active
+    - Source language has strings to translate
+
+    **Test your key:**
+    ```bash
+    curl https://api.openai.com/v1/models \
+      -H "Authorization: Bearer YOUR_API_KEY"
+    ```
+  </Accordion>
+
+  <Accordion title="Invalid API Key Error">
+    **Common issues:**
+    - Key doesn't start with valid prefix
+    - Key was copied with extra spaces
+    - Key has expired or been revoked
+    - Using old API key format
+
+    **Solution:** Generate a new key from OpenAI and update in Settings
+  </Accordion>
+
+  <Accordion title="Translation Quality Issues">
+    **Improve quality by:**
+    - Using high-quality source strings
+    - Adding descriptions to strings for context
+    - Reviewing and editing AI output
+    - Testing with different source languages
+
+    **Note:** AI translation is a starting point - always review for accuracy
+  </Accordion>
+
+  <Accordion title="Slow Translation Speed">
+    **Factors affecting speed:**
+    - Number of strings being translated
+    - OpenAI API rate limits
+    - Network connection speed
+    - Current OpenAI API load
+
+    **Tips:**
+    - Translate in smaller batches
+    - Check OpenAI API status
+    - Ensure stable internet connection
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Email Verification" icon="envelope-circle-check">
+    - Verify your email address
+    - Required for password reset
+    - Unlocks all dashboard features
+  </Card>
+
+  <Card title="Strong Passwords" icon="lock">
+    - Use 8+ characters
+    - Mix letters, numbers, symbols
+    - Avoid common words
+    - Change periodically
+  </Card>
+
+  <Card title="Two-Factor Protection" icon="shield">
+    - Link Google account for 2FA-like security
+    - Use Google Authenticator
+    - Keep recovery codes safe
+  </Card>
+
+  <Card title="Regular Reviews" icon="calendar-check">
+    - Review API tokens monthly
+    - Update passwords quarterly
+    - Rotate OpenAI API keys
+    - Remove unused integrations
+  </Card>
+
+  <Card title="Secure Storage" icon="vault">
+    - Don't share API keys
+    - Use password managers
+    - Enable browser security features
+    - Log out on shared devices
+  </Card>
+
+  <Card title="Monitor Activity" icon="chart-line">
+    - Review recent activity regularly
+    - Check for unexpected changes
+    - Monitor API token usage
+    - Report suspicious activity
+  </Card>
+</CardGroup>
+
+---
+
+## OpenAI API Cost Management
+
+<Info>
+  You pay OpenAI directly for API usage. Stringboot does not charge for translation features.
+</Info>
+
+### Cost Optimization Tips
+
+<AccordionGroup>
+  <Accordion title="Estimate Costs">
+    Translation costs depend on:
+    - Number of strings
+    - String length
+    - OpenAI model pricing (currently GPT-4)
+    - API rate limits
+
+    **Example:** Translating 1000 short strings (~50 chars each) typically costs $0.50-$2.00
+  </Accordion>
+
+  <Accordion title="Batch Translations">
+    - Translate multiple languages at once
+    - Use bulk translation instead of individual strings
+    - Monitor OpenAI dashboard for usage
+  </Accordion>
+
+  <Accordion title="Set Usage Limits">
+    In your OpenAI account:
+    - Set monthly spending limits
+    - Enable usage alerts
+    - Monitor daily usage
+    - Set up budget notifications
+  </Accordion>
+
+  <Accordion title="Review Before Translating">
+    - Ensure source strings are finalized
+    - Remove test/temporary strings
+    - Avoid translating duplicates
+    - Only translate what you need
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Use AI Translation" icon="wand-magic-sparkles" href="/dashboard-guides/languages#add-language-with-ai-translation">
+    Translate strings to new languages
+  </Card>
+
+  <Card title="Manage Languages" icon="language" href="/dashboard-guides/languages">
+    Configure languages for your apps
+  </Card>
+
+  <Card title="Account Security" icon="shield" href="/dashboard-guides/authentication">
+    Review authentication options
+  </Card>
+
+  <Card title="Dashboard Overview" icon="gauge" href="/dashboard-guides/dashboard-overview">
+    Return to main dashboard guide
+  </Card>
+</CardGroup>

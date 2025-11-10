@@ -1,0 +1,457 @@
+---
+title: "Dashboard Overview"
+description: "Navigate and use the Stringboot Dashboard effectively"
+---
+
+## Access the Dashboard
+
+After logging in, you'll land on the main dashboard at `/dashboard` or `/`.
+
+The dashboard provides a bird's-eye view of your Stringboot workspace with key statistics and quick actions.
+
+---
+
+## Dashboard Statistics
+
+The dashboard displays four key metrics across all your applications:
+
+<CardGroup cols={2}>
+  <Card title="Total Applications" icon="folder">
+    Number of applications you've created
+  </Card>
+
+  <Card title="Total String Resources" icon="font">
+    Total strings across all apps and languages
+  </Card>
+
+  <Card title="Active Languages" icon="language">
+    Number of configured languages across apps
+  </Card>
+
+  <Card title="Active API Tokens" icon="key">
+    Number of active tokens for API access
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Actions
+
+Jump directly to common tasks from the dashboard:
+
+<Steps>
+  <Step title="Create New App">
+    Click **Create New App** to navigate to app creation
+  </Step>
+
+  <Step title="Add String Resource">
+    Click **Add String Resource** to navigate to string creation
+  </Step>
+
+  <Step title="Add New Language">
+    Click **Add New Language** to navigate to language setup
+  </Step>
+
+  <Step title="Generate API Token">
+    Click **Generate API Token** to navigate to token creation
+  </Step>
+</Steps>
+
+<Tip>
+  These shortcuts save time by taking you directly to the action, pre-selecting forms when possible
+</Tip>
+
+---
+
+## Recent Activity
+
+The dashboard shows your recent actions to help track changes and progress:
+
+### Activity Types Displayed
+
+| Activity | Description |
+|----------|-------------|
+| **String additions** | New strings created or imported |
+| **Language additions** | New languages configured |
+| **API token creation** | New tokens generated |
+| **App creation** | New applications created |
+| **Bulk operations** | Large imports or translations |
+
+### Activity Information
+
+Each activity entry shows:
+- Action type and description
+- Timestamp
+- Application name
+- Status (success/failed)
+- Quick link to related resource
+
+---
+
+## Navigation Sidebar
+
+Access all major sections from the sidebar:
+
+<AccordionGroup>
+  <Accordion title="Dashboard" icon="gauge">
+    Main overview page with statistics and recent activity
+  </Accordion>
+
+  <Accordion title="Applications" icon="folder">
+    View and manage all applications
+
+    [Applications Guide →](/dashboard-guides/applications)
+  </Accordion>
+
+  <Accordion title="Strings" icon="font">
+    Create, edit, and manage string resources
+
+    [Strings Guide →](/dashboard-guides/strings)
+  </Accordion>
+
+  <Accordion title="Languages" icon="language">
+    Configure languages and AI translations
+
+    [Languages Guide →](/dashboard-guides/languages)
+  </Accordion>
+
+  <Accordion title="API Tokens" icon="key">
+    Generate and manage authentication tokens
+
+    [API Tokens Guide →](/dashboard-guides/api-tokens)
+  </Accordion>
+
+  <Accordion title="FAQs" icon="circle-question">
+    Create and organize frequently asked questions
+
+    [FAQs Guide →](/dashboard-guides/faqs)
+  </Accordion>
+
+  <Accordion title="Settings" icon="gear">
+    Configure account, API keys, and preferences
+
+    [Settings Guide →](/dashboard-guides/settings)
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## User Menu
+
+Access account-related actions from the user menu in the top right:
+
+- **Profile** - View and edit your profile information
+- **Settings** - Configure account and integrations
+- **Help & Documentation** - Access support resources
+- **Logout** - Sign out of your account
+
+---
+
+## Real-time Features
+
+The dashboard includes several real-time capabilities:
+
+### WebSocket Integration
+
+<CardGroup cols={2}>
+  <Card title="Live Progress" icon="signal-stream">
+    Real-time updates for bulk operations and translations
+  </Card>
+
+  <Card title="Background Tasks" icon="spinner">
+    Track long-running operations without blocking UI
+  </Card>
+
+  <Card title="Notifications" icon="bell">
+    Instant alerts for completed operations
+  </Card>
+
+  <Card title="Auto-refresh" icon="rotate">
+    Statistics update when changes occur
+  </Card>
+</CardGroup>
+
+---
+
+## Offline Mode
+
+The dashboard handles network connectivity gracefully:
+
+### Offline Behavior
+
+<Steps>
+  <Step title="Connection Lost">
+    A yellow banner appears: "Backend is unavailable"
+  </Step>
+
+  <Step title="Local Changes">
+    Changes are saved locally in browser storage
+  </Step>
+
+  <Step title="Connection Restored">
+    Banner disappears and changes sync automatically
+  </Step>
+
+  <Step title="Conflict Resolution">
+    Dashboard prompts if conflicts occur during sync
+  </Step>
+</Steps>
+
+<Warning>
+  Some features (like AI translation) require an active internet connection and won't work offline
+</Warning>
+
+---
+
+## Search and Filtering
+
+Most dashboard pages support powerful search and filtering:
+
+### Common Filter Options
+
+<Tabs>
+  <Tab title="Strings Page">
+    - Application filter
+    - Language filter
+    - Text search (key/value)
+    - Recently modified view
+  </Tab>
+
+  <Tab title="Languages Page">
+    - Application filter
+    - Active/inactive status
+    - Default language indicator
+  </Tab>
+
+  <Tab title="API Tokens Page">
+    - Application filter
+    - Token type (Standard/Plugin)
+    - Active/revoked status
+    - Expiry date filter
+  </Tab>
+
+  <Tab title="FAQs Page">
+    - Application filter
+    - Language filter
+    - Tag filter
+    - Text search (question/answer)
+    - Recently modified view
+  </Tab>
+</Tabs>
+
+---
+
+## Keyboard Shortcuts
+
+Speed up your workflow with keyboard shortcuts:
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + K` | Quick search (if enabled) |
+| `Esc` | Close dialogs and modals |
+| `Tab` | Navigate between form fields |
+| `Enter` | Submit forms |
+| `Arrow Keys` | Navigate tables |
+
+---
+
+## Workflow Examples
+
+### First-Time Setup
+
+<Steps>
+  <Step title="Create Application">
+    Dashboard → Create New App
+  </Step>
+
+  <Step title="Add Default Language">
+    Applications → Select App → Add Language (mark as default)
+  </Step>
+
+  <Step title="Add Strings">
+    Strings → Select App → Add individual or bulk upload
+  </Step>
+
+  <Step title="Generate API Token">
+    API Tokens → New Token → Copy for SDK use
+  </Step>
+
+  <Step title="Integrate SDK">
+    Use token in your app (see [Quickstart](/quickstart))
+  </Step>
+</Steps>
+
+### Adding a New Language
+
+<Steps>
+  <Step title="Navigate to Languages">
+    Dashboard → Languages → Select App
+  </Step>
+
+  <Step title="Add Language with AI">
+    - Click Add Language
+    - Enable AI translation
+    - Select source language
+    - Review translations
+  </Step>
+
+  <Step title="Save Translations">
+    Approve and save translated strings
+  </Step>
+
+  <Step title="Test in App">
+    Change language in your SDK to verify
+  </Step>
+</Steps>
+
+### Bulk String Import
+
+<Steps>
+  <Step title="Prepare File">
+    Create CSV/JSON with your strings
+  </Step>
+
+  <Step title="Navigate to Strings">
+    Dashboard → Strings → Select App
+  </Step>
+
+  <Step title="Bulk Upload">
+    - Click Bulk Upload
+    - Select file
+    - Review preview
+    - Resolve duplicates
+  </Step>
+
+  <Step title="Import">
+    Complete upload and verify strings
+  </Step>
+</Steps>
+
+---
+
+## Dashboard Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Regular Reviews" icon="calendar-check">
+    - Check dashboard statistics weekly
+    - Review recent activity
+    - Monitor token usage
+    - Clean up unused resources
+  </Card>
+
+  <Card title="Organized Workspace" icon="folder-tree">
+    - Use clear app naming conventions
+    - Delete test/unused applications
+    - Archive old strings
+    - Keep tags consistent
+  </Card>
+
+  <Card title="Security Hygiene" icon="shield">
+    - Revoke unused API tokens
+    - Rotate tokens periodically
+    - Review account linking
+    - Enable email verification
+  </Card>
+
+  <Card title="Efficient Workflows" icon="bolt">
+    - Use bulk operations for large changes
+    - Leverage AI translation
+    - Export for backups
+    - Use quick actions
+  </Card>
+</CardGroup>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Statistics Not Updating">
+    **Try:**
+    - Refresh the page (Cmd/Ctrl + R)
+    - Check network connection
+    - Wait for sync to complete
+    - Clear browser cache if issue persists
+  </Accordion>
+
+  <Accordion title="Offline Banner Stuck">
+    **Check:**
+    - Internet connection is active
+    - Stringboot API status
+    - Browser console for errors
+    - Firewall/proxy settings
+
+    **Solution:** Refresh page or check network settings
+  </Accordion>
+
+  <Accordion title="Recent Activity Missing">
+    **Possible causes:**
+    - Activity older than retention period
+    - Filtered by application
+    - Sync delay
+
+    **Solution:** Wait a few seconds or check specific resource pages
+  </Accordion>
+
+  <Accordion title="Can't Access Sidebar Section">
+    **Check:**
+    - Account permissions
+    - Email verification status
+    - Subscription/plan limits
+    - Browser JavaScript enabled
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+Choose your path based on what you want to accomplish:
+
+<CardGroup cols={2}>
+  <Card title="First Time User" icon="rocket" href="/dashboard-guides/authentication">
+    Start with account setup
+  </Card>
+
+  <Card title="Create Application" icon="folder" href="/dashboard-guides/applications">
+    Set up your first app
+  </Card>
+
+  <Card title="Add Strings" icon="font" href="/dashboard-guides/strings">
+    Create string resources
+  </Card>
+
+  <Card title="Configure Languages" icon="language" href="/dashboard-guides/languages">
+    Set up languages
+  </Card>
+
+  <Card title="Generate Tokens" icon="key" href="/dashboard-guides/api-tokens">
+    Create API tokens
+  </Card>
+
+  <Card title="Integrate SDK" icon="code" href="/quickstart">
+    Use tokens in your app
+  </Card>
+</CardGroup>
+
+---
+
+## Support Resources
+
+<CardGroup cols={2}>
+  <Card title="Email Support" icon="envelope" href="mailto:developer@stringboot.com">
+    Contact: developer@stringboot.com
+  </Card>
+
+  <Card title="SDK Documentation" icon="book" href="/quickstart">
+    Integration guides for Web, Android, iOS
+  </Card>
+
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Complete API documentation
+  </Card>
+
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>

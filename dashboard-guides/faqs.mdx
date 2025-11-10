@@ -1,0 +1,462 @@
+---
+title: "FAQs Management"
+description: "Create and manage frequently asked questions for your applications"
+---
+
+## Create a New FAQ
+
+Add individual FAQ entries to your application:
+
+<Steps>
+  <Step title="Navigate to FAQs">
+    Go to **FAQs** page (`/faqs`) from the sidebar
+  </Step>
+
+  <Step title="Select Application">
+    Choose an application from the dropdown
+  </Step>
+
+  <Step title="Click New FAQ">
+    Click the **New FAQ** button
+  </Step>
+
+  <Step title="Fill in Form">
+    Complete the FAQ details:
+    - **Question** (required) - The FAQ question
+    - **Answer** (required) - The detailed answer
+    - **Language Code** (required) - Language for this FAQ
+    - **Tags** (optional) - Comma-separated tags for categorization
+  </Step>
+
+  <Step title="Save">
+    Click **Save FAQ** to create
+  </Step>
+</Steps>
+
+<Tip>
+  Use tags to organize FAQs by category like "billing", "technical", "account", "getting-started"
+</Tip>
+
+---
+
+## Bulk Import FAQs
+
+Import multiple FAQs at once using CSV or JSON files.
+
+### Prerequisites
+
+<Check>Application created</Check>
+<Check>CSV or JSON file prepared with FAQ data</Check>
+<Check>File follows the correct format</Check>
+
+### File Formats
+
+<Tabs>
+  <Tab title="CSV Format">
+    ```csv
+    question,answer,languageCode,tags
+    "What is Stringboot?","A string management platform",en,"general,about"
+    "How do I get started?","Create an account and follow the quickstart",en,"getting-started"
+    "What languages are supported?","All major languages are supported",en,"technical,languages"
+    ```
+
+    **Important:** Use quotes for fields containing commas or newlines
+  </Tab>
+
+  <Tab title="JSON Format">
+    ```json
+    [
+      {
+        "question": "What is Stringboot?",
+        "answer": "A string management platform for modern applications",
+        "languageCode": "en",
+        "tags": ["general", "about"]
+      },
+      {
+        "question": "How do I get started?",
+        "answer": "Create an account and follow our quickstart guide",
+        "languageCode": "en",
+        "tags": ["getting-started", "tutorial"]
+      }
+    ]
+    ```
+  </Tab>
+</Tabs>
+
+### Import Steps
+
+<Steps>
+  <Step title="Navigate and Select">
+    - Go to **FAQs** page
+    - Select your application
+  </Step>
+
+  <Step title="Click Bulk Import">
+    Click the **Bulk Import** button
+  </Step>
+
+  <Step title="Upload File">
+    Choose your CSV or JSON file
+  </Step>
+
+  <Step title="Review Preview">
+    - Review the data preview
+    - Check for validation errors
+    - Resolve duplicate questions
+  </Step>
+
+  <Step title="Import">
+    Click **Import** to complete the process
+  </Step>
+</Steps>
+
+---
+
+## View and Filter FAQs
+
+Find FAQs quickly using multiple filter options:
+
+### Available Filters
+
+<AccordionGroup>
+  <Accordion title="By Application">
+    Select specific application from dropdown or view all
+  </Accordion>
+
+  <Accordion title="By Language">
+    Filter FAQs by language code
+  </Accordion>
+
+  <Accordion title="By Tags">
+    Filter by specific tag to see categorized FAQs
+  </Accordion>
+
+  <Accordion title="By Search Term">
+    Search within questions and answers using the search box
+  </Accordion>
+
+  <Accordion title="By Modified Date">
+    Switch between tabs:
+    - **All FAQs** - Complete list
+    - **Recently Modified** - Last 7 days
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Edit FAQ
+
+Modify existing FAQ entries:
+
+<Steps>
+  <Step title="Find FAQ">
+    Navigate to **FAQs** and locate the entry in the list
+  </Step>
+
+  <Step title="Click Edit">
+    Click the **Edit** icon (pencil) for the FAQ
+  </Step>
+
+  <Step title="Modify">
+    Update:
+    - Question text
+    - Answer text
+    - Tags
+  </Step>
+
+  <Step title="Save">
+    Click **Save Changes**
+  </Step>
+</Steps>
+
+---
+
+## Delete FAQs
+
+Remove FAQs you no longer need:
+
+<Tabs>
+  <Tab title="Single Delete">
+    <Steps>
+      <Step title="Find FAQ">
+        Locate the FAQ in the list
+      </Step>
+
+      <Step title="Click Delete">
+        Click the delete icon (trash)
+      </Step>
+
+      <Step title="Confirm">
+        Confirm deletion in the dialog
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Bulk Delete">
+    <Steps>
+      <Step title="Select FAQs">
+        Use checkboxes to select multiple FAQs
+      </Step>
+
+      <Step title="Click Delete Selected">
+        Click the **Delete Selected** button
+      </Step>
+
+      <Step title="Confirm">
+        Confirm bulk deletion
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+---
+
+## Export FAQs
+
+Download your FAQs for backup or documentation:
+
+<Steps>
+  <Step title="Navigate to FAQs">
+    Go to the **FAQs** page
+  </Step>
+
+  <Step title="Apply Filters">
+    (Optional) Apply filters to export specific FAQs
+  </Step>
+
+  <Step title="Click Export">
+    Click the **Export** button
+  </Step>
+
+  <Step title="Choose Format">
+    Select CSV or JSON format
+  </Step>
+
+  <Step title="Download">
+    Download begins automatically
+  </Step>
+</Steps>
+
+---
+
+## FAQ Organization with Tags
+
+Tags help categorize and organize your FAQs for better discoverability.
+
+### Recommended Tag Categories
+
+<CardGroup cols={2}>
+  <Card title="By Topic" icon="folder">
+    - billing
+    - technical
+    - account
+    - features
+    - pricing
+  </Card>
+
+  <Card title="By Audience" icon="users">
+    - beginners
+    - developers
+    - admins
+    - business
+  </Card>
+
+  <Card title="By Priority" icon="star">
+    - critical
+    - important
+    - general
+    - advanced
+  </Card>
+
+  <Card title="By Product" icon="box">
+    - web-sdk
+    - android-sdk
+    - ios-sdk
+    - dashboard
+  </Card>
+</CardGroup>
+
+### Tag Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Consistent Naming">
+    - Lowercase only: `getting-started` not `Getting-Started`
+    - Hyphenate multi-word tags: `api-tokens` not `api tokens`
+    - Be concise: `auth` not `authentication-and-authorization`
+  </Accordion>
+
+  <Accordion title="Apply Multiple Tags">
+    Tag the same FAQ with multiple relevant categories:
+    ```json
+    {
+      "question": "How do I reset my API token?",
+      "tags": ["api-tokens", "security", "troubleshooting", "developers"]
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Create Tag Taxonomy">
+    Define your tag system upfront:
+    - Document tag meanings
+    - Share with team
+    - Maintain consistency
+    - Review and update periodically
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Clear Questions" icon="question">
+    - Keep questions concise
+    - Use language users actually search for
+    - Start with question words (What, How, Why)
+  </Card>
+
+  <Card title="Comprehensive Answers" icon="comment">
+    - Provide complete answers
+    - Include examples when helpful
+    - Link to relevant documentation
+    - Keep language simple
+  </Card>
+
+  <Card title="Use Tags Wisely" icon="tags">
+    - Apply 2-4 relevant tags per FAQ
+    - Use consistent tag naming
+    - Create hierarchical categories
+    - Review tags periodically
+  </Card>
+
+  <Card title="Bulk Import for Setup" icon="upload">
+    - Use bulk import for initial FAQ creation
+    - Prepare FAQs in spreadsheet first
+    - Review with team before importing
+  </Card>
+
+  <Card title="Export for Documentation" icon="download">
+    - Export to create PDF documentation
+    - Share with support teams
+    - Backup regularly
+    - Version control important changes
+  </Card>
+
+  <Card title="Multilingual FAQs" icon="language">
+    - Create FAQs in each supported language
+    - Keep questions aligned across languages
+    - Translate carefully for cultural context
+  </Card>
+</CardGroup>
+
+---
+
+## FAQ Display Example
+
+Here's how your FAQs might be consumed via API:
+
+```javascript
+// Fetch FAQs by tag
+const faqs = await fetch(
+  'https://api.stringboot.com/api/faqs?appId=123&tag=getting-started'
+).then(r => r.json());
+
+// Display in your app
+faqs.forEach(faq => {
+  console.log(`Q: ${faq.question}`);
+  console.log(`A: ${faq.answer}`);
+  console.log(`Tags: ${faq.tags.join(', ')}\n`);
+});
+```
+
+---
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Customer Support">
+    - Reduce support ticket volume
+    - Provide instant answers
+    - Self-service help center
+    - Searchable knowledge base
+  </Tab>
+
+  <Tab title="Developer Documentation">
+    - SDK troubleshooting
+    - Common integration issues
+    - Best practices
+    - Code examples
+  </Tab>
+
+  <Tab title="Product Onboarding">
+    - Getting started guides
+    - Feature explanations
+    - Tutorial content
+    - Quick tips
+  </Tab>
+
+  <Tab title="Internal Knowledge">
+    - Team documentation
+    - Process guidelines
+    - Policy explanations
+    - Troubleshooting guides
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cannot Create FAQ">
+    **Check:**
+    - Application is selected
+    - All required fields filled (question, answer, language)
+    - Language code exists in application
+    - Question is unique within application
+
+    **Solution:** Verify all requirements and ensure uniqueness
+  </Accordion>
+
+  <Accordion title="Bulk Import Failing">
+    **Common issues:**
+    - CSV formatting errors (unescaped quotes)
+    - Missing required columns
+    - Invalid language codes
+    - Duplicate questions
+
+    **Solution:** Validate file format and review preview errors
+  </Accordion>
+
+  <Accordion title="Tags Not Working">
+    **Check:**
+    - Tags are comma-separated in CSV
+    - Tags array format in JSON
+    - No special characters in tags
+    - Tags follow naming conventions
+
+    **Solution:** Use simple, lowercase, hyphenated tags
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Manage Strings" icon="font" href="/dashboard-guides/strings">
+    Create string resources
+  </Card>
+
+  <Card title="Languages" icon="language" href="/dashboard-guides/languages">
+    Configure languages for FAQs
+  </Card>
+
+  <Card title="API Tokens" icon="key" href="/dashboard-guides/api-tokens">
+    Generate tokens to access FAQs via API
+  </Card>
+
+  <Card title="Dashboard" icon="gauge" href="/dashboard-guides/dashboard-overview">
+    Return to dashboard overview
+  </Card>
+</CardGroup>

@@ -22,6 +22,19 @@
             ]
           },
           {
+            "group": "Dashboard Guides",
+            "pages": [
+              "dashboard-guides/dashboard-overview",
+              "dashboard-guides/authentication",
+              "dashboard-guides/applications",
+              "dashboard-guides/strings",
+              "dashboard-guides/languages",
+              "dashboard-guides/api-tokens",
+              "dashboard-guides/faqs",
+              "dashboard-guides/settings"
+            ]
+          },
+          {
             "group": "Web SDK",
             "pages": [
               "web-sdk/installation",

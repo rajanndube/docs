@@ -1,0 +1,207 @@
+---
+title: "Applications Management"
+description: "Create and manage applications for organizing your string resources"
+---
+
+## Create a New Application
+
+Applications are the top-level containers for organizing your string resources, languages, and API tokens.
+
+<Steps>
+  <Step title="Navigate to Applications">
+    Go to **Applications** page (`/apps`) from the sidebar
+  </Step>
+
+  <Step title="Click New App">
+    Click the **New App** button in the top right
+  </Step>
+
+  <Step title="Fill in Details">
+    Complete the application form:
+    - **App Name** (required) - Choose a descriptive name
+    - **Description** (optional) - Add context for your team
+  </Step>
+
+  <Step title="Create">
+    Click **Create Application** to save
+  </Step>
+</Steps>
+
+<Tip>
+  Use clear naming conventions like "iOS Production" or "Android Beta" to easily identify apps
+</Tip>
+
+---
+
+## View Application Details
+
+Each application has multiple views to help you manage your content:
+
+<Steps>
+  <Step title="Open Application">
+    Navigate to **Applications** page and click on any application card
+  </Step>
+
+  <Step title="Explore Tabs">
+    View the available tabs:
+    - **Overview** - App statistics and details
+    - **Languages** - All configured languages
+    - **Strings** - String resources for this app
+    - **API Tokens** - Associated authentication tokens
+  </Step>
+</Steps>
+
+### Overview Tab
+
+The overview provides quick insights:
+
+- Total string count
+- Active languages
+- API token count
+- Recent activity
+- Quick action buttons
+
+---
+
+## Edit Application Settings
+
+Modify your application's configuration:
+
+<Steps>
+  <Step title="Open Application">
+    Click on the application you want to edit
+  </Step>
+
+  <Step title="Access Settings">
+    Click the **Settings** button in the header
+  </Step>
+
+  <Step title="Modify Details">
+    Update the following:
+    - App name
+    - Description
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Save Changes** to update
+  </Step>
+</Steps>
+
+---
+
+## Delete an Application
+
+<Warning>
+  Deleting an app **permanently removes** all associated:
+  - String resources
+  - Languages
+  - API tokens
+
+  This action cannot be undone.
+</Warning>
+
+<Steps>
+  <Step title="Navigate to Applications">
+    Go to the **Applications** page
+  </Step>
+
+  <Step title="Find Application">
+    Locate the application you want to delete
+  </Step>
+
+  <Step title="Click Delete">
+    Click the delete icon (trash) on the application card
+  </Step>
+
+  <Step title="Confirm Deletion">
+    Confirm the deletion in the dialog that appears
+  </Step>
+</Steps>
+
+---
+
+## Dashboard Quick Actions
+
+From the main dashboard, you can quickly create a new app:
+
+<CardGroup cols={2}>
+  <Card title="From Dashboard" icon="gauge">
+    Click **Create New App** shortcut on the dashboard
+  </Card>
+
+  <Card title="From Applications Page" icon="folder">
+    Click **New App** button on the `/apps` page
+  </Card>
+</CardGroup>
+
+---
+
+## Application Statistics
+
+Each application card displays key metrics:
+
+| Metric | Description |
+|--------|-------------|
+| **Total Strings** | Number of string resources across all languages |
+| **Active Languages** | Number of languages configured |
+| **API Tokens** | Number of active tokens for this app |
+| **Last Updated** | Most recent modification timestamp |
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Descriptive Names">
+    Name apps by platform and environment:
+    - ✅ "iOS Production"
+    - ✅ "Android Staging"
+    - ✅ "Web Dashboard"
+    - ❌ "App1", "Test", "New"
+  </Accordion>
+
+  <Accordion title="Add Detailed Descriptions">
+    Include information about:
+    - Platform (iOS, Android, Web)
+    - Environment (Production, Staging, Development)
+    - Purpose or team ownership
+    - Special configuration notes
+  </Accordion>
+
+  <Accordion title="Keep Workspace Clean">
+    - Archive or delete unused applications
+    - Use consistent naming conventions
+    - Document app purposes in descriptions
+  </Accordion>
+
+  <Accordion title="Organize by Environment">
+    Create separate apps for different environments:
+    ```
+    MyApp - Production
+    MyApp - Staging
+    MyApp - Development
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Add Languages" icon="language" href="/dashboard-guides/languages">
+    Configure languages for your application
+  </Card>
+
+  <Card title="Add Strings" icon="font" href="/dashboard-guides/strings">
+    Create string resources
+  </Card>
+
+  <Card title="Generate API Tokens" icon="key" href="/dashboard-guides/api-tokens">
+    Create tokens for API access
+  </Card>
+
+  <Card title="Dashboard Overview" icon="gauge" href="/dashboard-guides/dashboard-overview">
+    Return to dashboard guide
+  </Card>
+</CardGroup>
