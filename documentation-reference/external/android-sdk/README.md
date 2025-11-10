@@ -44,7 +44,6 @@ The **Stringboot Android SDK** provides high-performance internationalization (i
 | **Target SDK** | 34 (Android 14) |
 | **SDK Version** | 1.0.8 |
 | **Kotlin** | 1.9.22+ |
-| **License** | Apache 2.0 |
 
 ---
 
@@ -1264,7 +1263,5 @@ class StringbootApplication : Application() {
 **Email:** support@stringboot.com
 
 ---
-
-**License:** Apache 2.0
 
 **Copyright:** © 2025 Stringboot Inc.

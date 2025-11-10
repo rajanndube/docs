@@ -46,7 +46,6 @@ The **Stringboot iOS SDK** provides high-performance internationalization (i18n)
 | **Swift** | 5.9+ |
 | **Xcode** | 15.0+ |
 | **SDK Version** | 2.0 |
-| **License** | Apache 2.0 |
 
 ---
 
@@ -1304,7 +1303,5 @@ init() {
 **Email:** support@stringboot.com
 
 ---
-
-**License:** Apache 2.0
 
 **Copyright:** © 2025 Stringboot Inc.
