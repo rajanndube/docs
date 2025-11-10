@@ -13,14 +13,14 @@ Stringboot uses a sophisticated three-layer caching system for optimal performan
 
 <Steps>
   <Step title="Layer 1: In-Memory Cache" stepNumber={1}>
-    LRU, 1000 entries by default  `Access: <1ms`
+    LRU, 1000 entries by default  `Access: <1ms `
 
-    <Icon icon="arrow-down-from-line" iconType="solid" /> Cache miss
+    <Icon icon="arrow-down-from-line" iconType="solid" color="#00C853" /> Cache miss
   </Step>
   <Step title="Layer 2: Local Database">
     IndexedDB / Room / CoreData
 
-     <Icon icon="arrow-down-from-line" iconType="solid" /> Not Found
+    <Icon icon="arrow-down-from-line" iconType="solid" color="#00C853" /> Not Found
   </Step>
   <Step title="Layer 3: Network Sync">
     String-Sync v2 with ETag `Access: 100-500ms`
@@ -146,18 +146,17 @@ Stringboot is designed to work perfectly offline after the initial synchronizati
   ✓ All previously synced strings available
 </Check>
 
- <Check>
+<Check>
   ✓ Language switching works with cached languages
 </Check>
 
- <Check>
+<Check>
   ✓ No error messages or failed requests
 </Check>
 
- <Check>
+<Check>
   ✓ Zero latency - instant string retrieval
 </Check>
-
 
 <Warning>
   New or updated strings require network connectivity
