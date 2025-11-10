@@ -11,22 +11,21 @@ Stringboot is built on three core principles: **offline-first architecture**, **
 
 Stringboot uses a sophisticated three-layer caching system for optimal performance:
 
-```
-┌─────────────────────────────────┐
-│  Layer 1: In-Memory Cache       │  Access: <1ms
-│  (LRU, 1000 entries by default) │
-└─────────────────────────────────┘
-           ↓ (cache miss)
-┌─────────────────────────────────┐
-│  Layer 2: Local Database        │  Access: 5-20ms
-│  (IndexedDB / Room / CoreData)  │
-└─────────────────────────────────┘
-           ↓ (not found)
-┌─────────────────────────────────┐
-│  Layer 3: Network Sync          │  Access: 100-500ms
-│  (String-Sync v2 with ETag)     │
-└─────────────────────────────────┘
-```
+<Steps>
+  <Step title="Layer 1: In-Memory Cache" stepNumber={1}>
+    LRU, 1000 entries by default  `Access: <1ms`
+
+    <Icon icon="arrow-down-from-line" iconType="solid" /> Cache miss
+  </Step>
+  <Step title="Layer 2: Local Database">
+    IndexedDB / Room / CoreData
+
+     <Icon icon="arrow-down-from-line" iconType="solid" /> Not Found
+  </Step>
+  <Step title="Layer 3: Network Sync">
+    String-Sync v2 with ETag `Access: 100-500ms`
+  </Step>
+</Steps>
 
 <Accordion title="Layer 1: In-Memory Cache">
   **Fastest access** - Strings are cached in memory for instant retrieval
@@ -73,15 +72,17 @@ Stringboot uses a custom delta synchronization protocol to minimize bandwidth an
     If-None-Match: "etag123abc"
     ```
   </Step>
-
   <Step title="Server Response">
     **Case 1: No changes (304 Not Modified)**
+
     ```
     HTTP/1.1 304 Not Modified
     ```
+
     Result: No download needed, cache is current
 
     **Case 2: Updates available (200 OK)**
+
     ```json
     {
       "etag": "etag456def",
@@ -89,14 +90,13 @@ Stringboot uses a custom delta synchronization protocol to minimize bandwidth an
     }
     ```
   </Step>
-
   <Step title="Download Delta">
     Client downloads only changed strings
+
     ```http
     GET /strings/delta?keys=welcome_message,app_title&lang=en
     ```
   </Step>
-
   <Step title="Update Cache">
     SDK updates memory cache and local database with new strings
   </Step>
@@ -110,7 +110,6 @@ Stringboot uses a custom delta synchronization protocol to minimize bandwidth an
 
     **Monthly bandwidth**: ~3-15MB per user
   </Card>
-
   <Card title="String-Sync v2" icon="bolt">
     **Metadata check**: ~2KB
 
@@ -133,7 +132,6 @@ Stringboot is designed to work perfectly offline after the initial synchronizati
     3. Syncs with server in background
     4. Updates cache with latest strings
   </Tab>
-
   <Tab title="Without Network">
     1. SDK checks memory cache first
     2. Falls back to local database
@@ -144,12 +142,26 @@ Stringboot is designed to work perfectly offline after the initial synchronizati
 
 ### Offline Capabilities
 
-<Check>✓ All previously synced strings available</Check>
-<Check>✓ Language switching works with cached languages</Check>
-<Check>✓ No error messages or failed requests</Check>
-<Check>✓ Zero latency - instant string retrieval</Check>
+<Check>
+  ✓ All previously synced strings available
+</Check>
 
-<Warning>New or updated strings require network connectivity</Warning>
+ <Check>
+  ✓ Language switching works with cached languages
+</Check>
+
+ <Check>
+  ✓ No error messages or failed requests
+</Check>
+
+ <Check>
+  ✓ Zero latency - instant string retrieval
+</Check>
+
+
+<Warning>
+  New or updated strings require network connectivity
+</Warning>
 
 ## Smart Memory Management
 
@@ -173,13 +185,11 @@ The SDK uses a Least Recently Used (LRU) cache enhanced with access frequency tr
     - IndexedDB: Unlimited storage (quota-based)
     - Automatic cleanup on storage pressure
   </Tab>
-
   <Tab title="Android">
     - Memory cache: 1000 entries
     - Room database: No hard limit
     - Memory pressure listener for automatic cleanup
   </Tab>
-
   <Tab title="iOS">
     - Memory cache: 1000 entries
     - Core Data: No hard limit
@@ -203,6 +213,7 @@ await StringBoot.preloadLanguage('es', maxStrings = 500);
 await StringBoot.changeLanguage('es'); // <100ms
 ```
 
+
 ```kotlin Android
 // Preload in Application.onCreate()
 lifecycleScope.launch {
@@ -213,6 +224,7 @@ lifecycleScope.launch {
 StringProvider.setLocale("es")
 binding.root.applyStringbootTags()
 ```
+
 
 ```swift iOS
 // Preload synchronously to prevent flash
@@ -237,10 +249,12 @@ const languages = await StringBoot.getActiveLanguages();
 // [{ code: 'en', name: 'English' }, { code: 'es', name: 'Spanish' }]
 ```
 
+
 ```kotlin Android
 val languages = StringProvider.getAvailableLanguagesFromServer()
 // List<ActiveLanguage>
 ```
+
 
 ```swift iOS
 let languages = StringProvider.shared.availableLanguages
@@ -265,25 +279,25 @@ Stringboot provides multiple fallback mechanisms to ensure your app always has c
 
 ### Network Error Handling
 
-| Error Type | SDK Behavior |
-|------------|--------------|
-| **Network timeout** | Use cached data, retry in background |
-| **401/403 Unauthorized** | Log error, use cache, disable sync |
-| **404 Not Found** | Language doesn't exist, use fallback |
-| **429 Rate Limited** | Exponential backoff, max 3 retries |
-| **500+ Server Error** | Retry with backoff, use cache |
+| Error Type               | SDK Behavior                         |
+| ------------------------ | ------------------------------------ |
+| **Network timeout**      | Use cached data, retry in background |
+| **401/403 Unauthorized** | Log error, use cache, disable sync   |
+| **404 Not Found**        | Language doesn't exist, use fallback |
+| **429 Rate Limited**     | Exponential backoff, max 3 retries   |
+| **500+ Server Error**    | Retry with backoff, use cache        |
 
 ## Performance Characteristics
 
 ### Lookup Times
 
-| Source | Typical Latency | Use Case |
-|--------|----------------|----------|
-| **Memory cache** | &lt;1ms | Frequently accessed strings |
-| **Local database** | 5-20ms | Previously synced strings |
-| **Network (cached)** | 50-100ms | ETag check, no download |
-| **Network (delta)** | 100-300ms | Download changed strings |
-| **Network (full)** | 200-500ms | First sync or force refresh |
+| Source               | Typical Latency | Use Case                    |
+| -------------------- | --------------- | --------------------------- |
+| **Memory cache**     | \<1ms           | Frequently accessed strings |
+| **Local database**   | 5-20ms          | Previously synced strings   |
+| **Network (cached)** | 50-100ms        | ETag check, no download     |
+| **Network (delta)**  | 100-300ms       | Download changed strings    |
+| **Network (full)**   | 200-500ms       | First sync or force refresh |
 
 ### Best Practices
 
@@ -291,15 +305,12 @@ Stringboot provides multiple fallback mechanisms to ensure your app always has c
   <Card title="Do: Preload on Start" icon="circle-check">
     Preload common strings synchronously during app initialization
   </Card>
-
   <Card title="Don't: Force Refresh Often" icon="circle-xmark">
     Avoid bypassing ETag checks - wastes bandwidth
   </Card>
-
   <Card title="Do: Use Watchers/Hooks" icon="circle-check">
     Use reactive APIs for automatic UI updates
   </Card>
-
   <Card title="Don't: Poll for Updates" icon="circle-xmark">
     SDK handles sync automatically - no need to poll
   </Card>
@@ -311,15 +322,12 @@ Stringboot provides multiple fallback mechanisms to ensure your app always has c
   <Card title="Web SDK" icon="globe" href="/web-sdk/installation">
     Implement these concepts in web apps
   </Card>
-
   <Card title="Android SDK" icon="android" href="/android-sdk/installation">
     Apply concepts to Android development
   </Card>
-
   <Card title="iOS SDK" icon="apple" href="/ios-sdk/installation">
     Use concepts in iOS applications
   </Card>
-
   <Card title="Best Practices" icon="star" href="/advanced/best-practices">
     Production-ready patterns
   </Card>
