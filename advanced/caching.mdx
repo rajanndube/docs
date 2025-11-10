@@ -153,9 +153,9 @@ Evictions: \(stats.memoryEvictionCount)
 
 | Metric | Good | Needs Attention |
 |--------|------|-----------------|
-| **Hit Rate** | >90% | <80% |
+| **Hit Rate** | >90% | &lt;80% |
 | **Memory Usage** | 60-80% of max | 100% full |
-| **Evictions** | <100/min | >500/min |
+| **Evictions** | &lt;100/min | >500/min |
 
 <Note>
   If hit rate is low, consider increasing `cacheSize` or preloading frequently accessed strings.
