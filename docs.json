@@ -40,6 +40,7 @@
               "web-sdk/installation",
               "web-sdk/usage",
               "web-sdk/react-hooks",
+              "web-sdk/nextjs",
               "web-sdk/best-practices"
             ]
           },
