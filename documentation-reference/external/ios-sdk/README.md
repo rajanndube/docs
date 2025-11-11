@@ -114,7 +114,7 @@ struct StringbootDemoApp: App {
         // Initialize Stringboot SDK
         StringProvider.shared.initialize(
             cacheSize: 1000,
-            apiToken: "9bc7d015-c9e6-42ff-aec2-8c33b13284c0",
+            apiToken: "YOUR_STRINGBOOT_API_TOKEN",
             baseURL: "https://api.stringboot.com",
             autoSync: true  // Auto-fetch strings on startup
         )
