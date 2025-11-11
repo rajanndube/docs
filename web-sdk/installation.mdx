@@ -25,9 +25,9 @@ pnpm add @stringboot/web-sdk
 
 ## Prerequisites
 
-- **Node.js:** Version 19 or higher
-- **Modern Browser:** ES2020+ support required
+- **Modern Browser:** ES2020+ support required (Chrome 87+, Firefox 78+, Safari 14+, Edge 88+)
 - **API Token:** [Obtain from your Stringboot dashboard](https://dashboard.stringboot.com)
+- **Node.js:** Version 18+ (for development/build tools only)
 
 ## Quick Start
 
@@ -81,6 +81,7 @@ Initialize the SDK as early as possible in your application to ensure strings ar
 | `baseUrl` | string | No | API endpoint (default: `https://api.stringboot.com`) |
 | `defaultLanguage` | string | No | Default language code (default: `en`) |
 | `debug` | boolean | No | Enable debug logging (default: `false`) |
+| `enableIntegrityCheck` | boolean | No | Enable integrity verification for strings (default: `false`) |
 
 ## Environment Variables
 
@@ -233,28 +234,6 @@ initApp();
 | Firefox | 78+ |
 | Safari | 14+ |
 | Edge | 88+ |
-
-## CDN Installation (Optional)
-
-For quick prototyping without a build step:
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@stringboot/web-sdk@1.0.0/dist/stringboot.umd.js"></script>
-
-<script>
-  const { StringBoot } = window.Stringboot;
-
-  StringBoot.initialize({
-    apiToken: 'your_api_token_here',
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en'
-  });
-</script>
-```
-
-<Note>
-The CDN version is for prototyping only. For production applications, use npm installation with your build tool.
-</Note>
 
 ## What's Next?
 
