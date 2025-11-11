@@ -94,7 +94,7 @@
     "primary": {
       "type": "button",
       "label": "Get API Key",
-      "href": "https://dashboard.stringboot.com"
+      "href": "https://dashboard.stringboot.com/tokens"
     }
   },
   "contextual": {
@@ -111,7 +111,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/stringboot",
+      "github": "https://github.com/Stringboot-SDK",
       "linkedin": "https://linkedin.com/company/stringboot"
     }
   }
