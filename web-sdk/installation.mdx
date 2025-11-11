@@ -3,7 +3,7 @@ title: "Installation & Setup"
 description: "Install and configure the Stringboot Web SDK"
 ---
 
-## Package Installation
+## Installation
 
 Choose your preferred package manager to install the Stringboot Web SDK.
 
@@ -23,187 +23,246 @@ pnpm add @stringboot/web-sdk
 
 </CodeGroup>
 
-## CDN Installation
+## Prerequisites
 
-For quick prototyping without a build step, you can load the SDK directly from a CDN:
+- **Node.js:** Version 19 or higher
+- **Modern Browser:** ES2020+ support required
+- **API Token:** [Obtain from your Stringboot dashboard](https://app.stringboot.com)
+
+## Quick Start
+
+### Vanilla JavaScript
+
+Initialize the SDK in your application entry point:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+// Initialize the SDK
+await StringBoot.initialize({
+  apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+  debug: false
+});
+```
+
+### React
+
+Use the `useStringBoot` hook in your root component:
+
+```jsx
+import { useStringBoot } from '@stringboot/web-sdk/react';
+
+export function App() {
+  const { initialized, error } = useStringBoot({
+    apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
+    baseUrl: 'https://api.stringboot.com',
+    defaultLanguage: 'en',
+    debug: false
+  });
+
+  if (!initialized) return <LoadingScreen />;
+  if (error) return <ErrorScreen error={error} />;
+
+  return <MainApp />;
+}
+```
+
+<Tip>
+Initialize the SDK as early as possible in your application to ensure strings are available when needed.
+</Tip>
+
+## Configuration Options
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `apiToken` | string | Yes | Your API token from the Stringboot dashboard |
+| `baseUrl` | string | No | API endpoint (default: `https://api.stringboot.com`) |
+| `defaultLanguage` | string | No | Default language code (default: `en`) |
+| `debug` | boolean | No | Enable debug logging (default: `false`) |
+
+## Environment Variables
+
+Store your API token securely using environment variables:
+
+<CodeGroup>
+
+```javascript Vite
+// .env
+VITE_STRINGBOOT_TOKEN=your_api_token_here
+
+// main.js
+const config = {
+  apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+  debug: import.meta.env.DEV
+};
+```
+
+```javascript Create React App
+// .env
+REACT_APP_STRINGBOOT_TOKEN=your_api_token_here
+
+// index.js
+const config = {
+  apiToken: process.env.REACT_APP_STRINGBOOT_TOKEN,
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+  debug: process.env.NODE_ENV === 'development'
+};
+```
+
+```javascript Next.js
+// .env.local
+NEXT_PUBLIC_STRINGBOOT_TOKEN=your_api_token_here
+
+// _app.js
+const config = {
+  apiToken: process.env.NEXT_PUBLIC_STRINGBOOT_TOKEN,
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+  debug: process.env.NODE_ENV === 'development'
+};
+```
+
+</CodeGroup>
+
+<Warning>
+Never commit API tokens to source control. Always use environment variables and add `.env` files to your `.gitignore`.
+</Warning>
+
+## Complete React Example
+
+Here's a production-ready React setup with proper loading and error states:
+
+```jsx
+import React from 'react';
+import { useStringBoot, useString } from '@stringboot/web-sdk/react';
+
+export function App() {
+  // Initialize SDK with environment variables
+  const { initialized, error } = useStringBoot({
+    apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
+    baseUrl: 'https://api.stringboot.com',
+    defaultLanguage: 'en',
+    debug: import.meta.env.DEV
+  });
+
+  // Show loading state during initialization
+  if (!initialized) {
+    return (
+      <div className="loading">
+        <div className="spinner" />
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // Show error state if initialization fails
+  if (error) {
+    return (
+      <div className="error">
+        <h1>Initialization Error</h1>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  // Render main application once initialized
+  return <MainApp />;
+}
+
+function MainApp() {
+  const title = useString('app_title');
+  const welcomeMsg = useString('welcome_message');
+
+  return (
+    <div>
+      <h1>{title}</h1>
+      <p>{welcomeMsg}</p>
+    </div>
+  );
+}
+```
+
+## Complete Vanilla JavaScript Example
+
+Here's a production-ready vanilla JavaScript setup:
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+async function initApp() {
+  try {
+    // Initialize SDK
+    await StringBoot.initialize({
+      apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
+      baseUrl: 'https://api.stringboot.com',
+      defaultLanguage: 'en',
+      debug: import.meta.env.DEV
+    });
+
+    // Set up reactive watchers
+    StringBoot.watch('app_title', (value) => {
+      document.getElementById('title').textContent = value;
+    });
+
+    StringBoot.watch('welcome_message', (value) => {
+      document.getElementById('welcome').textContent = value;
+    });
+
+    console.log('✓ SDK initialized successfully');
+
+  } catch (error) {
+    console.error('✗ Initialization failed:', error);
+    showErrorState(error.message);
+  }
+}
+
+// Initialize on page load
+initApp();
+```
+
+## Browser Compatibility
+
+| Browser | Minimum Version |
+|---------|-----------------|
+| Chrome | 87+ |
+| Firefox | 78+ |
+| Safari | 14+ |
+| Edge | 88+ |
+
+## CDN Installation (Optional)
+
+For quick prototyping without a build step:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@stringboot/web-sdk@1.0.0/dist/stringboot.umd.js"></script>
 
 <script>
   const { StringBoot } = window.Stringboot;
-  // SDK is now available globally
+
+  StringBoot.initialize({
+    apiToken: 'your_api_token_here',
+    baseUrl: 'https://api.stringboot.com',
+    defaultLanguage: 'en'
+  });
 </script>
 ```
 
 <Note>
-The CDN version is ideal for quick prototypes and demos, but for production applications, we recommend using npm installation with your build tool.
+The CDN version is for prototyping only. For production applications, use npm installation with your build tool.
 </Note>
-
-## Local Development Setup
-
-To run the SDK against a local Stringboot server during development:
-
-<Steps>
-  <Step title="Start your local server">
-    Ensure your local Stringboot server is running on `http://localhost:8000`
-  </Step>
-  <Step title="Configure the SDK">
-    Use the local URL in your initialization configuration (see examples below)
-  </Step>
-  <Step title="Use debug mode">
-    Enable debug logging to see detailed SDK operations
-  </Step>
-</Steps>
-
-## Vanilla JavaScript Initialization
-
-### Basic Setup
-
-```javascript
-import StringBoot from '@stringboot/web-sdk';
-
-// Initialize SDK
-async function init() {
-  try {
-    // Local development configuration
-    await StringBoot.initialize({
-      apiToken: 'YOUR_STRINGBOOT_API_TOKEN',
-      baseUrl: 'http://localhost:8000',
-      defaultLanguage: 'en',
-      debug: true
-    });
-
-    console.log('✓ SDK initialized successfully');
-
-    // Now you can use the SDK
-    await loadStrings();
-
-  } catch (error) {
-    console.error('✗ Initialization failed:', error);
-  }
-}
-
-init();
-```
-
-### Production Configuration
-
-```javascript
-import StringBoot from '@stringboot/web-sdk';
-
-await StringBoot.initialize({
-  apiToken: 'your-production-api-token',
-  baseUrl: 'https://api.stringboot.com',
-  defaultLanguage: 'en',
-  debug: false  // Disable debug logging in production
-});
-```
-
-## React Initialization
-
-### Complete App Setup
-
-```jsx
-import React from 'react';
-import {
-  useString,
-  useStrings,
-  useLanguage,
-  useActiveLanguages,
-  useStringBoot,
-  useSync,
-} from '@stringboot/web-sdk/react';
-
-/**
- * Main App Component with initialization
- */
-export function App() {
-  // Initialize SDK and handle loading/error states
-  const { initialized, error } = useStringBoot({
-    apiToken: 'sk_live_your_api_token_here',
-    baseUrl: 'http://localhost:8000', // or 'https://api.stringboot.com' for production
-    defaultLanguage: 'en',
-    debug: true,
-  });
-
-  if (!initialized) {
-    return (
-      <div className="loading">
-        <h1>Loading StringBoot SDK...</h1>
-        <div className="spinner"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="error">
-        <h1>Error initializing SDK</h1>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="app">
-      <Header />
-      <LanguageSwitcher />
-      <MainContent />
-      <SyncControls />
-    </div>
-  );
-}
-```
-
-<Tip>
-Always initialize the SDK as early as possible in your application to ensure strings are available when components render.
-</Tip>
-
-## Environment Variables
-
-For security, store your API token in environment variables:
-
-<CodeGroup>
-
-```javascript Vite
-const token = import.meta.env.VITE_STRINGBOOT_TOKEN;
-const baseUrl = import.meta.env.VITE_STRINGBOOT_URL || 'https://api.stringboot.com';
-```
-
-```javascript Create React App
-const token = process.env.REACT_APP_STRINGBOOT_TOKEN;
-const baseUrl = process.env.REACT_APP_STRINGBOOT_URL || 'https://api.stringboot.com';
-```
-
-```javascript Next.js
-const token = process.env.NEXT_PUBLIC_STRINGBOOT_TOKEN;
-const baseUrl = process.env.NEXT_PUBLIC_STRINGBOOT_URL || 'https://api.stringboot.com';
-```
-
-</CodeGroup>
-
-<Warning>
-Never commit API tokens to source control. Always use environment variables for sensitive credentials.
-</Warning>
-
-## Browser Compatibility
-
-The Stringboot Web SDK supports all modern browsers:
-
-| Browser | Minimum Version | Status |
-|---------|-----------------|--------|
-| **Chrome** | 87+ | Full support |
-| **Firefox** | 78+ | Full support |
-| **Safari** | 14+ | Full support |
-| **Edge** | 88+ | Full support |
-
-## Prerequisites
-
-- **Node.js:** Version 19 or higher (for npm installation)
-- **Modern Browser:** ES2020+ support required
-- **API Token:** Obtain from your Stringboot account
 
 ## What's Next?
 
-Now that you have the SDK installed, explore the [Usage Guide](/web-sdk/usage) to learn how to fetch and display translated strings in your application.
+<CardGroup cols={2}>
+  <Card title="Usage Guide" icon="book" href="/web-sdk/usage">
+    Learn how to fetch and display strings in your app
+  </Card>
+  <Card title="React Hooks" icon="react" href="/web-sdk/react-hooks">
+    Explore React-specific hooks and patterns
+  </Card>
+</CardGroup>
