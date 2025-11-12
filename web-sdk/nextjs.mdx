@@ -24,27 +24,46 @@ Create a client-side provider component for Stringboot:
 'use client';
 
 import { useStringBoot } from '@stringboot/web-sdk/react';
-import { ReactNode } from 'react';
 
-interface StringBootProviderProps {
-  children: ReactNode;
-}
+const isDev = process.env.NODE_ENV === 'development';
 
-export function StringBootProvider({ children }: StringBootProviderProps) {
+export function StringBootProvider({ children }: { children: React.ReactNode }): React.ReactNode {
   const { initialized, error } = useStringBoot({
     apiToken: process.env.NEXT_PUBLIC_STRINGBOOT_API_TOKEN!,
-    baseUrl: 'https://api.stringboot.com',
+    baseUrl: process.env.NEXT_PUBLIC_STRINGBOOT_API_URL || 'https://api.stringboot.com',
     defaultLanguage: 'en',
-    debug: process.env.NODE_ENV === 'development',
+    debug: isDev,
   });
 
   if (error) {
-    console.error('StringBoot initialization error:', error);
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-red-600">
+          <h1 className="text-xl font-bold">StringBoot Error</h1>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!initialized) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-gray-600">Loading StringBoot...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
 }
 ```
+
+<Note>
+The provider handles loading and error states with proper UI feedback. This prevents the app from rendering before strings are ready.
+</Note>
 
 ### Add to Root Layout
 
@@ -77,67 +96,44 @@ export default function RootLayout({
 Create client components that use Stringboot hooks:
 
 ```tsx
-// app/components/welcome.tsx
+// app/page.tsx
 'use client';
 
 import { useString, useLanguage } from '@stringboot/web-sdk/react';
 
-export function Welcome() {
-  const welcomeText = useString('welcome_message');
+export default function Home() {
+  const text = useString('welcome_message');
   const [lang, setLang] = useLanguage();
 
   return (
-    <div>
-      <h1>{welcomeText}</h1>
+    <div className="flex min-h-screen items-center justify-center">
+      <main className="flex flex-col items-center gap-8">
+        {/* Language Switcher */}
+        <div className="mb-8">
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+            className="border rounded px-4 py-2"
+          >
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+          </select>
+        </div>
 
-      <select value={lang} onChange={(e) => setLang(e.target.value)}>
-        <option value="en">English</option>
-        <option value="es">Español</option>
-        <option value="fr">Français</option>
-      </select>
+        {/* Dynamic String */}
+        <h1 className="text-3xl font-semibold">
+          {text || 'Loading...'}
+        </h1>
+      </main>
     </div>
   );
 }
 ```
 
-### Use in Server Components
-
-For server components, fetch strings server-side:
-
-```tsx
-// app/page.tsx (Server Component)
-import StringBoot from '@stringboot/web-sdk';
-import { Welcome } from './components/welcome';
-
-async function getServerStrings() {
-  await StringBoot.initialize({
-    apiToken: process.env.STRINGBOOT_API_TOKEN!,
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en',
-  });
-
-  return {
-    title: await StringBoot.get('page_title'),
-    description: await StringBoot.get('page_description'),
-  };
-}
-
-export default async function Home() {
-  const strings = await getServerStrings();
-
-  return (
-    <main>
-      <h1>{strings.title}</h1>
-      <p>{strings.description}</p>
-      <Welcome />
-    </main>
-  );
-}
-```
-
-<Note>
-The SDK works offline-first, so strings will load progressively even if the initial fetch is slow.
-</Note>
+<Tip>
+Use the `||` operator to provide a fallback value while strings are loading. The hooks automatically update the UI when strings become available.
+</Tip>
 
 ## Pages Router (Next.js 12 and below)
 
@@ -294,18 +290,23 @@ export default function Page({ strings }: PageProps) {
 
 ## Environment Variables
 
-Create a `.env.local` file:
+Create a `.env.local` file in your project root:
 
 ```bash
-# Client-side (exposed to browser)
+# Required: API Token (client-side)
 NEXT_PUBLIC_STRINGBOOT_API_TOKEN=your_token_here
 
-# Server-side only (more secure)
+# Optional: Custom API URL (defaults to https://api.stringboot.com)
+NEXT_PUBLIC_STRINGBOOT_API_URL=https://api.stringboot.com
+
+# Optional: Server-side only token (more secure for SSR/SSG)
 STRINGBOOT_API_TOKEN=your_token_here
 ```
 
 <Warning>
-Use `NEXT_PUBLIC_` prefix for client-side usage. Use regular env vars for server-side only to keep tokens secure.
+- Use `NEXT_PUBLIC_*` prefix for client-side usage (required for client components)
+- Use regular env vars for server-side only (SSR, SSG, API routes) to keep tokens secure
+- Never commit `.env.local` to version control - add it to `.gitignore`
 </Warning>
 
 ## Common Patterns
