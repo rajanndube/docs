@@ -4,8 +4,8 @@
   "name": "Stringboot",
   "colors": {
     "primary": "#FE5D05",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "light": "#FE5D05",
+    "dark": "#E55100"
   },
   "favicon": "/favicon.svg",
   "navigation": {
