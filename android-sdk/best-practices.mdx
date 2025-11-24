@@ -322,9 +322,86 @@ Configure cache size based on your app's string count to balance memory and perf
 
 ---
 
+---
+
+## 9. A/B Testing Best Practices
+
+Use consistent device IDs and proper analytics integration for reliable A/B testing.
+
+<Tabs>
+  <Tab title="Good">
+    ```kotlin
+    class StringbootApplication : Application() {
+        override fun onCreate() {
+            super.onCreate()
+
+            // Define analytics handler before initialization
+            val analyticsHandler = object : StringbootAnalyticsHandler {
+                override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
+                    experiments.forEach { (key, assignment) ->
+                        // Set user properties (not events) for experiment tracking
+                        firebaseAnalytics.setUserProperty(
+                            "stringboot_exp_$key",
+                            assignment.variantName
+                        )
+                    }
+                }
+            }
+
+            // Use consistent device ID across all SDKs
+            StringbootExtensions.autoInitialize(
+                context = this,
+                providedDeviceId = getAppDeviceId(), // Consistent across app
+                analyticsHandler = analyticsHandler
+            )
+        }
+
+        private fun getAppDeviceId(): String? {
+            // Use Firebase Installation ID or similar persistent ID
+            // return FirebaseInstallations.getInstance().id.await()
+            return null // Let SDK generate UUID if no custom ID
+        }
+    }
+    ```
+  </Tab>
+  <Tab title="Bad">
+    ```kotlin
+    // ❌ Generating new device ID on each session
+    val sessionId = UUID.randomUUID().toString()
+    StringbootExtensions.autoInitialize(
+        context = this,
+        providedDeviceId = sessionId // Wrong: non-persistent ID
+    )
+
+    // ❌ Not tracking experiments in analytics
+    StringbootExtensions.autoInitialize(this)
+    // No analytics integration - can't measure experiment impact
+
+    // ❌ Using events instead of user properties
+    analyticsHandler = object : StringbootAnalyticsHandler {
+        override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
+            // Wrong: Events don't persist across sessions
+            firebaseAnalytics.logEvent("experiment_assigned", bundle)
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+**A/B Testing Guidelines:**
+
+- Use persistent, installation-level device IDs (not session IDs)
+- Set experiments as user properties in analytics (not events)
+- Use the same device ID across all SDKs in your app
+- Let SDK handle experiment assignment automatically
+- Don't manually assign users to variants
+- Test experiment tracking in development before release
+
+---
+
 ## Summary
 
-Following these 8 best practices ensures:
+Following these 9 best practices ensures:
 
 1. Fast app startup without UI flashing
 2. Responsive language switching
@@ -334,5 +411,6 @@ Following these 8 best practices ensures:
 6. Maintainable code structure
 7. Production-ready implementation
 8. Easier debugging and troubleshooting
+9. Reliable A/B testing with proper analytics tracking
 
 Implement these patterns in your production apps for best results with the Stringboot Android SDK.

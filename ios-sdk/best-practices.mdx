@@ -426,6 +426,83 @@ StringbootLogger.isLoggingEnabled = false
 
 ---
 
+---
+
+## 9. A/B Testing Best Practices
+
+Use consistent device IDs and proper analytics integration for reliable A/B testing.
+
+**✅ Good:**
+
+```swift
+import StringbootSDK
+import FirebaseAnalytics
+
+// Define analytics handler
+class MyAnalyticsHandler: StringbootAnalyticsHandler {
+    func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+        for (key, assignment) in experiments {
+            // Set user properties (not events) for experiment tracking
+            Analytics.setUserProperty(
+                assignment.variantName,
+                forName: "stringboot_exp_\(key)"
+            )
+        }
+    }
+}
+
+@main
+struct MyApp: App {
+    let analyticsHandler = MyAnalyticsHandler()
+
+    init() {
+        // Use consistent device ID across all SDKs
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_TOKEN",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true,
+            providedDeviceId: getAppDeviceId(), // Consistent across app
+            analyticsHandler: analyticsHandler
+        )
+    }
+
+    private func getAppDeviceId() -> String? {
+        // Use Firebase Installation ID or similar persistent ID
+        // return UserDefaults.standard.string(forKey: "app_device_id")
+        return nil // Let SDK generate UUID if no custom ID
+    }
+}
+```
+
+**❌ Bad:**
+
+```swift
+// ❌ Generating new device ID on each session
+let sessionId = UUID().uuidString
+StringProvider.shared.initialize(
+    providedDeviceId: sessionId // Wrong: non-persistent ID
+)
+
+// ❌ Not tracking experiments in analytics
+StringProvider.shared.initialize(...) // No analytics integration
+
+// ❌ Using events instead of user properties
+Analytics.logEvent("experiment_assigned", parameters: [...])
+// Wrong: Events don't persist across sessions
+```
+
+**A/B Testing Guidelines:**
+
+- Use persistent, installation-level device IDs (not session IDs)
+- Set experiments as user properties in analytics (not events)
+- Use the same device ID across all SDKs in your app
+- Let SDK handle experiment assignment automatically
+- Don't manually assign users to variants
+- Test experiment tracking in development before release
+
+---
+
 ## Testing Checklist
 
 Before shipping to production:
@@ -441,3 +518,4 @@ Before shipping to production:
 - [ ] Offline functionality tested (Airplane Mode)
 - [ ] Error cases tested and handled gracefully
 - [ ] Logging disabled for production build
+- [ ] A/B testing integration verified with analytics platform (if using experiments)

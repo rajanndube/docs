@@ -552,3 +552,179 @@ The `StringProvider` exposes these `@Published` properties for reactive UI updat
 | `languageChangeError` | String? | Language change error message |
 | `currentLanguage` | String? | Current active language code |
 | `availableLanguages` | [ActiveLanguage] | List of available languages |
+
+---
+
+## A/B Testing Integration
+
+SDK v1.2.0+ includes built-in A/B testing support. The SDK automatically:
+- Generates or uses a persistent device ID for consistent experiment bucketing
+- Receives experiment assignments from the backend (V2 API)
+- Delivers the correct variant strings to users
+- Integrates with your analytics platform (Firebase, Mixpanel, Amplitude, etc.)
+
+### How It Works
+
+1. **Device ID**: SDK generates a UUID per installation (or uses your app's device ID)
+2. **X-Device-ID Header**: Sent with every API request
+3. **Backend Assignment**: Server assigns device to experiment variants based on device ID
+4. **String Resolution**: SDK receives pre-resolved strings for assigned variants
+5. **Analytics Tracking**: SDK notifies your analytics handler of experiment assignments
+
+### Basic A/B Testing Setup (SDK-Generated Device ID)
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        // SDK will generate and persist a UUID automatically
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_TOKEN",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true
+        )
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+### With Custom Device ID
+
+Use your app's existing device ID for consistency:
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        // Use your app's existing device ID for consistency
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_TOKEN",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true,
+            providedDeviceId: "your-app-device-id-67890"
+        )
+    }
+}
+```
+
+### With Analytics Integration
+
+Track experiment assignments in your analytics platform:
+
+```swift
+import StringbootSDK
+import FirebaseAnalytics
+
+class MyAnalyticsHandler: StringbootAnalyticsHandler {
+    func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+        for (key, assignment) in experiments {
+            // Firebase Analytics
+            Analytics.setUserProperty(
+                assignment.variantName,
+                forName: "stringboot_exp_\(key)"
+            )
+
+            // Mixpanel
+            Mixpanel.mainInstance().people.set(
+                property: "stringboot_exp_\(key)",
+                to: assignment.variantName
+            )
+
+            // Amplitude
+            Amplitude.instance().setUserProperties([
+                "stringboot_exp_\(key)": assignment.variantName
+            ])
+        }
+    }
+}
+
+@main
+struct MyApp: App {
+    let analyticsHandler = MyAnalyticsHandler()
+
+    init() {
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_TOKEN",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true,
+            providedDeviceId: getYourAppDeviceId(),
+            analyticsHandler: analyticsHandler
+        )
+    }
+
+    private func getYourAppDeviceId() -> String? {
+        // Use your existing device identifier
+        // return UserDefaults.standard.string(forKey: "app_device_id")
+
+        // Or let SDK generate its own UUID
+        return nil
+    }
+}
+```
+
+### Using Firebase Installation ID
+
+```swift
+import FirebaseInstallations
+
+private func getFirebaseDeviceId() async -> String? {
+    do {
+        return try await Installations.installations().installationID()
+    } catch {
+        return nil
+    }
+}
+
+// In App.init()
+Task {
+    let deviceId = await getFirebaseDeviceId()
+    StringProvider.shared.initialize(
+        cacheSize: 1000,
+        apiToken: "YOUR_TOKEN",
+        baseURL: "https://api.stringboot.com",
+        autoSync: true,
+        providedDeviceId: deviceId
+    )
+}
+```
+
+### Debugging Experiments
+
+The SDK logs experiment assignments in debug builds:
+
+```
+📦 Catalog response: 22 strings, experiments: 2
+📊 Received 2 experiment(s) from server:
+   • welcome-message-test → variant-a (experiment: 22ee1616-36c4-457b-8e3e-f5be39823176)
+   • pricing-copy-test → variant-b (experiment: 33ff2727-47d5-568e-9a11-8ccf00678287)
+   ✓ Saved experiments to persistent storage
+```
+
+### A/B Testing Best Practices
+
+```swift
+// ✅ Use consistent device ID across all SDKs in your app
+StringProvider.shared.initialize(
+    providedDeviceId: yourAppDeviceId  // Same ID for Stringboot, analytics, etc.
+)
+
+// ✅ Set analytics properties as user properties (not events)
+Analytics.setUserProperty(variantName, forName: "stringboot_exp_key")
+
+// ✅ Let SDK handle experiment assignment
+// Don't try to manually assign users to variants
+
+// ❌ Don't generate new device IDs on each session
+// Device ID must persist across app launches for consistent bucketing
+
+// ❌ Don't use session IDs or temporary identifiers
+// Use installation-level persistent IDs
+```

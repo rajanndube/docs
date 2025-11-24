@@ -410,3 +410,174 @@ println("Memory: ${stats.memorySize} / ${stats.memoryMaxSize}")
 println("Hit rate: ${stats.hitRate * 100}%")
 println("DB entries: ${stats.dbSize}")
 ```
+
+---
+
+## A/B Testing Integration
+
+SDK v1.2.0+ includes built-in A/B testing support. The SDK automatically:
+- Generates or uses a persistent device ID for consistent experiment bucketing
+- Receives experiment assignments from the backend (V2 API)
+- Delivers the correct variant strings to users
+- Integrates with your analytics platform (Firebase, Mixpanel, Amplitude, etc.)
+
+### How It Works
+
+1. **Device ID**: SDK generates a UUID per installation (or uses your app's device ID)
+2. **X-Device-ID Header**: Sent with every API request
+3. **Backend Assignment**: Server assigns device to experiment variants based on device ID
+4. **String Resolution**: SDK receives pre-resolved strings for assigned variants
+5. **Analytics Tracking**: SDK notifies your analytics handler of experiment assignments
+
+### Basic A/B Testing Setup
+
+```kotlin
+import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
+import com.stringboot.sdk.models.ExperimentAssignment
+
+class StringbootApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        // SDK will generate and persist a UUID automatically
+        StringbootExtensions.autoInitialize(this)
+    }
+}
+```
+
+### With Custom Device ID
+
+Use your app's existing device ID for consistency across SDKs:
+
+```kotlin
+class StringbootApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        // Use your app's existing device ID for consistency
+        StringbootExtensions.autoInitialize(
+            context = this,
+            providedDeviceId = "your-app-device-id-12345"
+        )
+    }
+}
+```
+
+### With Analytics Integration
+
+Track experiment assignments in your analytics platform:
+
+```kotlin
+class StringbootApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        val analyticsHandler = object : StringbootAnalyticsHandler {
+            override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
+                experiments.forEach { (key, assignment) ->
+                    // Firebase Analytics
+                    firebaseAnalytics.setUserProperty(
+                        "stringboot_exp_$key",
+                        assignment.variantName
+                    )
+
+                    // Mixpanel
+                    mixpanel.people.set(
+                        "stringboot_exp_$key",
+                        assignment.variantName
+                    )
+
+                    // Amplitude
+                    val identify = Identify()
+                        .set("stringboot_exp_$key", assignment.variantName)
+                    amplitude.identify(identify)
+                }
+            }
+        }
+
+        StringbootExtensions.autoInitialize(
+            context = this,
+            providedDeviceId = getYourAppDeviceId(),
+            analyticsHandler = analyticsHandler
+        )
+    }
+
+    /**
+     * Optional: Provide your app's existing device ID for consistent A/B testing
+     */
+    private fun getYourAppDeviceId(): String? {
+        // Example: Use Firebase Installation ID
+        // return FirebaseInstallations.getInstance().id.await()
+
+        // Or let SDK generate its own UUID
+        return null
+    }
+}
+```
+
+### Using Firebase Installation ID
+
+```kotlin
+import com.google.firebase.installations.FirebaseInstallations
+import kotlinx.coroutines.tasks.await
+
+private suspend fun getFirebaseDeviceId(): String? {
+    return try {
+        FirebaseInstallations.getInstance().id.await()
+    } catch (e: Exception) {
+        null
+    }
+}
+
+// In Application.onCreate()
+lifecycleScope.launch {
+    val deviceId = getFirebaseDeviceId()
+    StringbootExtensions.autoInitialize(
+        context = this@StringbootApplication,
+        providedDeviceId = deviceId
+    )
+}
+```
+
+### Get Current Device ID
+
+Retrieve the device ID used for A/B testing:
+
+```kotlin
+val deviceId = StringProvider.getDeviceId()
+Log.i("Stringboot", "Device ID: $deviceId")
+```
+
+### Debugging Experiments
+
+The SDK logs experiment assignments in debug builds:
+
+```
+📦 Catalog response: 22 strings, experiments: 2
+📊 Received 2 experiment(s) from server:
+   • welcome-message-test → variant-a (experiment: 22ee1616-36c4-457b-8e3e-f5be39823176)
+   • pricing-copy-test → variant-b (experiment: 33ff2727-47d5-568e-9a11-8ccf00678287)
+   ✓ Saved experiments to persistent storage
+```
+
+### A/B Testing Best Practices
+
+```kotlin
+// ✅ Use consistent device ID across all SDKs in your app
+StringbootExtensions.autoInitialize(
+    context = this,
+    providedDeviceId = yourAppDeviceId  // Same ID for Stringboot, analytics, etc.
+)
+
+// ✅ Set analytics properties as user properties (not events)
+firebaseAnalytics.setUserProperty("stringboot_exp_key", variantName)
+
+// ✅ Let SDK handle experiment assignment
+// Don't try to manually assign users to variants
+
+// ❌ Don't generate new device IDs on each session
+// Device ID must persist across app launches for consistent bucketing
+
+// ❌ Don't use session IDs or temporary identifiers
+// Use installation-level persistent IDs
+```

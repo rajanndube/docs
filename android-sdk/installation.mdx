@@ -25,9 +25,11 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.stringboot:stringboot-android-sdk:1.1.0")
+    implementation("com.stringboot:stringboot-android-sdk:1.2.0")
 }
 ```
+
+All transitive dependencies are included automatically (Room, Retrofit, OkHttp, Coroutines, etc.).
 
 **Latest Version:** Check [Maven Central](https://search.maven.org/artifact/com.stringboot/stringboot-android-sdk) for the latest available version.
 
@@ -39,37 +41,135 @@ Click **Sync Now** in Android Studio or run the following command in your termin
 ./gradlew build
 ```
 
-## Step 4: Configure AndroidManifest.xml
+## Step 4: Secure API Credentials
 
-Add Internet permission and configure your API credentials in your `AndroidManifest.xml`:
+**Important:** Never hardcode API tokens in your source code or manifest files. Use environment variables or gradle.properties instead.
+
+In `gradle.properties` (add to `.gitignore`):
+
+```properties
+STRINGBOOT_API_URL=https://api.stringboot.com
+STRINGBOOT_API_TOKEN=your_token_here
+```
+
+In `app/build.gradle.kts`:
+
+```kotlin
+android {
+    defaultConfig {
+        // Configure API URL and Token using manifest placeholders
+        val apiUrl = project.findProperty("STRINGBOOT_API_URL")?.toString()
+            ?: System.getenv("STRINGBOOT_API_URL")
+            ?: error("STRINGBOOT_API_URL not configured")
+
+        val apiToken = project.findProperty("STRINGBOOT_API_TOKEN")?.toString()
+            ?: System.getenv("STRINGBOOT_API_TOKEN")
+            ?: error("STRINGBOOT_API_TOKEN not configured")
+
+        // Manifest placeholders (for auto-initialization)
+        manifestPlaceholders["STRINGBOOT_API_URL"] = apiUrl
+        manifestPlaceholders["STRINGBOOT_API_TOKEN"] = apiToken
+    }
+}
+```
+
+## Step 5: Configure AndroidManifest.xml
+
+Add permissions and configuration in your `AndroidManifest.xml`:
 
 ```xml
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:name=".StringbootApplication">
+        android:name=".StringbootApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppName">
 
-        <!-- Stringboot Configuration -->
+        <!-- Stringboot SDK Configuration -->
         <meta-data
             android:name="com.stringboot.api_url"
-            android:value="https://api.stringboot.com" />
-
+            android:value="${STRINGBOOT_API_URL}" />
         <meta-data
             android:name="com.stringboot.api_token"
-            android:value="YOUR_API_TOKEN_HERE" />
-
-        <meta-data
-            android:name="com.stringboot.cache_size"
-            android:value="1000" />
-
-        <!-- Optional: Set default locale -->
+            android:value="${STRINGBOOT_API_TOKEN}" />
         <meta-data
             android:name="com.stringboot.default_locale"
             android:value="en" />
+        <meta-data
+            android:name="com.stringboot.cache_size"
+            android:value="1000" />
+        <meta-data
+            android:name="com.stringboot.auto_replace"
+            android:value="false" />
+
+        <!-- Your activities -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
     </application>
 </manifest>
 ```
+
+## Step 6: Initialize SDK
+
+Create an Application class to initialize the SDK:
+
+```kotlin
+package com.stringboot.android
+
+import android.app.Application
+import com.stringboot.sdk.StringProvider
+import com.stringboot.sdk.StringbootExtensions
+import com.stringboot.sdk.utils.StringbootLogger
+
+class StringbootApplication : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        // Auto-initialize from manifest configuration
+        val success = StringbootExtensions.autoInitialize(this)
+
+        if (success) {
+            StringbootLogger.i("✅ Stringboot initialized successfully")
+        } else {
+            StringbootLogger.w("⚠️ Stringboot auto-initialization failed")
+
+            // Fallback: Initialize without network for offline-only mode
+            try {
+                StringProvider.initialize(
+                    context = this,
+                    cacheSize = 1000,
+                    api = null // Offline mode
+                )
+                StringbootLogger.i("✅ Stringboot initialized in offline mode")
+            } catch (e: Exception) {
+                StringbootLogger.e("❌ Stringboot fallback initialization failed: ${e.message}", e)
+            }
+        }
+    }
+}
+```
+
+**The SDK automatically:**
+- Reads configuration from AndroidManifest.xml
+- Creates and configures the API client
+- Initializes the Room database
+- Sets up smart caching with specified size
 
 ## Platform Support
 
@@ -77,9 +177,9 @@ Add Internet permission and configure your API credentials in your `AndroidManif
 | --------------- | ---------------- |
 | **Min SDK**     | 24 (Android 7.0) |
 | **Target SDK**  | 34 (Android 14)  |
-| **SDK Version** | 1.1.0            |
+| **SDK Version** | 1.2.0            |
 | **Kotlin**      | 1.9.22+          |
 
 ## Next Steps
 
-After installation, proceed to the [Usage Guide](/android-sdk/usage) to learn how to integrate the SDK into your application.
+After installation, proceed to the [Usage Guide](/android-sdk/usage) to learn how to integrate the SDK into your application, including A/B testing support.
