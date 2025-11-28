@@ -1,0 +1,840 @@
+---
+title: "Translations & Language Switching"
+description: "Multi-language support and seamless language switching with Stringboot"
+---
+
+## Overview
+
+Stringboot makes multi-language support effortless with automatic language detection, smooth language switching, and AI-powered translations from the dashboard. Support global users without complex i18n libraries or language file management.
+
+### Key Benefits
+
+<CardGroup cols={2}>
+  <Card title="Auto-Detection" icon="globe">
+    Automatically detects and uses device locale
+  </Card>
+  <Card title="Instant Switching" icon="arrows-rotate">
+    Change language without app restart
+  </Card>
+  <Card title="AI Translations" icon="robot">
+    Generate translations from dashboard with one click
+  </Card>
+  <Card title="Offline Support" icon="wifi-slash">
+    All languages cached locally for offline use
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Start
+
+### 1. Add Languages in Dashboard
+
+Go to [Stringboot Dashboard](https://dashboard.stringboot.com) → **Languages** → **Add Language**:
+
+1. Select application
+2. Choose language (e.g., Spanish - `es`)
+3. Enable **AI Translation** (optional)
+4. Click **Save**
+
+AI will automatically translate all existing strings to the new language.
+
+### 2. Use Device Locale
+
+The SDK automatically uses the device's language:
+
+```kotlin App.kt
+class StringbootApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        StringbootExtensions.autoInitialize(
+            context = this,
+            analyticsHandler = yourAnalyticsHandler
+        )
+
+        // Automatically detect and set device locale
+        val deviceLang = StringProvider.deviceLocale()
+        StringProvider.setLocale(deviceLang)
+
+        StringbootLogger.i("Using device language: $deviceLang")
+    }
+}
+```
+
+### 3. Display Content
+
+Strings automatically load in the user's language:
+
+```xml
+<TextView
+    android:tag="welcome_message"
+    android:text="@string/loading" />
+```
+
+```kotlin
+binding.root.applyStringbootTags()
+// Shows "Welcome!" in English
+// Shows "¡Bienvenido!" in Spanish
+// Shows "Willkommen!" in German
+```
+
+---
+
+## Language Detection
+
+### Auto-Detect Device Locale
+
+```kotlin
+val deviceLanguage = StringProvider.deviceLocale()
+// Returns: "en", "es", "fr", "de", etc.
+
+StringProvider.setLocale(deviceLanguage)
+```
+
+**How it works:**
+- Uses Android's `Locale.getDefault().language`
+- Returns ISO 639-1 language code (e.g., "en", "es", "fr")
+- Falls back to "en" if device locale not supported
+
+### Check Supported Languages
+
+```kotlin
+lifecycleScope.launch {
+    val supportedLanguages = StringProvider.getAvailableLanguagesFromServer()
+
+    supportedLanguages.forEach { language ->
+        Log.d("Stringboot", "${language.name} (${language.code})")
+    }
+    // Output:
+    // English (en)
+    // Spanish (es)
+    // French (fr)
+}
+```
+
+### Fallback to Supported Language
+
+```kotlin
+class StringbootApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        StringbootExtensions.autoInitialize(this, analyticsHandler = yourAnalyticsHandler)
+
+        lifecycleScope.launch {
+            val deviceLang = StringProvider.deviceLocale()
+            val supportedLanguages = StringProvider.getAvailableLanguagesFromServer()
+            val supportedCodes = supportedLanguages.map { it.code }
+
+            val languageToUse = if (supportedCodes.contains(deviceLang)) {
+                deviceLang
+            } else {
+                "en"  // Fallback to English
+            }
+
+            StringProvider.setLocale(languageToUse)
+            StringbootLogger.i("Using language: $languageToUse")
+        }
+    }
+}
+```
+
+---
+
+## Language Switching
+
+### Complete Language Switch Flow
+
+```kotlin MainActivity.kt
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+    private var currentLanguage = "en"
+
+    private fun switchLanguage(newLanguage: ActiveLanguage) {
+        lifecycleScope.launch {
+            try {
+                // Show loading indicator
+                binding.progressBar.visibility = View.VISIBLE
+
+                Toast.makeText(
+                    this@MainActivity,
+                    "Switching to ${newLanguage.name}...",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                // Step 1: Set new locale
+                currentLanguage = newLanguage.code
+                StringProvider.setLocale(currentLanguage)
+
+                // Step 2: Preload language cache (prevents UI flash)
+                StringProvider.preloadLanguage(currentLanguage, maxStrings = 500)
+
+                // Step 3: Refresh from network (background sync)
+                withContext(Dispatchers.IO) {
+                    val refreshSuccess = StringProvider.refreshFromNetwork(currentLanguage)
+                    if (!refreshSuccess) {
+                        StringbootLogger.w("Network refresh failed, using cached strings")
+                    }
+                }
+
+                // Step 4: Update UI
+                withContext(Dispatchers.Main) {
+                    binding.root.applyStringbootTags()  // Re-apply all tags
+                    setupLanguageDisplay()  // Restart Flow observations
+                }
+
+                // Step 5: Save language preference
+                getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    .edit()
+                    .putString("current_language", currentLanguage)
+                    .apply()
+
+                Toast.makeText(
+                    this@MainActivity,
+                    "Language changed to ${newLanguage.name}",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+            } catch (e: Exception) {
+                StringbootLogger.e("Error switching language", e)
+                Toast.makeText(
+                    this@MainActivity,
+                    "Failed to switch language",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } finally {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
+    }
+}
+```
+
+**Key Steps:**
+1. **Set locale**: `StringProvider.setLocale(newLang)`
+2. **Preload cache**: Avoids UI flashing
+3. **Refresh from network**: Get latest translations (non-blocking)
+4. **Update UI**: Re-apply tags and restart Flows
+5. **Save preference**: Remember user's choice
+
+---
+
+## Language Picker UI
+
+### Show Language Selection Dialog
+
+```kotlin
+private fun showLanguageDialog() {
+    lifecycleScope.launch {
+        try {
+            // Get available languages from server
+            val languages = withContext(Dispatchers.IO) {
+                StringProvider.getAvailableLanguagesFromServer()
+            }
+
+            if (languages.isEmpty()) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "No languages available",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@launch
+            }
+
+            // Build dialog
+            val dialogBinding = DialogLanguagePickerBinding.inflate(layoutInflater)
+
+            // Set dialog title and subtitle (using Stringboot!)
+            dialogBinding.dialogTitle.text = StringProvider.get("language_dialog_title")
+            dialogBinding.dialogSubtitle.text = StringProvider.get("language_dialog_subtitle")
+
+            // Create language list
+            val languageNames = languages.map { "${it.name} (${it.code})" }.toTypedArray()
+            val currentIndex = languages.indexOfFirst { it.code == currentLanguage }
+
+            AlertDialog.Builder(this@MainActivity)
+                .setView(dialogBinding.root)
+                .setSingleChoiceItems(languageNames, currentIndex) { dialog, which ->
+                    val selectedLanguage = languages[which]
+                    switchLanguage(selectedLanguage)
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+
+        } catch (e: Exception) {
+            StringbootLogger.e("Error showing language dialog", e)
+            Toast.makeText(
+                this@MainActivity,
+                "Error loading languages",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+}
+```
+
+### Language Picker Button
+
+```kotlin
+private fun setupLanguageButton() {
+    binding.languageButton.setOnClickListener {
+        showLanguageDialog()
+    }
+}
+```
+
+---
+
+## Display Current Language
+
+### Show Active Language Name
+
+```kotlin
+private fun setupLanguageDisplay() {
+    lifecycleScope.launch {
+        // Use Flow to reactively update language display
+        StringProvider.getFlow("status_current_language", currentLanguage)
+            .collect { template ->
+                val languageName = getLanguageDisplayName(currentLanguage)
+                val displayText = template.format(languageName)
+                binding.tvCurrentLanguage.text = displayText
+            }
+    }
+}
+
+private fun getLanguageDisplayName(code: String): String {
+    return when (code) {
+        "en" -> "English"
+        "es" -> "Español"
+        "fr" -> "Français"
+        "de" -> "Deutsch"
+        "pt" -> "Português"
+        "zh" -> "中文"
+        "ja" -> "日本語"
+        "ko" -> "한국어"
+        else -> code.uppercase()
+    }
+}
+```
+
+**Dashboard String:**
+```
+Key: status_current_language
+Value: "Current language: %s"
+```
+
+**Output:**
+- English: "Current language: English"
+- Spanish: "Idioma actual: Español"
+- French: "Langue actuelle: Français"
+
+---
+
+## Persisting Language Preference
+
+### Save on Language Change
+
+```kotlin
+private fun saveLanguagePreference(languageCode: String) {
+    getSharedPreferences("app_prefs", MODE_PRIVATE)
+        .edit()
+        .putString("current_language", languageCode)
+        .apply()
+}
+```
+
+### Load on App Start
+
+```kotlin
+class StringbootApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        StringbootExtensions.autoInitialize(this, analyticsHandler = yourAnalyticsHandler)
+
+        // Load saved language or use device locale
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        val savedLanguage = prefs.getString("current_language", null)
+
+        val languageToUse = savedLanguage ?: StringProvider.deviceLocale()
+        StringProvider.setLocale(languageToUse)
+
+        StringbootLogger.i("Using language: $languageToUse")
+    }
+}
+```
+
+---
+
+## Advanced Patterns
+
+### Language-Specific Formatting
+
+Different languages have different formatting rules for numbers, dates, and currencies.
+
+```kotlin
+private fun formatPrice(amount: Double, languageCode: String): String {
+    val locale = when (languageCode) {
+        "en" -> Locale.US
+        "es" -> Locale("es", "ES")
+        "fr" -> Locale.FRANCE
+        "de" -> Locale.GERMANY
+        else -> Locale.US
+    }
+
+    val currencyFormat = NumberFormat.getCurrencyInstance(locale)
+    return currencyFormat.format(amount)
+}
+
+// Usage
+val template = StringProvider.get("product_price", currentLanguage)
+val formattedPrice = formatPrice(29.99, currentLanguage)
+binding.price.text = template.format(formattedPrice)
+```
+
+**Output:**
+- English (US): "Price: $29.99"
+- Spanish (ES): "Precio: 29,99 €"
+- French (FR): "Prix : 29,99 €"
+
+### RTL Language Support
+
+Automatically detect and apply RTL layout for Arabic, Hebrew, etc.
+
+```kotlin
+private fun setupRTLSupport() {
+    val isRTL = when (currentLanguage) {
+        "ar", "he", "fa", "ur" -> true
+        else -> false
+    }
+
+    window.decorView.layoutDirection = if (isRTL) {
+        View.LAYOUT_DIRECTION_RTL
+    } else {
+        View.LAYOUT_DIRECTION_LTR
+    }
+}
+
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+
+    // Apply RTL before setting content view
+    setupRTLSupport()
+
+    binding = ActivityMainBinding.inflate(layoutInflater)
+    setContentView(binding.root)
+}
+```
+
+### Pluralization Rules
+
+Handle plurals correctly for different languages.
+
+**Dashboard Strings:**
+```
+Key: items_count_one (for English)
+Value: "%d item"
+
+Key: items_count_other (for English)
+Value: "%d items"
+
+Key: items_count_one (for Spanish)
+Value: "%d artículo"
+
+Key: items_count_other (for Spanish)
+Value: "%d artículos"
+```
+
+**Code:**
+```kotlin
+private fun getItemsCountText(count: Int, language: String): String {
+    val key = if (count == 1) {
+        "items_count_one"
+    } else {
+        "items_count_other"
+    }
+
+    val template = StringProvider.get(key, language)
+    return template.format(count)
+}
+
+// Usage
+binding.itemCount.text = getItemsCountText(5, currentLanguage)
+// English: "5 items"
+// Spanish: "5 artículos"
+```
+
+---
+
+## Testing Translations
+
+### Preview Different Languages
+
+```kotlin
+private fun previewLanguage(languageCode: String) {
+    // Temporarily switch to preview language
+    val originalLanguage = currentLanguage
+
+    currentLanguage = languageCode
+    StringProvider.setLocale(languageCode)
+    binding.root.applyStringbootTags()
+
+    // Show restore button
+    binding.restoreLanguageButton.visibility = View.VISIBLE
+    binding.restoreLanguageButton.setOnClickListener {
+        currentLanguage = originalLanguage
+        StringProvider.setLocale(originalLanguage)
+        binding.root.applyStringbootTags()
+        binding.restoreLanguageButton.visibility = View.GONE
+    }
+}
+```
+
+### Test Missing Translations
+
+```kotlin
+private fun checkMissingTranslations(languageCode: String) {
+    val keys = listOf(
+        "welcome_message",
+        "button_get_started",
+        "title_products",
+        "description_offer"
+    )
+
+    val missing = mutableListOf<String>()
+
+    keys.forEach { key ->
+        val value = StringProvider.get(key, languageCode)
+        if (value.startsWith("??") && value.endsWith("??")) {
+            missing.add(key)
+        }
+    }
+
+    if (missing.isNotEmpty()) {
+        StringbootLogger.w("Missing translations for $languageCode: $missing")
+    }
+}
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always Persist Language Preference">
+    **Recommended:**
+    ```kotlin
+    // Save user's choice
+    prefs.edit().putString("current_language", newLanguage).apply()
+
+    // Load on app start
+    val savedLang = prefs.getString("current_language", null)
+    val language = savedLang ?: StringProvider.deviceLocale()
+    StringProvider.setLocale(language)
+    ```
+
+    Users expect their language choice to persist across app sessions.
+  </Accordion>
+
+  <Accordion title="Preload Before Switching">
+    **Recommended:**
+    ```kotlin
+    // Preload new language
+    StringProvider.preloadLanguage(newLanguage, maxStrings = 500)
+
+    // Then update UI
+    binding.root.applyStringbootTags()
+    ```
+
+    **Avoid:**
+    ```kotlin
+    // Switching without preloading causes UI flash
+    StringProvider.setLocale(newLanguage)
+    binding.root.applyStringbootTags()  // ❌ May show ??keys?? briefly
+    ```
+
+    Preloading eliminates visual glitches during language switching.
+  </Accordion>
+
+  <Accordion title="Handle Missing Translations Gracefully">
+    **Recommended:**
+    ```kotlin
+    fun getStringWithFallback(key: String, fallbackLang: String = "en"): String {
+        val value = StringProvider.get(key, currentLanguage)
+
+        if (value.startsWith("??") && value.endsWith("??")) {
+            // Fallback to English
+            return StringProvider.get(key, fallbackLang)
+        }
+
+        return value
+    }
+    ```
+
+    If a translation is missing, fall back to English (or another default language).
+  </Accordion>
+
+  <Accordion title="Sync After Language Switch">
+    ```kotlin
+    StringProvider.setLocale(newLanguage)
+
+    // Sync latest translations from server
+    lifecycleScope.launch {
+        StringProvider.refreshFromNetwork(newLanguage)
+        binding.root.applyStringbootTags()
+    }
+    ```
+
+    Ensures user gets the latest translations for the new language.
+  </Accordion>
+
+  <Accordion title="Test All Supported Languages">
+    Create a debug menu to quickly switch languages:
+
+    ```kotlin
+    if (BuildConfig.DEBUG) {
+        binding.debugLanguageMenu.visibility = View.VISIBLE
+
+        binding.btnEnglish.setOnClickListener { previewLanguage("en") }
+        binding.btnSpanish.setOnClickListener { previewLanguage("es") }
+        binding.btnFrench.setOnClickListener { previewLanguage("fr") }
+        binding.btnGerman.setOnClickListener { previewLanguage("de") }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Common Use Cases
+
+### App-Wide Language Switcher
+
+```kotlin
+class LanguageSwitcher(private val context: Context) {
+
+    private val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+
+    fun getCurrentLanguage(): String {
+        return prefs.getString("current_language", "en") ?: "en"
+    }
+
+    suspend fun switchLanguage(newLanguage: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Set locale
+                StringProvider.setLocale(newLanguage)
+
+                // Preload
+                StringProvider.preloadLanguage(newLanguage, maxStrings = 500)
+
+                // Sync
+                StringProvider.refreshFromNetwork(newLanguage)
+
+                // Save
+                prefs.edit().putString("current_language", newLanguage).apply()
+
+                true
+            } catch (e: Exception) {
+                StringbootLogger.e("Language switch failed", e)
+                false
+            }
+        }
+    }
+
+    suspend fun getAvailableLanguages(): List<ActiveLanguage> {
+        return withContext(Dispatchers.IO) {
+            StringProvider.getAvailableLanguagesFromServer()
+        }
+    }
+}
+```
+
+### In-App Language Settings Screen
+
+```kotlin SettingsActivity.kt
+class SettingsActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivitySettingsBinding
+    private val languageSwitcher = LanguageSwitcher(this)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivitySettingsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        setupLanguageSection()
+    }
+
+    private fun setupLanguageSection() {
+        val currentLang = languageSwitcher.getCurrentLanguage()
+        binding.tvCurrentLanguage.text = "Current: ${getLanguageDisplayName(currentLang)}"
+
+        binding.btnChangeLanguage.setOnClickListener {
+            showLanguageDialog()
+        }
+    }
+
+    private fun showLanguageDialog() {
+        lifecycleScope.launch {
+            val languages = languageSwitcher.getAvailableLanguages()
+
+            val languageNames = languages.map { it.name }.toTypedArray()
+            val currentIndex = languages.indexOfFirst {
+                it.code == languageSwitcher.getCurrentLanguage()
+            }
+
+            AlertDialog.Builder(this@SettingsActivity)
+                .setTitle("Select Language")
+                .setSingleChoiceItems(languageNames, currentIndex) { dialog, which ->
+                    val selected = languages[which]
+                    changeLanguage(selected.code)
+                    dialog.dismiss()
+                }
+                .show()
+        }
+    }
+
+    private fun changeLanguage(newLanguage: String) {
+        lifecycleScope.launch {
+            val success = languageSwitcher.switchLanguage(newLanguage)
+
+            if (success) {
+                // Restart activity to apply new language
+                recreate()
+            } else {
+                Toast.makeText(
+                    this@SettingsActivity,
+                    "Failed to change language",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+}
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Dynamic Strings" icon="font" href="/android-sdk/dynamic-strings">
+    Learn about string retrieval and updates
+  </Card>
+  <Card title="A/B Testing" icon="flask" href="/android-sdk/ab-testing">
+    Optimize messaging with experiments
+  </Card>
+  <Card title="Best Practices" icon="star" href="/android-sdk/best-practices">
+    Production patterns and optimization
+  </Card>
+</CardGroup>
+
+---
+
+## API Reference
+
+### Language Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `deviceLocale()` | Get device's current language code | `String` |
+| `setLocale(lang)` | Set active language for string retrieval | `Unit` |
+| `getAvailableLanguages()` | Get cached language codes | `List<String>` |
+| `getAvailableLanguagesFromServer()` | Get languages from server | `List<ActiveLanguage>` |
+| `preloadLanguage(lang, maxStrings?)` | Preload language into cache | `Unit` |
+| `refreshFromNetwork(lang)` | Sync language from server | `Boolean` |
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Language doesn't switch">
+    **Check:**
+    1. Did you call `StringProvider.setLocale(newLang)`?
+    2. Did you re-apply tags with `binding.root.applyStringbootTags()`?
+    3. Did you restart Flow observations?
+
+    **Solution:**
+    ```kotlin
+    StringProvider.setLocale(newLang)
+    StringProvider.preloadLanguage(newLang)
+    binding.root.applyStringbootTags()  // Re-apply!
+    ```
+  </Accordion>
+
+  <Accordion title="UI shows ??keys?? briefly when switching">
+    **Cause:** Cache not preloaded before UI update.
+
+    **Solution:**
+    ```kotlin
+    // Preload BEFORE updating UI
+    StringProvider.preloadLanguage(newLang, maxStrings = 500)
+    binding.root.applyStringbootTags()
+    ```
+  </Accordion>
+
+  <Accordion title="Translations not showing for a language">
+    **Check:**
+    1. Language added in Stringboot Dashboard?
+    2. Strings translated for that language?
+    3. Network sync successful?
+
+    **Debug:**
+    ```kotlin
+    val value = StringProvider.get("key", "es")
+    if (value.startsWith("??")) {
+        Log.e("Stringboot", "Translation missing for key in es")
+    }
+    ```
+
+    **Sync manually:**
+    ```kotlin
+    StringProvider.refreshFromNetwork("es")
+    ```
+  </Accordion>
+
+  <Accordion title="Device locale detection not working">
+    **Check:**
+    ```kotlin
+    val deviceLang = StringProvider.deviceLocale()
+    Log.d("Stringboot", "Device language: $deviceLang")
+
+    // Verify it's supported
+    val supported = StringProvider.getAvailableLanguagesFromServer()
+    Log.d("Stringboot", "Supported: ${supported.map { it.code }}")
+    ```
+
+    **Fallback:**
+    ```kotlin
+    val lang = if (supportedCodes.contains(deviceLang)) {
+        deviceLang
+    } else {
+        "en"  // Default
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Support
+
+<CardGroup cols={2}>
+  <Card title="Dashboard: Languages" icon="language" href="/dashboard-guides/languages">
+    How to add languages in the dashboard
+  </Card>
+  <Card title="Advanced Usage" icon="code" href="/android-sdk/usage">
+    Advanced patterns and techniques
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/core-concepts">
+    Understanding caching and sync
+  </Card>
+</CardGroup>

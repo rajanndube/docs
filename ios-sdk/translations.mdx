@@ -1,0 +1,750 @@
+---
+title: "Translations & Language Switching"
+description: "Multi-language support and seamless language switching with Stringboot"
+---
+
+## Overview
+
+Stringboot makes multi-language support effortless with automatic language detection, smooth language switching, and AI-powered translations from the dashboard. Support global users without complex localization libraries or string file management.
+
+### Key Benefits
+
+<CardGroup cols={2}>
+  <Card title="Auto-Detection" icon="globe">
+    Automatically detects and uses device locale
+  </Card>
+  <Card title="Instant Switching" icon="arrows-rotate">
+    Change language without app restart
+  </Card>
+  <Card title="AI Translations" icon="robot">
+    Generate translations from dashboard with one click
+  </Card>
+  <Card title="Offline Support" icon="wifi-slash">
+    All languages cached locally for offline use
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Start
+
+### 1. Add Languages in Dashboard
+
+Go to [Stringboot Dashboard](https://dashboard.stringboot.com) → **Languages** → **Add Language**:
+
+1. Select application
+2. Choose language (e.g., Spanish - `es`)
+3. Enable **AI Translation** (optional)
+4. Click **Save**
+
+AI will automatically translate all existing strings to the new language.
+
+### 2. Use Device Locale
+
+The SDK automatically uses the device's language:
+
+```swift App.swift
+import SwiftUI
+import StringbootSDK
+
+@main
+struct MyApp: App {
+    init() {
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_API_TOKEN",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true,
+            analyticsHandler: yourAnalyticsHandler
+        )
+
+        // Automatically detect and set device locale
+        let deviceLang = StringProvider.shared.deviceLocale()
+        StringProvider.shared.setLocale(deviceLang)
+
+        StringbootLogger.i("Using device language: \(deviceLang)")
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+### 3. Display Content
+
+Strings automatically load in the user's language:
+
+```swift
+SBText("welcome_message")
+// Shows "Welcome!" in English
+// Shows "¡Bienvenido!" in Spanish
+// Shows "Willkommen!" in German
+```
+
+---
+
+## Language Detection
+
+### Auto-Detect Device Locale
+
+```swift
+let deviceLanguage = StringProvider.shared.deviceLocale()
+// Returns: "en", "es", "fr", "de", etc.
+
+StringProvider.shared.setLocale(deviceLanguage)
+```
+
+**How it works:**
+- Uses iOS `Locale.current.language.languageCode?.identifier`
+- Returns ISO 639-1 language code (e.g., "en", "es", "fr")
+- Falls back to "en" if device locale not supported
+
+### Check Supported Languages
+
+```swift
+Task {
+    let supportedLanguages = await StringProvider.shared.getAvailableLanguagesFromServer()
+
+    for language in supportedLanguages {
+        print("\(language.name) (\(language.code))")
+    }
+    // Output:
+    // English (en)
+    // Spanish (es)
+    // French (fr)
+}
+```
+
+### Fallback to Supported Language
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_API_TOKEN",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true,
+            analyticsHandler: yourAnalyticsHandler
+        )
+
+        Task {
+            let deviceLang = StringProvider.shared.deviceLocale()
+            let supportedLanguages = await StringProvider.shared.getAvailableLanguagesFromServer()
+            let supportedCodes = supportedLanguages.map { $0.code }
+
+            let languageToUse = supportedCodes.contains(deviceLang) ? deviceLang : "en"
+            StringProvider.shared.setLocale(languageToUse)
+
+            StringbootLogger.i("Using language: \(languageToUse)")
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+---
+
+## Language Switching
+
+### Complete Language Switch Flow (SwiftUI)
+
+```swift LanguageSwitcher.swift
+import SwiftUI
+import StringbootSDK
+
+struct ContentView: View {
+    @State private var isChangingLanguage = false
+    @State private var currentLanguage = "en"
+
+    var body: some View {
+        VStack {
+            Text("Current Language: \(getLanguageName(currentLanguage))")
+
+            Button("Change Language") {
+                showLanguagePicker()
+            }
+        }
+        .overlay {
+            if isChangingLanguage {
+                ProgressView("Switching language...")
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(10)
+            }
+        }
+    }
+
+    private func switchLanguage(to newLanguage: String) {
+        Task {
+            isChangingLanguage = true
+
+            do {
+                // Step 1: Set new locale
+                StringProvider.shared.setLocale(newLanguage)
+
+                // Step 2: Preload language cache (prevents UI flash)
+                await StringProvider.shared.preloadLanguage(lang: newLanguage, maxStrings: 500)
+
+                // Step 3: Refresh from network (background sync)
+                let refreshSuccess = await StringProvider.shared.refreshFromNetwork(lang: newLanguage)
+                if !refreshSuccess {
+                    StringbootLogger.w("Network refresh failed, using cached strings")
+                }
+
+                // Step 4: Update state
+                await MainActor.run {
+                    currentLanguage = newLanguage
+                    UserDefaults.standard.set(newLanguage, forKey: "current_language")
+                }
+
+            } catch {
+                StringbootLogger.e("Language switch failed", error)
+            }
+
+            await MainActor.run {
+                isChangingLanguage = false
+            }
+        }
+    }
+
+    private func getLanguageName(_ code: String) -> String {
+        switch code {
+        case "en": return "English"
+        case "es": return "Español"
+        case "fr": return "Français"
+        case "de": return "Deutsch"
+        default: return code.uppercased()
+        }
+    }
+}
+```
+
+**Key Steps:**
+1. **Set locale**: `setLocale(newLang)`
+2. **Preload cache**: Avoids UI flashing
+3. **Refresh from network**: Get latest translations (non-blocking)
+4. **Save preference**: Remember user's choice
+
+---
+
+### Complete Language Switch Flow (UIKit)
+
+```swift ViewController.swift
+import UIKit
+import StringbootSDK
+
+class ViewController: UIViewController {
+    var currentLanguage = "en"
+
+    @IBAction func changeLanguageTapped(_ sender: UIButton) {
+        showLanguagePicker()
+    }
+
+    private func switchLanguage(to newLanguage: String) {
+        showLoadingIndicator(message: "Switching language...")
+
+        Task {
+            // Set new locale
+            StringProvider.shared.setLocale(newLanguage)
+
+            // Preload language cache
+            await StringProvider.shared.preloadLanguage(lang: newLanguage, maxStrings: 500)
+
+            // Refresh from network
+            let success = await StringProvider.shared.refreshFromNetwork(lang: newLanguage)
+
+            await MainActor.run {
+                currentLanguage = newLanguage
+                UserDefaults.standard.set(newLanguage, forKey: "current_language")
+
+                hideLoadingIndicator()
+
+                // Refresh UI
+                updateAllLabels()
+
+                showToast(success ? "Language changed!" : "Using cached content")
+            }
+        }
+    }
+
+    private func updateAllLabels() {
+        // Refresh all SBLabel instances
+        // Or manually update labels
+        Task {
+            titleLabel.text = await StringProvider.shared.get("title")
+            subtitleLabel.text = await StringProvider.shared.get("subtitle")
+        }
+    }
+}
+```
+
+---
+
+## Language Picker UI
+
+### SwiftUI Language Picker
+
+```swift LanguagePickerView.swift
+import SwiftUI
+import StringbootSDK
+
+struct LanguagePickerView: View {
+    @Environment(\.dismiss) var dismiss
+    @State private var languages: [ActiveLanguage] = []
+    @State private var isLoading = true
+    @Binding var selectedLanguage: String
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if isLoading {
+                    ProgressView()
+                } else {
+                    List(languages, id: \.code) { language in
+                        Button {
+                            selectedLanguage = language.code
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(language.name)
+                                Spacer()
+                                if language.code == selectedLanguage {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Select Language")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .task {
+            await loadLanguages()
+        }
+    }
+
+    private func loadLanguages() async {
+        languages = await StringProvider.shared.getAvailableLanguagesFromServer()
+        isLoading = false
+    }
+}
+```
+
+### UIKit Language Picker
+
+```swift
+private func showLanguagePicker() {
+    Task {
+        let languages = await StringProvider.shared.getAvailableLanguagesFromServer()
+
+        await MainActor.run {
+            let alert = UIAlertController(
+                title: "Select Language",
+                message: nil,
+                preferredStyle: .actionSheet
+            )
+
+            for language in languages {
+                let action = UIAlertAction(title: language.name, style: .default) { _ in
+                    self.switchLanguage(to: language.code)
+                }
+                if language.code == currentLanguage {
+                    action.setValue(true, forKey: "checked")
+                }
+                alert.addAction(action)
+            }
+
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            present(alert, animated: true)
+        }
+    }
+}
+```
+
+---
+
+## Persisting Language Preference
+
+### Save on Language Change
+
+```swift
+UserDefaults.standard.set(languageCode, forKey: "current_language")
+```
+
+### Load on App Start
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_API_TOKEN",
+            baseURL: "https://api.stringboot.com",
+            autoSync: true,
+            analyticsHandler: yourAnalyticsHandler
+        )
+
+        // Load saved language or use device locale
+        let savedLanguage = UserDefaults.standard.string(forKey: "current_language")
+        let languageToUse = savedLanguage ?? StringProvider.shared.deviceLocale()
+
+        StringProvider.shared.setLocale(languageToUse)
+        StringbootLogger.i("Using language: \(languageToUse)")
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+---
+
+## Advanced Patterns
+
+### Language-Specific Formatting
+
+```swift
+func formatPrice(_ amount: Double, languageCode: String) -> String {
+    let locale: Locale
+    switch languageCode {
+    case "en": locale = Locale(identifier: "en_US")
+    case "es": locale = Locale(identifier: "es_ES")
+    case "fr": locale = Locale(identifier: "fr_FR")
+    case "de": locale = Locale(identifier: "de_DE")
+    default: locale = Locale(identifier: "en_US")
+    }
+
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .currency
+    formatter.locale = locale
+
+    return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
+}
+
+// Usage
+Task {
+    let template = await StringProvider.shared.get("product_price", lang: currentLanguage)
+    let formattedPrice = formatPrice(29.99, languageCode: currentLanguage)
+    priceLabel.text = String(format: template, formattedPrice)
+}
+```
+
+**Output:**
+- English (US): "Price: $29.99"
+- Spanish (ES): "Precio: 29,99 €"
+- French (FR): "Prix : 29,99 €"
+
+---
+
+### RTL Language Support
+
+```swift
+func setupRTLSupport(for languageCode: String) {
+    let isRTL = ["ar", "he", "fa", "ur"].contains(languageCode)
+
+    if isRTL {
+        UIView.appearance().semanticContentAttribute = .forceRightToLeft
+    } else {
+        UIView.appearance().semanticContentAttribute = .forceLeftToRight
+    }
+}
+
+// Call before setting up UI
+setupRTLSupport(for: currentLanguage)
+```
+
+For SwiftUI:
+```swift
+.environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
+```
+
+---
+
+### Pluralization Rules
+
+**Dashboard Strings:**
+```
+Key: items_count_one (for English)
+Value: "%d item"
+
+Key: items_count_other (for English)
+Value: "%d items"
+```
+
+**Code:**
+```swift
+func getItemsCountText(count: Int, language: String) async -> String {
+    let key = count == 1 ? "items_count_one" : "items_count_other"
+    let template = await StringProvider.shared.get(key, lang: language)
+    return String(format: template, count)
+}
+
+// Usage
+let text = await getItemsCountText(count: 5, language: currentLanguage)
+// English: "5 items"
+// Spanish: "5 artículos"
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always Persist Language Preference">
+    ```swift
+    // Save user's choice
+    UserDefaults.standard.set(newLanguage, forKey: "current_language")
+
+    // Load on app start
+    let savedLang = UserDefaults.standard.string(forKey: "current_language")
+    let language = savedLang ?? StringProvider.shared.deviceLocale()
+    StringProvider.shared.setLocale(language)
+    ```
+
+    Users expect their language choice to persist across app sessions.
+  </Accordion>
+
+  <Accordion title="Preload Before Switching">
+    **Recommended:**
+    ```swift
+    // Preload new language
+    await StringProvider.shared.preloadLanguage(lang: newLanguage, maxStrings: 500)
+
+    // Then notify UI to update
+    StringProvider.shared.setLocale(newLanguage)
+    ```
+
+    Preloading eliminates visual glitches during language switching.
+  </Accordion>
+
+  <Accordion title="Handle Missing Translations Gracefully">
+    ```swift
+    func getStringWithFallback(_ key: String, fallbackLang: String = "en") async -> String {
+        let value = await StringProvider.shared.get(key, lang: currentLanguage)
+
+        if value == key {
+            // Fallback to English
+            return await StringProvider.shared.get(key, lang: fallbackLang)
+        }
+
+        return value
+    }
+    ```
+
+    If a translation is missing, fall back to English (or another default language).
+  </Accordion>
+
+  <Accordion title="Sync After Language Switch">
+    ```swift
+    StringProvider.shared.setLocale(newLanguage)
+
+    Task {
+        await StringProvider.shared.refreshFromNetwork(lang: newLanguage)
+    }
+    ```
+
+    Ensures user gets the latest translations for the new language.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Common Use Cases
+
+### App-Wide Language Switcher
+
+```swift LanguageManager.swift
+import Foundation
+import StringbootSDK
+
+@MainActor
+class LanguageManager: ObservableObject {
+    @Published var currentLanguage: String
+
+    init() {
+        let saved = UserDefaults.standard.string(forKey: "current_language")
+        self.currentLanguage = saved ?? StringProvider.shared.deviceLocale()
+        StringProvider.shared.setLocale(currentLanguage)
+    }
+
+    func switchLanguage(to newLanguage: String) async {
+        StringProvider.shared.setLocale(newLanguage)
+        await StringProvider.shared.preloadLanguage(lang: newLanguage, maxStrings: 500)
+        await StringProvider.shared.refreshFromNetwork(lang: newLanguage)
+
+        currentLanguage = newLanguage
+        UserDefaults.standard.set(newLanguage, forKey: "current_language")
+    }
+
+    func getAvailableLanguages() async -> [ActiveLanguage] {
+        await StringProvider.shared.getAvailableLanguagesFromServer()
+    }
+}
+```
+
+### Settings Screen with Language Picker
+
+```swift SettingsView.swift
+import SwiftUI
+import StringbootSDK
+
+struct SettingsView: View {
+    @StateObject private var languageManager = LanguageManager()
+    @State private var showLanguagePicker = false
+
+    var body: some View {
+        List {
+            Section("Language") {
+                Button {
+                    showLanguagePicker = true
+                } label: {
+                    HStack {
+                        Text("Language")
+                        Spacer()
+                        Text(getLanguageName(languageManager.currentLanguage))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showLanguagePicker) {
+            LanguagePickerView(selectedLanguage: $languageManager.currentLanguage)
+        }
+    }
+
+    private func getLanguageName(_ code: String) -> String {
+        switch code {
+        case "en": return "English"
+        case "es": return "Español"
+        case "fr": return "Français"
+        case "de": return "Deutsch"
+        default: return code.uppercased()
+        }
+    }
+}
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Dynamic Strings" icon="font" href="/ios-sdk/dynamic-strings">
+    Learn about string retrieval and updates
+  </Card>
+  <Card title="A/B Testing" icon="flask" href="/ios-sdk/ab-testing">
+    Optimize messaging with experiments
+  </Card>
+  <Card title="Best Practices" icon="star" href="/ios-sdk/best-practices">
+    Production patterns and optimization
+  </Card>
+</CardGroup>
+
+---
+
+## API Reference
+
+### Language Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `deviceLocale()` | Get device's current language code | `String` |
+| `setLocale(_ lang)` | Set active language for string retrieval | `Void` |
+| `getAvailableLanguages()` | Get cached language codes | `[String]` |
+| `getAvailableLanguagesFromServer()` | Get languages from server | `async [ActiveLanguage]` |
+| `preloadLanguage(lang, maxStrings?)` | Preload language into cache | `async Void` |
+| `refreshFromNetwork(lang:)` | Sync language from server | `async Bool` |
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Language doesn't switch">
+    **Check:**
+    1. Did you call `setLocale(newLang)`?
+    2. Are SBText views updating automatically?
+    3. Did you refresh manual labels?
+
+    **Solution:**
+    ```swift
+    StringProvider.shared.setLocale(newLang)
+    await StringProvider.shared.preloadLanguage(lang: newLang)
+    // SBText updates automatically
+    // Manual labels need refresh
+    ```
+  </Accordion>
+
+  <Accordion title="UI shows keys briefly when switching">
+    **Cause:** Cache not preloaded before UI update.
+
+    **Solution:**
+    ```swift
+    // Preload BEFORE setting locale
+    await StringProvider.shared.preloadLanguage(lang: newLang, maxStrings: 500)
+    StringProvider.shared.setLocale(newLang)
+    ```
+  </Accordion>
+
+  <Accordion title="Translations not showing for a language">
+    **Check:**
+    1. Language added in Stringboot Dashboard?
+    2. Strings translated for that language?
+    3. Network sync successful?
+
+    **Debug:**
+    ```swift
+    let value = await StringProvider.shared.get("key", lang: "es")
+    if value == "key" {
+        print("Translation missing for key in es")
+    }
+    ```
+
+    **Sync manually:**
+    ```swift
+    await StringProvider.shared.refreshFromNetwork(lang: "es")
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Support
+
+<CardGroup cols={2}>
+  <Card title="Dashboard: Languages" icon="language" href="/dashboard-guides/languages">
+    How to add languages in the dashboard
+  </Card>
+  <Card title="Advanced Usage" icon="code" href="/ios-sdk/usage">
+    Advanced patterns and techniques
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/core-concepts">
+    Understanding caching and sync
+  </Card>
+</CardGroup>

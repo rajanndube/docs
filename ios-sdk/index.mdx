@@ -7,7 +7,21 @@ description: "Complete guide to integrating Stringboot in your iOS application"
 
 The Stringboot iOS SDK provides high-performance string localization for iOS and macOS applications with offline-first architecture, Core Data persistence, and reactive SwiftUI/UIKit integration.
 
-### Key Features
+### Three Core Features
+
+<CardGroup cols={3}>
+  <Card title="Dynamic Strings" icon="font">
+    Update app text instantly without releasing new versions
+  </Card>
+  <Card title="Multi-Language Support" icon="language">
+    Seamless translations and language switching for global users
+  </Card>
+  <Card title="A/B Testing" icon="flask">
+    Optimize messaging with built-in experiment tracking
+  </Card>
+</CardGroup>
+
+### Additional Features
 
 <CardGroup cols={2}>
   <Card title="Offline-First" icon="wifi-slash">
@@ -19,8 +33,8 @@ The Stringboot iOS SDK provides high-performance string localization for iOS and
   <Card title="Combine Publishers" icon="arrows-rotate">
     Reactive string updates for automatic UI refresh
   </Card>
-  <Card title="A/B Testing" icon="flask">
-    Built-in experiment tracking with analytics integration
+  <Card title="Analytics Integration" icon="chart-mixed">
+    Firebase, Mixpanel, Amplitude, and custom analytics
   </Card>
 </CardGroup>
 
@@ -313,19 +327,32 @@ struct ContentView: View {
 
 ## What's Next?
 
-<CardGroup cols={2}>
-  <Card title="Basic Usage" icon="code" href="/ios-sdk/usage">
-    Learn all the ways to use strings in your app
-  </Card>
+Explore the three core features of Stringboot:
 
+<CardGroup cols={3}>
+  <Card title="Dynamic Strings" icon="font" href="/ios-sdk/dynamic-strings">
+    Update app text without releases
+  </Card>
+  <Card title="Translations" icon="language" href="/ios-sdk/translations">
+    Multi-language support and switching
+  </Card>
   <Card title="A/B Testing" icon="flask" href="/ios-sdk/ab-testing">
-    Add experiment tracking and analytics integration
+    Optimize messaging with experiments
   </Card>
+</CardGroup>
 
+### Additional Resources
+
+<CardGroup cols={2}>
+  <Card title="Installation Guide" icon="download" href="/ios-sdk/installation">
+    Complete setup with analytics integration
+  </Card>
   <Card title="Best Practices" icon="star" href="/ios-sdk/best-practices">
-    Production-ready patterns and optimization tips
+    Production-ready patterns and optimization
   </Card>
-
+  <Card title="Advanced Usage" icon="code" href="/ios-sdk/usage">
+    Advanced patterns and techniques
+  </Card>
   <Card title="Core Concepts" icon="book" href="/core-concepts">
     Understand caching, sync, and offline behavior
   </Card>
@@ -335,7 +362,9 @@ struct ContentView: View {
 
 ## Quick Links
 
-- [Usage Guide](/ios-sdk/usage) - Detailed usage examples
+- [Installation Guide](/ios-sdk/installation) - Complete setup with analytics
+- [Dynamic Strings](/ios-sdk/dynamic-strings) - Update text without releases
+- [Translations](/ios-sdk/translations) - Multi-language support
 - [A/B Testing](/ios-sdk/ab-testing) - Experiment tracking setup
 - [Best Practices](/ios-sdk/best-practices) - Production patterns
 - [Troubleshooting](/advanced/troubleshooting) - Common issues and solutions

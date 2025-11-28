@@ -1,0 +1,783 @@
+---
+title: "Complete Installation & Setup"
+description: "Complete setup guide for iOS SDK including analytics and A/B testing configuration"
+---
+
+## Overview
+
+This guide covers complete installation of the Stringboot iOS SDK, including analytics integration for A/B testing. Follow all steps to unlock the full capabilities of dynamic strings, translations, and experiments.
+
+<Note>
+  **A/B Testing Setup is Included:** This guide includes analytics handler and device ID configuration required for experiments. These are core features, not optional add-ons.
+</Note>
+
+---
+
+## Step 1: Add Swift Package Dependency
+
+In Xcode, navigate to **File → Add Packages** and enter the repository URL:
+
+```
+https://github.com/Stringboot-SDK/stringboot-ios-sdk.git
+```
+
+Select: **Up to next major version** = `1.2.0`
+
+### Alternative: Package.swift
+
+Add to your `Package.swift`:
+
+```swift Package.swift
+dependencies: [
+    .package(
+        url: "https://github.com/Stringboot-SDK/stringboot-ios-sdk.git",
+        from: "1.2.0"
+    )
+]
+
+targets: [
+    .target(
+        name: "YourApp",
+        dependencies: ["StringbootSDK"]
+    )
+]
+```
+
+---
+
+## Step 2: Import SDK
+
+In files where you use Stringboot:
+
+```swift
+import StringbootSDK
+```
+
+---
+
+## Step 3: Analytics Handler (Required for A/B Testing)
+
+### Why Analytics Integration is Required
+
+The analytics handler enables:
+- **Experiment tracking**: Know which users see which variants
+- **Results analysis**: Measure impact of string changes
+- **Data-driven decisions**: Use analytics platforms for statistical analysis
+
+<Tabs>
+  <Tab title="Firebase Analytics">
+    ### Add Firebase Package
+
+    In Xcode: **File → Add Packages** → Add Firebase:
+
+    ```
+    https://github.com/firebase/firebase-ios-sdk.git
+    ```
+
+    Select: **FirebaseAnalytics** product
+
+    ### Implement Analytics Handler
+
+    ```swift App.swift
+    import SwiftUI
+    import StringbootSDK
+    import FirebaseCore
+    import FirebaseAnalytics
+
+    // Define analytics handler
+    class FirebaseAnalyticsHandler: StringbootAnalyticsHandler {
+        func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+            for (key, assignment) in experiments {
+                // Set user property in Firebase
+                Analytics.setUserProperty(
+                    assignment.variantName,
+                    forName: "stringboot_exp_\(key)"
+                )
+
+                print("📊 Experiment: \(key) → \(assignment.variantName)")
+            }
+        }
+    }
+
+    @main
+    struct MyApp: App {
+
+        init() {
+            // Initialize Firebase
+            FirebaseApp.configure()
+
+            // Configure logging
+            StringbootLogger.isLoggingEnabled = true
+            StringbootLogger.logLevel = .debug
+
+            // Initialize Stringboot with analytics
+            StringProvider.shared.initialize(
+                cacheSize: 1000,
+                apiToken: "YOUR_API_TOKEN",
+                baseURL: "https://api.stringboot.com",
+                autoSync: true,
+                analyticsHandler: FirebaseAnalyticsHandler()
+            )
+
+            // Set language
+            let currentLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
+                ?? StringProvider.shared.deviceLocale()
+            StringProvider.shared.setLocale(currentLang)
+        }
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+            }
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Mixpanel">
+    ### Add Mixpanel Package
+
+    In Xcode: **File → Add Packages** → Add Mixpanel:
+
+    ```
+    https://github.com/mixpanel/mixpanel-swift.git
+    ```
+
+    ### Implement Analytics Handler
+
+    ```swift App.swift
+    import SwiftUI
+    import StringbootSDK
+    import Mixpanel
+
+    // Define analytics handler
+    class MixpanelAnalyticsHandler: StringbootAnalyticsHandler {
+        func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+            for (key, assignment) in experiments {
+                // Set people property
+                Mixpanel.mainInstance().people.set(
+                    property: "stringboot_exp_\(key)",
+                    to: assignment.variantName
+                )
+
+                print("📊 Experiment: \(key) → \(assignment.variantName)")
+            }
+        }
+    }
+
+    @main
+    struct MyApp: App {
+
+        init() {
+            // Initialize Mixpanel
+            Mixpanel.initialize(token: "YOUR_MIXPANEL_TOKEN", trackAutomaticEvents: true)
+
+            // Configure Stringboot logging
+            StringbootLogger.isLoggingEnabled = true
+            StringbootLogger.logLevel = .debug
+
+            // Initialize Stringboot with analytics
+            StringProvider.shared.initialize(
+                cacheSize: 1000,
+                apiToken: "YOUR_API_TOKEN",
+                baseURL: "https://api.stringboot.com",
+                autoSync: true,
+                analyticsHandler: MixpanelAnalyticsHandler()
+            )
+
+            // Set language
+            let currentLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
+                ?? StringProvider.shared.deviceLocale()
+            StringProvider.shared.setLocale(currentLang)
+        }
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+            }
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Amplitude">
+    ### Add Amplitude Package
+
+    In Xcode: **File → Add Packages** → Add Amplitude:
+
+    ```
+    https://github.com/amplitude/Amplitude-Swift.git
+    ```
+
+    ### Implement Analytics Handler
+
+    ```swift App.swift
+    import SwiftUI
+    import StringbootSDK
+    import AmplitudeSwift
+
+    // Define analytics handler
+    class AmplitudeAnalyticsHandler: StringbootAnalyticsHandler {
+        let amplitude: Amplitude
+
+        init(amplitude: Amplitude) {
+            self.amplitude = amplitude
+        }
+
+        func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+            for (key, assignment) in experiments {
+                // Set user property
+                amplitude.setUserProperties(userProperties: [
+                    "stringboot_exp_\(key)": assignment.variantName
+                ])
+
+                print("📊 Experiment: \(key) → \(assignment.variantName)")
+            }
+        }
+    }
+
+    @main
+    struct MyApp: App {
+
+        let amplitude = Amplitude(configuration: Configuration(
+            apiKey: "YOUR_AMPLITUDE_API_KEY"
+        ))
+
+        init() {
+            // Configure Stringboot logging
+            StringbootLogger.isLoggingEnabled = true
+            StringbootLogger.logLevel = .debug
+
+            // Initialize Stringboot with analytics
+            StringProvider.shared.initialize(
+                cacheSize: 1000,
+                apiToken: "YOUR_API_TOKEN",
+                baseURL: "https://api.stringboot.com",
+                autoSync: true,
+                analyticsHandler: AmplitudeAnalyticsHandler(amplitude: amplitude)
+            )
+
+            // Set language
+            let currentLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
+                ?? StringProvider.shared.deviceLocale()
+            StringProvider.shared.setLocale(currentLang)
+        }
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+            }
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Custom Analytics">
+    ### Implement Custom Handler
+
+    Integrate with any analytics platform by implementing the `StringbootAnalyticsHandler` protocol:
+
+    ```swift App.swift
+    import SwiftUI
+    import StringbootSDK
+
+    // Define custom analytics handler
+    class CustomAnalyticsHandler: StringbootAnalyticsHandler {
+        func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+            for (key, assignment) in experiments {
+                // Send to your analytics platform
+                YourAnalytics.setUserProperty(
+                    "stringboot_exp_\(key)",
+                    value: assignment.variantName
+                )
+
+                // Or send as event
+                YourAnalytics.track("experiment_assigned", properties: [
+                    "experiment_key": key,
+                    "variant": assignment.variantName,
+                    "experiment_id": assignment.experimentId
+                ])
+
+                print("📊 Experiment: \(key) → \(assignment.variantName)")
+            }
+        }
+    }
+
+    @main
+    struct MyApp: App {
+
+        init() {
+            // Configure Stringboot logging
+            StringbootLogger.isLoggingEnabled = true
+            StringbootLogger.logLevel = .debug
+
+            // Initialize Stringboot with custom analytics
+            StringProvider.shared.initialize(
+                cacheSize: 1000,
+                apiToken: "YOUR_API_TOKEN",
+                baseURL: "https://api.stringboot.com",
+                autoSync: true,
+                analyticsHandler: CustomAnalyticsHandler()
+            )
+
+            // Set language
+            let currentLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
+                ?? StringProvider.shared.deviceLocale()
+            StringProvider.shared.setLocale(currentLang)
+        }
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+            }
+        }
+    }
+    ```
+
+    **Key Points:**
+    - Use **user properties** (not events) for best analysis
+    - Property name format: `stringboot_exp_{experiment_key}`
+    - Value is the variant name: `control`, `variant-a`, etc.
+  </Tab>
+</Tabs>
+
+---
+
+## Step 4: Device ID Configuration (Required for A/B Testing)
+
+### Why Device ID is Required
+
+- **Consistent assignments**: Same device always gets same variant
+- **Cross-session persistence**: Experiments persist across app restarts
+- **Accurate results**: Users don't switch between variants randomly
+
+<Tabs>
+  <Tab title="Auto-Generated (Default)">
+    ### SDK-Generated UUID (Recommended)
+
+    By default, the SDK generates a persistent UUID per app installation:
+
+    ```swift App.swift
+    @main
+    struct MyApp: App {
+
+        init() {
+            // SDK automatically generates and persists a UUID
+            StringProvider.shared.initialize(
+                cacheSize: 1000,
+                apiToken: "YOUR_API_TOKEN",
+                baseURL: "https://api.stringboot.com",
+                autoSync: true,
+                analyticsHandler: YourAnalyticsHandler()
+                // providedDeviceId not specified - SDK generates UUID
+            )
+        }
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+            }
+        }
+    }
+    ```
+
+    **Characteristics:**
+    - Persists across app launches
+    - Unique per app installation
+    - Automatically managed by SDK
+    - **Use this unless you have a specific reason to use custom ID**
+  </Tab>
+
+  <Tab title="Firebase Installation ID">
+    ### Use Firebase Installation ID
+
+    For consistency with Firebase Analytics and other Firebase services:
+
+    Add Firebase Installations to your packages, then:
+
+    ```swift App.swift
+    import SwiftUI
+    import StringbootSDK
+    import FirebaseCore
+    import FirebaseInstallations
+
+    @main
+    struct MyApp: App {
+
+        init() {
+            // Initialize Firebase
+            FirebaseApp.configure()
+
+            // Get Firebase Installation ID
+            Task {
+                let deviceId = await getFirebaseInstallationId()
+
+                // Initialize with Firebase Installation ID
+                StringProvider.shared.initialize(
+                    cacheSize: 1000,
+                    apiToken: "YOUR_API_TOKEN",
+                    baseURL: "https://api.stringboot.com",
+                    autoSync: true,
+                    providedDeviceId: deviceId,
+                    analyticsHandler: YourAnalyticsHandler()
+                )
+            }
+        }
+
+        private func getFirebaseInstallationId() async -> String? {
+            do {
+                return try await Installations.installations().installationID()
+            } catch {
+                print("Failed to get Firebase Installation ID: \(error)")
+                return nil // SDK will generate UUID as fallback
+            }
+        }
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+            }
+        }
+    }
+    ```
+
+    **When to use:**
+    - Already using Firebase in your app
+    - Want same device ID across multiple SDKs
+    - Need to correlate Stringboot experiments with Firebase data
+  </Tab>
+
+  <Tab title="Custom Device ID">
+    ### Provide Your Own Device ID
+
+    Use your app's existing device identifier:
+
+    ```swift App.swift
+    @main
+    struct MyApp: App {
+
+        init() {
+            let customDeviceId = getYourAppDeviceId()
+
+            StringProvider.shared.initialize(
+                cacheSize: 1000,
+                apiToken: "YOUR_API_TOKEN",
+                baseURL: "https://api.stringboot.com",
+                autoSync: true,
+                providedDeviceId: customDeviceId,
+                analyticsHandler: YourAnalyticsHandler()
+            )
+        }
+
+        private func getYourAppDeviceId() -> String? {
+            // Option 1: Your app's existing user/device ID
+            return UserDefaults.standard.string(forKey: "app_device_id")
+
+            // Option 2: Generated UUID stored in UserDefaults
+            // if let existing = UserDefaults.standard.string(forKey: "app_device_id") {
+            //     return existing
+            // } else {
+            //     let newId = UUID().uuidString
+            //     UserDefaults.standard.set(newId, forKey: "app_device_id")
+            //     return newId
+            // }
+
+            // Option 3: Return nil to let SDK generate UUID
+            // return nil
+        }
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+            }
+        }
+    }
+    ```
+
+    **Requirements for custom device ID:**
+    - Must be persistent across app launches
+    - Must be unique per installation
+    - Must not change during experiments
+    - Should be available before SDK initialization
+
+    **❌ Don't use:**
+    - Session IDs (change each launch)
+    - Temporary identifiers
+    - User IDs that change on logout
+  </Tab>
+</Tabs>
+
+---
+
+## Step 5: Configure Logger (Optional)
+
+Control SDK logging for debugging:
+
+```swift App.swift
+@main
+struct MyApp: App {
+
+    init() {
+        // Enable detailed logging for development
+        StringbootLogger.isLoggingEnabled = true
+        StringbootLogger.logLevel = .debug  // Options: .debug, .info, .warning, .error
+
+        // Initialize SDK...
+    }
+}
+```
+
+**For production builds:**
+
+```swift
+// Disable logging
+StringbootLogger.isLoggingEnabled = false
+```
+
+---
+
+## Complete Setup Example
+
+Here's a complete SwiftUI app with all components:
+
+```swift App.swift
+import SwiftUI
+import StringbootSDK
+import FirebaseCore
+import FirebaseAnalytics
+import FirebaseInstallations
+
+// Analytics handler for experiments
+class FirebaseAnalyticsHandler: StringbootAnalyticsHandler {
+    func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+        for (key, assignment) in experiments {
+            Analytics.setUserProperty(
+                assignment.variantName,
+                forName: "stringboot_exp_\(key)"
+            )
+            print("📊 Experiment: \(key) → \(assignment.variantName)")
+        }
+    }
+}
+
+@main
+struct MyApp: App {
+
+    init() {
+        // Initialize Firebase
+        FirebaseApp.configure()
+
+        // Configure Stringboot logging (disable in production)
+        StringbootLogger.isLoggingEnabled = true
+        StringbootLogger.logLevel = .debug
+
+        // Get device ID asynchronously
+        Task {
+            let deviceId = await getFirebaseInstallationId()
+
+            // Initialize Stringboot with all features
+            StringProvider.shared.initialize(
+                cacheSize: 1000,
+                apiToken: "YOUR_API_TOKEN",
+                baseURL: "https://api.stringboot.com",
+                autoSync: true,
+                providedDeviceId: deviceId,
+                analyticsHandler: FirebaseAnalyticsHandler()
+            )
+
+            print("✅ Stringboot initialized")
+
+            // Set saved language or use device locale
+            let currentLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
+                ?? StringProvider.shared.deviceLocale()
+            StringProvider.shared.setLocale(currentLang)
+
+            print("🌍 Language set to: \(currentLang)")
+        }
+    }
+
+    private func getFirebaseInstallationId() async -> String? {
+        do {
+            return try await Installations.installations().installationID()
+        } catch {
+            print("⚠️ Failed to get Firebase Installation ID: \(error)")
+            return nil // SDK will generate UUID
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+---
+
+## Step 6: Verify Setup
+
+### Test SDK Initialization
+
+1. **Run your app** with debug logging enabled
+2. **Check Console** for Stringboot initialization messages:
+
+```
+✅ Stringboot initialized
+🌍 Language set to: en
+```
+
+### Test String Retrieval
+
+Add a test in your ContentView:
+
+```swift ContentView.swift
+struct ContentView: View {
+    @State private var testString = ""
+
+    var body: some View {
+        Text(testString)
+            .task {
+                testString = await StringProvider.shared.get("welcome_message", lang: "en")
+                print("String value: \(testString)")
+                // Should NOT see "??welcome_message??" (means string loaded)
+            }
+    }
+}
+```
+
+### Test Experiment Assignment
+
+If you have experiments running:
+
+```swift
+// Check device ID
+if let deviceId = StringProvider.shared.getDeviceId() {
+    print("Device ID: \(deviceId)")
+}
+
+// Look for experiment logs
+// 📊 Experiment: cta-test → variant-a
+```
+
+### Verify Analytics Integration
+
+1. Check your analytics platform (Firebase/Mixpanel/Amplitude)
+2. Look for user properties like `stringboot_exp_cta_test`
+3. Value should be variant name: `control`, `variant-a`, etc.
+
+---
+
+## Common Setup Issues
+
+<AccordionGroup>
+  <Accordion title="Build fails with package dependency error">
+    **Cause:** Package dependency conflict or incorrect version
+
+    **Solution:**
+    1. File → Packages → Reset Package Caches
+    2. Clean build folder (Cmd+Shift+K)
+    3. Rebuild project
+    4. Verify version is `1.2.0` or higher
+  </Accordion>
+
+  <Accordion title="Analytics handler not called">
+    **Possible causes:**
+    1. No experiments running in dashboard
+    2. Analytics handler not passed to `initialize()`
+    3. Device not assigned to any experiments
+
+    **Solutions:**
+    - Create test experiment in dashboard
+    - Verify `analyticsHandler` parameter is set
+    - Check device ID is being sent with requests
+  </Accordion>
+
+  <Accordion title="Strings show '??key??' pattern">
+    **Causes:**
+    1. API token invalid
+    2. No network connectivity
+    3. Strings not created in dashboard
+    4. SDK not initialized yet
+
+    **Solutions:**
+    - Verify API token in dashboard
+    - Check network permissions
+    - Ensure strings exist for your app
+    - Wait for SDK `isReady` before fetching
+  </Accordion>
+
+  <Accordion title="Device ID changes on each launch">
+    **Cause:** Using non-persistent ID or regenerating UUID
+
+    **Solution:**
+    - Use default SDK-generated UUID (it persists automatically)
+    - If using custom ID, store it in UserDefaults
+    - Don't generate new UUID on each launch
+  </Accordion>
+
+  <Accordion title="'StringbootSDK' module not found">
+    **Cause:** Package not properly linked
+
+    **Solution:**
+    1. File → Packages → Resolve Package Versions
+    2. Check target has StringbootSDK in Frameworks
+    3. Clean and rebuild
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Platform Requirements
+
+| Requirement       | Version |
+| ----------------- | ------- |
+| **Minimum iOS**   | 14.0+   |
+| **Minimum macOS** | 11.0+   |
+| **Swift**         | 5.9+    |
+| **Xcode**         | 15.0+   |
+| **SDK Version**   | 1.2.0   |
+
+---
+
+## Next Steps
+
+Now that setup is complete, learn how to use the three core features:
+
+<CardGroup cols={3}>
+  <Card title="Dynamic Strings" icon="text" href="/ios-sdk/dynamic-strings">
+    Update app copy without releases
+  </Card>
+
+  <Card title="Translations" icon="language" href="/ios-sdk/translations">
+    Multi-language support and switching
+  </Card>
+
+  <Card title="A/B Testing" icon="flask" href="/ios-sdk/ab-testing">
+    Run experiments to optimize messaging
+  </Card>
+</CardGroup>
+
+### Additional Resources
+
+<CardGroup cols={2}>
+  <Card title="Best Practices" icon="star" href="/ios-sdk/best-practices">
+    Production-ready patterns
+  </Card>
+
+  <Card title="Advanced Usage" icon="code" href="/ios-sdk/advanced-usage">
+    Advanced patterns and optimization
+  </Card>
+
+  <Card title="Core Concepts" icon="book" href="/core-concepts">
+    Architecture and offline behavior
+  </Card>
+
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>
+
+---
+
+**Questions?** Contact [developer@stringboot.com](mailto:developer@stringboot.com)

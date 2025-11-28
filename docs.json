@@ -28,6 +28,10 @@
             "group": "Web SDK",
             "pages": [
               "web-sdk/index",
+              "web-sdk/installation",
+              "web-sdk/dynamic-strings",
+              "web-sdk/translations",
+              "web-sdk/ab-testing",
               "web-sdk/react-hooks",
               "web-sdk/nextjs",
               "web-sdk/usage",
@@ -38,6 +42,10 @@
             "group": "Android SDK",
             "pages": [
               "android-sdk/index",
+              "android-sdk/installation",
+              "android-sdk/dynamic-strings",
+              "android-sdk/translations",
+              "android-sdk/ab-testing",
               "android-sdk/usage",
               "android-sdk/best-practices"
             ]
@@ -46,6 +54,10 @@
             "group": "iOS SDK",
             "pages": [
               "ios-sdk/index",
+              "ios-sdk/installation",
+              "ios-sdk/dynamic-strings",
+              "ios-sdk/translations",
+              "ios-sdk/ab-testing",
               "ios-sdk/usage",
               "ios-sdk/best-practices"
             ]
@@ -66,6 +78,7 @@
               "dashboard-guides/applications",
               "dashboard-guides/strings",
               "dashboard-guides/languages",
+              "dashboard-guides/experiments",
               "dashboard-guides/faqs",
               "dashboard-guides/api-tokens",
               "dashboard-guides/settings"

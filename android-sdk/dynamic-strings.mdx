@@ -1,0 +1,862 @@
+---
+title: "Dynamic Strings"
+description: "Update app text instantly without releasing new versions using Stringboot"
+---
+
+## Overview
+
+Dynamic strings allow you to update your app's text content instantly without releasing a new version to the Play Store. Change marketing copy, fix typos, run time-sensitive campaigns, or adjust messaging—all from the Stringboot Dashboard.
+
+### Key Benefits
+
+<CardGroup cols={2}>
+  <Card title="Instant Updates" icon="bolt">
+    Change text content without app releases or user updates
+  </Card>
+  <Card title="Offline-First" icon="wifi-slash">
+    Strings cached locally—works without internet connection
+  </Card>
+  <Card title="Zero-Code Updates" icon="tag">
+    Use XML tags for automatic string injection
+  </Card>
+  <Card title="Reactive UI" icon="arrows-rotate">
+    Automatic UI updates when strings change
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Start
+
+### 1. Add String to Dashboard
+
+Go to [Stringboot Dashboard](https://dashboard.stringboot.com) → **Strings** → **Add New String**:
+
+- **Key**: `welcome_message`
+- **Value**: `"Welcome to our app!"`
+- **Language**: `en`
+
+### 2. Use in Your App
+
+<Tabs>
+  <Tab title="XML Tag Method (Recommended)">
+    **Step 1:** Add `android:tag` to your TextView:
+
+    ```xml activity_main.xml
+    <TextView
+        android:id="@+id/welcome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:tag="welcome_message"
+        android:text="@string/loading"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+    ```
+
+    **Step 2:** Apply Stringboot tags in your Activity:
+
+    ```kotlin MainActivity.kt
+    class MainActivity : AppCompatActivity() {
+        private lateinit var binding: ActivityMainBinding
+
+        override fun onCreate(savedInstanceState: Bundle?) {
+            super.onCreate(savedInstanceState)
+            binding = ActivityMainBinding.inflate(layoutInflater)
+            setContentView(binding.root)
+
+            // Auto-apply all Stringboot tags
+            binding.root.applyStringbootTags()
+        }
+    }
+    ```
+
+    **That's it!** The TextView automatically shows "Welcome to our app!" and updates whenever you change it in the dashboard.
+  </Tab>
+
+  <Tab title="Programmatic Method">
+    ```kotlin MainActivity.kt
+    class MainActivity : AppCompatActivity() {
+        private lateinit var binding: ActivityMainBinding
+
+        override fun onCreate(savedInstanceState: Bundle?) {
+            super.onCreate(savedInstanceState)
+            binding = ActivityMainBinding.inflate(layoutInflater)
+            setContentView(binding.root)
+
+            // Get string directly
+            val welcomeText = StringProvider.get("welcome_message")
+            binding.welcome.text = welcomeText
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Reactive Flow Method">
+    ```kotlin MainActivity.kt
+    class MainActivity : AppCompatActivity() {
+        private lateinit var binding: ActivityMainBinding
+
+        override fun onCreate(savedInstanceState: Bundle?) {
+            super.onCreate(savedInstanceState)
+            binding = ActivityMainBinding.inflate(layoutInflater)
+            setContentView(binding.root)
+
+            // Use Flow for reactive updates
+            lifecycleScope.launch {
+                StringProvider.getFlow("welcome_message")
+                    .collect { text ->
+                        binding.welcome.text = text
+                    }
+            }
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### 3. Update from Dashboard
+
+Go to **Strings** → Edit `welcome_message` → Change to `"Welcome back!"` → **Save**
+
+Your app automatically shows the new text next time it syncs (happens automatically on app launch).
+
+---
+
+## String Retrieval Methods
+
+### 1. XML Tag-Based (Recommended)
+
+The simplest method: set `android:tag` and call `applyStringbootTags()`.
+
+```xml res/layout/activity_product.xml
+<TextView
+    android:id="@+id/product_title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:tag="product_title"
+    android:text="@string/loading"
+    android:textSize="20sp" />
+
+<TextView
+    android:id="@+id/product_description"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:tag="product_description"
+    android:text="@string/loading"
+    android:textSize="14sp" />
+
+<Button
+    android:id="@+id/buy_button"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:tag="button_buy_now"
+    android:text="@string/buy" />
+```
+
+```kotlin ProductActivity.kt
+class ProductActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityProductBinding
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityProductBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Apply all tags at once
+        binding.root.applyStringbootTags()
+    }
+}
+```
+
+**Benefits:**
+- Zero boilerplate code
+- Updates all tagged views at once
+- Perfect for static layouts
+- Automatically handles missing strings
+
+**When to use:**
+- Most TextView, Button, and static UI elements
+- Marketing pages and static content
+- Forms with static labels
+
+---
+
+### 2. Synchronous Get
+
+Get strings immediately from cache without suspending.
+
+```kotlin
+val text = StringProvider.get("welcome_message")
+```
+
+**Full Signature:**
+
+```kotlin
+val text = StringProvider.get(
+    key = "welcome_message",
+    lang = "en",  // Optional: defaults to current locale
+    allowNetworkFetch = false  // Optional: fetch from network if not cached
+)
+```
+
+**Example: Dialog Content**
+
+```kotlin
+private fun showWelcomeDialog() {
+    val dialogBinding = DialogWelcomeBinding.inflate(layoutInflater)
+
+    // Get strings synchronously
+    dialogBinding.dialogTitle.text = StringProvider.get("dialog_welcome_title")
+    dialogBinding.dialogMessage.text = StringProvider.get("dialog_welcome_message")
+    dialogBinding.buttonOk.text = StringProvider.get("button_ok")
+
+    AlertDialog.Builder(this)
+        .setView(dialogBinding.root)
+        .show()
+}
+```
+
+**When to use:**
+- Dialogs and quick UI updates
+- Non-critical string retrieval
+- When you don't need reactivity
+
+**Behavior:**
+- Returns immediately from memory cache
+- Falls back to database if not in memory
+- Returns `"??key??"` if string not found
+- Never blocks the main thread
+
+---
+
+### 3. Reactive Flow
+
+Use Kotlin Flow for auto-updating UI when strings change.
+
+```kotlin
+private var flowJob: Job? = null
+
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    binding = ActivityMainBinding.inflate(layoutInflater)
+    setContentView(binding.root)
+
+    // Start observing string changes
+    flowJob = lifecycleScope.launch {
+        StringProvider.getFlow("status_message")
+            .collect { text ->
+                binding.statusText.text = text
+            }
+    }
+}
+
+override fun onDestroy() {
+    super.onDestroy()
+    flowJob?.cancel()
+}
+```
+
+**Benefits:**
+- Automatically updates when string changes
+- Updates when network sync completes
+- Lifecycle-aware when used with `lifecycleScope`
+- Perfect for dynamic content
+
+**Example: Dynamic Status Messages**
+
+```kotlin
+private fun setupStatusMessage() {
+    lifecycleScope.launch {
+        StringProvider.getFlow("status_current_session", currentLanguage)
+            .collect { template ->
+                // Format template string with dynamic data
+                val displayText = template.format(sessionCount)
+                binding.sessionStatus.text = displayText
+            }
+    }
+}
+```
+
+**When to use:**
+- Content that changes based on user actions
+- Status messages and live updates
+- Templates with dynamic formatting
+- When you want reactive UI updates
+
+---
+
+## Advanced Patterns
+
+### Get Multiple Strings at Once
+
+Fetch multiple strings efficiently in a single database query.
+
+```kotlin
+lifecycleScope.launch {
+    val keys = listOf("title", "subtitle", "description", "call_to_action")
+    val strings = StringProvider.getMultiple(keys, lang = "en")
+
+    binding.title.text = strings["title"] ?: "Default Title"
+    binding.subtitle.text = strings["subtitle"] ?: "Default Subtitle"
+    binding.description.text = strings["description"] ?: "Default Description"
+    binding.ctaButton.text = strings["call_to_action"] ?: "Get Started"
+}
+```
+
+**Benefits:**
+- Single database query instead of multiple
+- More efficient for bulk retrieval
+- Returns a `Map<String, String>`
+
+---
+
+### String Templates with Formatting
+
+Use string templates with dynamic values.
+
+**Dashboard String:**
+```
+Key: welcome_user
+Value: "Welcome back, %s! You have %d new messages."
+```
+
+**Code:**
+```kotlin
+val template = StringProvider.get("welcome_user")
+val formattedText = template.format(userName, messageCount)
+binding.greeting.text = formattedText
+// Output: "Welcome back, John! You have 5 new messages."
+```
+
+**Example: Dynamic Countdown**
+
+**Dashboard:**
+```
+Key: offer_expires
+Value: "Offer expires in %d days!"
+```
+
+**Code:**
+```kotlin
+private fun setupCountdown() {
+    lifecycleScope.launch {
+        StringProvider.getFlow("offer_expires")
+            .collect { template ->
+                val daysRemaining = calculateDaysRemaining()
+                binding.countdownText.text = template.format(daysRemaining)
+            }
+    }
+}
+```
+
+---
+
+### Preloading Strings for Performance
+
+Preload frequently used strings into memory cache for instant access.
+
+```kotlin
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+
+    // Preload strings for current language
+    lifecycleScope.launch {
+        StringProvider.preloadLanguage(
+            lang = "en",
+            maxStrings = 500  // Load first 500 strings into cache
+        )
+    }
+}
+```
+
+**When to use:**
+- App startup
+- Before showing a complex screen with many strings
+- After language switching
+
+**Benefits:**
+- Instant string retrieval
+- Eliminates database queries
+- Reduces perceived lag
+
+---
+
+### Refresh Strings from Network
+
+Manually trigger a network sync to get latest strings.
+
+```kotlin
+private fun refreshContent() {
+    lifecycleScope.launch {
+        binding.refreshButton.isEnabled = false
+        binding.progressBar.visibility = View.VISIBLE
+
+        try {
+            val success = StringProvider.refreshFromNetwork("en")
+
+            if (success) {
+                Toast.makeText(this@MainActivity, "Content updated!", Toast.LENGTH_SHORT).show()
+                // Re-apply tags to show new strings
+                binding.root.applyStringbootTags()
+            } else {
+                Toast.makeText(this@MainActivity, "Using cached content", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            StringbootLogger.e("Refresh failed", e)
+            Toast.makeText(this@MainActivity, "Refresh failed", Toast.LENGTH_SHORT).show()
+        } finally {
+            binding.refreshButton.isEnabled = true
+            binding.progressBar.visibility = View.GONE
+        }
+    }
+}
+```
+
+**Behavior:**
+- Fetches latest strings from server
+- Updates local database
+- Clears memory cache
+- Does NOT automatically update UI (call `applyStringbootTags()` or refresh your views)
+
+---
+
+## RecyclerView Integration
+
+### Using XML Tags in ViewHolder
+
+```xml item_product.xml
+<androidx.cardview.widget.CardView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/product_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:tag="product_item_title"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/product_price"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:tag="product_item_price_label"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+```
+
+```kotlin ProductAdapter.kt
+class ProductViewHolder(private val binding: ItemProductBinding) : RecyclerView.ViewHolder(binding.root) {
+
+    fun bind(product: Product) {
+        // Apply Stringboot tags to this item
+        binding.root.applyStringbootTags()
+
+        // Set dynamic product data
+        binding.productName.append(" - ${product.name}")
+        binding.productPrice.append(" $${product.price}")
+    }
+}
+```
+
+### Using Programmatic Strings in Adapter
+
+```kotlin
+class ProductAdapter(private val products: List<Product>) : RecyclerView.Adapter<ProductViewHolder>() {
+
+    override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
+        val product = products[position]
+
+        // Get strings programmatically
+        val addToCartText = StringProvider.get("button_add_to_cart")
+        val outOfStockText = StringProvider.get("label_out_of_stock")
+
+        holder.binding.apply {
+            productTitle.text = product.name
+            productPrice.text = "$${product.price}"
+
+            if (product.inStock) {
+                addButton.text = addToCartText
+                addButton.isEnabled = true
+            } else {
+                addButton.text = outOfStockText
+                addButton.isEnabled = false
+            }
+        }
+    }
+}
+```
+
+---
+
+## Handling Missing Strings
+
+### Fallback Behavior
+
+When a string key doesn't exist, Stringboot returns `"??key??"`:
+
+```kotlin
+val text = StringProvider.get("non_existent_key")
+// Returns: "??non_existent_key??"
+```
+
+### Provide Default Values
+
+```kotlin
+fun getStringWithFallback(key: String, fallback: String): String {
+    val text = StringProvider.get(key)
+    return if (text.startsWith("??") && text.endsWith("??")) {
+        fallback
+    } else {
+        text
+    }
+}
+
+// Usage
+val title = getStringWithFallback("product_title", "Product")
+```
+
+### Check if String Exists
+
+```kotlin
+fun stringExists(key: String): Boolean {
+    val text = StringProvider.get(key)
+    return !text.startsWith("??") || !text.endsWith("??")
+}
+
+if (stringExists("special_offer_title")) {
+    binding.specialOffer.visibility = View.VISIBLE
+    binding.specialOfferTitle.text = StringProvider.get("special_offer_title")
+}
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use XML Tags for Static Content">
+    **Recommended:**
+    ```xml
+    <TextView
+        android:tag="welcome_message"
+        android:text="@string/loading" />
+    ```
+    ```kotlin
+    binding.root.applyStringbootTags()
+    ```
+
+    **Avoid:**
+    ```kotlin
+    binding.welcomeText.text = StringProvider.get("welcome_message")
+    binding.titleText.text = StringProvider.get("title")
+    // ... repeating for every view
+    ```
+
+    XML tags eliminate boilerplate and ensure consistency.
+  </Accordion>
+
+  <Accordion title="Use Flows for Dynamic Content">
+    **Recommended:**
+    ```kotlin
+    lifecycleScope.launch {
+        StringProvider.getFlow("status_message")
+            .collect { text -> binding.status.text = text }
+    }
+    ```
+
+    **Avoid:**
+    ```kotlin
+    // Manually polling for updates
+    handler.postDelayed({
+        binding.status.text = StringProvider.get("status_message")
+    }, 1000)
+    ```
+
+    Flows automatically update when content changes.
+  </Accordion>
+
+  <Accordion title="Preload Before Heavy Screens">
+    ```kotlin
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            // Preload before showing content
+            StringProvider.preloadLanguage("en", maxStrings = 500)
+
+            // Now show UI
+            withContext(Dispatchers.Main) {
+                binding.root.applyStringbootTags()
+                binding.loadingView.visibility = View.GONE
+                binding.contentView.visibility = View.VISIBLE
+            }
+        }
+    }
+    ```
+
+    Eliminates database queries during UI rendering.
+  </Accordion>
+
+  <Accordion title="Handle Lifecycle Correctly">
+    ```kotlin
+    private var flowJob: Job? = null
+
+    override fun onStart() {
+        super.onStart()
+        flowJob = lifecycleScope.launch {
+            StringProvider.getFlow("message").collect { text ->
+                binding.message.text = text
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        flowJob?.cancel()
+    }
+    ```
+
+    Or use `lifecycleScope` which auto-cancels:
+    ```kotlin
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Automatically cancelled when lifecycle destroyed
+        lifecycleScope.launch {
+            StringProvider.getFlow("message").collect { text ->
+                binding.message.text = text
+            }
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Use String Templates for Dynamic Data">
+    **Dashboard:**
+    ```
+    Key: cart_items_count
+    Value: "You have %d items in your cart"
+    ```
+
+    **Code:**
+    ```kotlin
+    val template = StringProvider.get("cart_items_count")
+    binding.cartSummary.text = template.format(cartItemCount)
+    ```
+
+    **Avoid:**
+    ```kotlin
+    // Hardcoding format in code
+    binding.cartSummary.text = "You have $cartItemCount items in your cart"
+    ```
+
+    Templates allow you to change format from dashboard.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Common Use Cases
+
+### Marketing Campaigns
+
+Update promotional messages instantly without app updates.
+
+**Dashboard Strings:**
+- `campaign_banner_title`: "50% Off All Items!"
+- `campaign_banner_subtitle`: "Limited time offer - ends Friday"
+- `campaign_cta_button`: "Shop Now"
+
+**Code:**
+```xml
+<TextView
+    android:tag="campaign_banner_title"
+    android:textSize="24sp" />
+
+<TextView
+    android:tag="campaign_banner_subtitle"
+    android:textSize="14sp" />
+
+<Button
+    android:tag="campaign_cta_button" />
+```
+
+```kotlin
+binding.root.applyStringbootTags()
+```
+
+Update campaign text from dashboard as needed—no code changes required!
+
+---
+
+### Seasonal Content
+
+Change app content for holidays, events, or seasons.
+
+```kotlin
+// App automatically shows correct seasonal message
+lifecycleScope.launch {
+    StringProvider.getFlow("seasonal_greeting")
+        .collect { greeting ->
+            binding.headerGreeting.text = greeting
+        }
+}
+```
+
+**Dashboard** (update as seasons change):
+- December: "seasonal_greeting" = "Happy Holidays!"
+- January: "seasonal_greeting" = "Happy New Year!"
+- Spring: "seasonal_greeting" = "Spring Sale!"
+
+---
+
+### Fix Typos Instantly
+
+Found a typo in production? Fix it immediately from the dashboard.
+
+**Before:**
+```
+"Welcom to our app!"  ❌
+```
+
+**Fix:** Edit string in dashboard → Save
+
+**After:**
+```
+"Welcome to our app!"  ✅
+```
+
+Users see the fix next time they open the app—no Play Store release needed!
+
+---
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Translations" icon="language" href="/android-sdk/translations">
+    Add multi-language support and language switching
+  </Card>
+  <Card title="A/B Testing" icon="flask" href="/android-sdk/ab-testing">
+    Optimize messaging with experiments
+  </Card>
+  <Card title="Best Practices" icon="star" href="/android-sdk/best-practices">
+    Production patterns and optimization
+  </Card>
+</CardGroup>
+
+---
+
+## API Reference
+
+### StringProvider Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `get(key, lang?, allowNetworkFetch?)` | Get string synchronously | `String` |
+| `getFlow(key, lang?)` | Get reactive Flow for string | `Flow<String>` |
+| `getMultiple(keys, lang?)` | Get multiple strings | `Map<String, String>` |
+| `preloadLanguage(lang, maxStrings?)` | Preload strings into cache | `Unit` |
+| `refreshFromNetwork(lang)` | Sync latest strings from server | `Boolean` |
+
+### Extension Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `View.applyStringbootTags()` | Apply Stringboot to all tagged child views | `Unit` |
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Strings show ??key?? instead of value">
+    **Causes:**
+    1. String key doesn't exist in dashboard
+    2. Network sync hasn't happened yet
+    3. String not in cache or database
+
+    **Solutions:**
+    - Verify key exists in Stringboot Dashboard
+    - Call `StringProvider.refreshFromNetwork()` to sync
+    - Check logs for sync errors
+  </Accordion>
+
+  <Accordion title="XML tags not working">
+    **Check:**
+    - Did you call `binding.root.applyStringbootTags()`?
+    - Is `android:tag` attribute set correctly?
+    - Is the view a TextView, Button, or compatible view?
+
+    **Debug:**
+    ```kotlin
+    binding.root.applyStringbootTags()
+    StringbootLogger.isLoggingEnabled = true  // Enable logs
+    StringbootLogger.logLevel = .debug
+    ```
+  </Accordion>
+
+  <Accordion title="UI doesn't update when string changes in dashboard">
+    **For XML Tags:**
+    ```kotlin
+    // Call after manual sync
+    StringProvider.refreshFromNetwork("en")
+    binding.root.applyStringbootTags()  // Re-apply to update UI
+    ```
+
+    **For Flows:**
+    Flows automatically update—check if Flow is still collecting:
+    ```kotlin
+    lifecycleScope.launch {
+        StringProvider.getFlow("key").collect { text ->
+            Log.d("Stringboot", "Updated: $text")
+            binding.text.text = text
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Performance issues with many strings">
+    **Use preloading:**
+    ```kotlin
+    lifecycleScope.launch {
+        StringProvider.preloadLanguage("en", maxStrings = 1000)
+    }
+    ```
+
+    **Batch retrieve:**
+    ```kotlin
+    val strings = StringProvider.getMultiple(listOf("key1", "key2", "key3"))
+    ```
+
+    **Avoid:**
+    - Calling `get()` in tight loops
+    - Synchronous get() on main thread for many strings
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Support
+
+<CardGroup cols={2}>
+  <Card title="Installation Guide" icon="download" href="/android-sdk/installation">
+    Complete setup instructions
+  </Card>
+  <Card title="Advanced Usage" icon="code" href="/android-sdk/usage">
+    Advanced patterns and techniques
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/core-concepts">
+    Understanding caching and sync
+  </Card>
+</CardGroup>

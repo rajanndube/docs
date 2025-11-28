@@ -1,0 +1,753 @@
+---
+title: "Dynamic Strings"
+description: "Update app text instantly without releasing new versions using Stringboot"
+---
+
+## Overview
+
+Dynamic strings allow you to update your iOS app's text content instantly without submitting a new version to the App Store. Change marketing copy, fix typos, run time-sensitive campaigns, or adjust messaging—all from the Stringboot Dashboard.
+
+### Key Benefits
+
+<CardGroup cols={2}>
+  <Card title="Instant Updates" icon="bolt">
+    Change text content without app releases or user updates
+  </Card>
+  <Card title="Offline-First" icon="wifi-slash">
+    Strings cached locally—works without internet connection
+  </Card>
+  <Card title="SwiftUI Native" icon="swift">
+    Use `SBText` for automatic string injection
+  </Card>
+  <Card title="Reactive UI" icon="arrows-rotate">
+    Combine publishers for automatic UI updates
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Start
+
+### 1. Add String to Dashboard
+
+Go to [Stringboot Dashboard](https://dashboard.stringboot.com) → **Strings** → **Add New String**:
+
+- **Key**: `welcome_message`
+- **Value**: `"Welcome to our app!"`
+- **Language**: `en`
+
+### 2. Use in Your App
+
+<Tabs>
+  <Tab title="SwiftUI - SBText (Recommended)">
+    ```swift ContentView.swift
+    import SwiftUI
+    import StringbootSDK
+
+    struct ContentView: View {
+        @ObservedObject var stringProvider = StringProvider.shared
+
+        var body: some View {
+            VStack(spacing: 20) {
+                // Auto-updating text view
+                SBText("welcome_message")
+                    .font(.title)
+                    .fontWeight(.bold)
+
+                SBText("app_description")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+        }
+    }
+    ```
+
+    **That's it!** The text automatically shows "Welcome to our app!" and updates whenever you change it in the dashboard.
+  </Tab>
+
+  <Tab title="SwiftUI - Async/Await">
+    ```swift ContentView.swift
+    import SwiftUI
+    import StringbootSDK
+
+    struct ContentView: View {
+        @State private var welcomeText = ""
+
+        var body: some View {
+            Text(welcomeText)
+                .font(.title)
+                .task {
+                    welcomeText = await StringProvider.shared.get("welcome_message")
+                }
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="UIKit - SBLabel">
+    ```swift ViewController.swift
+    import UIKit
+    import StringbootSDK
+
+    class ViewController: UIViewController {
+        let welcomeLabel = SBLabel(key: "welcome_message")
+
+        override func viewDidLoad() {
+            super.viewDidLoad()
+
+            welcomeLabel.font = .systemFont(ofSize: 24, weight: .bold)
+            welcomeLabel.textAlignment = .center
+            view.addSubview(welcomeLabel)
+
+            // Layout constraints...
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### 3. Update from Dashboard
+
+Go to **Strings** → Edit `welcome_message` → Change to `"Welcome back!"` → **Save**
+
+Your app automatically shows the new text next time it syncs (happens automatically on app launch).
+
+---
+
+## String Retrieval Methods
+
+### 1. SBText (SwiftUI - Recommended)
+
+The simplest method for SwiftUI apps: auto-updating text views.
+
+```swift ProductView.swift
+import SwiftUI
+import StringbootSDK
+
+struct ProductView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SBText("product_title")
+                .font(.title)
+                .fontWeight(.bold)
+
+            SBText("product_description")
+                .font(.body)
+                .foregroundColor(.secondary)
+
+            Button(action: buyNow) {
+                SBText("button_buy_now")
+                    .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+    }
+
+    func buyNow() {
+        // Purchase logic
+    }
+}
+```
+
+**Benefits:**
+- Zero boilerplate code
+- Automatically updates when language changes
+- Perfect for static layouts
+- Handles missing strings gracefully
+
+**When to use:**
+- Most Text views in SwiftUI
+- Marketing pages and static content
+- Forms with static labels
+
+---
+
+### 2. Async/Await
+
+Get strings asynchronously with Swift's modern concurrency.
+
+```swift
+let text = await StringProvider.shared.get("welcome_message")
+```
+
+**Full Signature:**
+
+```swift
+let text = await StringProvider.shared.get(
+    _ key: String,
+    lang: String? = nil  // Optional: defaults to current locale
+)
+```
+
+**Example: Dialog Content**
+
+```swift
+private func showWelcomeDialog() async {
+    let title = await StringProvider.shared.get("dialog_welcome_title")
+    let message = await StringProvider.shared.get("dialog_welcome_message")
+    let buttonText = await StringProvider.shared.get("button_ok")
+
+    let alert = UIAlertController(
+        title: title,
+        message: message,
+        preferredStyle: .alert
+    )
+
+    alert.addAction(UIAlertAction(title: buttonText, style: .default))
+    present(alert, animated: true)
+}
+```
+
+**When to use:**
+- Dialogs and alerts
+- Non-critical string retrieval
+- When you need strings before UI renders
+
+---
+
+### 3. Combine Publishers
+
+Use Combine for reactive string updates.
+
+```swift
+import Combine
+import StringbootSDK
+
+class ViewModel: ObservableObject {
+    @Published var statusMessage = ""
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        StringProvider.shared.getPublisher(for: "status_message")
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$statusMessage)
+    }
+}
+
+struct ContentView: View {
+    @StateObject private var viewModel = ViewModel()
+
+    var body: some View {
+        Text(viewModel.statusMessage)
+            .font(.headline)
+    }
+}
+```
+
+**Benefits:**
+- Automatically updates when string changes
+- Updates when network sync completes
+- Perfect for dynamic content
+- Integrates with existing Combine code
+
+**When to use:**
+- Content that changes based on user actions
+- Status messages and live updates
+- Templates with dynamic formatting
+- MVVM architectures
+
+---
+
+## Advanced Patterns
+
+### Get Multiple Strings at Once
+
+Fetch multiple strings efficiently in a single query.
+
+```swift
+Task {
+    let keys = ["title", "subtitle", "description", "call_to_action"]
+    let strings = await StringProvider.shared.getMultiple(keys, lang: "en")
+
+    titleLabel.text = strings["title"] ?? "Default Title"
+    subtitleLabel.text = strings["subtitle"] ?? "Default Subtitle"
+    descriptionLabel.text = strings["description"] ?? "Default Description"
+    ctaButton.setTitle(strings["call_to_action"] ?? "Get Started", for: .normal)
+}
+```
+
+**Benefits:**
+- Single database query instead of multiple
+- More efficient for bulk retrieval
+- Returns a `[String: String]` dictionary
+
+---
+
+### String Templates with Formatting
+
+Use string templates with dynamic values.
+
+**Dashboard String:**
+```
+Key: welcome_user
+Value: "Welcome back, %@! You have %d new messages."
+```
+
+**Code:**
+```swift
+let template = await StringProvider.shared.get("welcome_user")
+let formattedText = String(format: template, userName, messageCount)
+welcomeLabel.text = formattedText
+// Output: "Welcome back, John! You have 5 new messages."
+```
+
+**Example: Dynamic Countdown**
+
+**Dashboard:**
+```
+Key: offer_expires
+Value: "Offer expires in %d days!"
+```
+
+**Code:**
+```swift
+class CountdownViewModel: ObservableObject {
+    @Published var countdownText = ""
+
+    init() {
+        StringProvider.shared.getPublisher(for: "offer_expires")
+            .map { template in
+                let daysRemaining = self.calculateDaysRemaining()
+                return String(format: template, daysRemaining)
+            }
+            .assign(to: &$countdownText)
+    }
+
+    func calculateDaysRemaining() -> Int {
+        // Calculate days until offer expires
+        return 7
+    }
+}
+```
+
+---
+
+### Preloading Strings for Performance
+
+Preload frequently used strings into memory cache for instant access.
+
+```swift
+override func viewDidLoad() {
+    super.viewDidLoad()
+
+    Task {
+        // Preload strings for current language
+        await StringProvider.shared.preloadLanguage(
+            lang: "en",
+            maxStrings: 500
+        )
+
+        // Now show UI
+        await MainActor.run {
+            setupUI()
+        }
+    }
+}
+```
+
+**When to use:**
+- App startup
+- Before showing a complex screen with many strings
+- After language switching
+
+**Benefits:**
+- Instant string retrieval
+- Eliminates database queries
+- Reduces perceived lag
+
+---
+
+### Refresh Strings from Network
+
+Manually trigger a network sync to get latest strings.
+
+```swift
+@IBAction func refreshContent(_ sender: UIButton) {
+    sender.isEnabled = false
+    activityIndicator.startAnimating()
+
+    Task {
+        let success = await StringProvider.shared.refreshFromNetwork(lang: "en")
+
+        await MainActor.run {
+            if success {
+                showToast("Content updated!")
+            } else {
+                showToast("Using cached content")
+            }
+
+            sender.isEnabled = true
+            activityIndicator.stopAnimating()
+        }
+    }
+}
+```
+
+**Behavior:**
+- Fetches latest strings from server
+- Updates local Core Data database
+- Clears memory cache
+- Publishers automatically emit new values
+
+---
+
+## List/Collection Integration
+
+### SwiftUI List with SBText
+
+```swift ProductListView.swift
+import SwiftUI
+import StringbootSDK
+
+struct ProductListView: View {
+    let products: [Product]
+
+    var body: some View {
+        List(products) { product in
+            VStack(alignment: .leading) {
+                Text(product.name)
+                    .font(.headline)
+
+                SBText("product_price_label")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                +
+                Text(" $\(product.price, specifier: "%.2f")")
+                    .font(.subheadline)
+            }
+        }
+    }
+}
+```
+
+### UIKit TableView
+
+```swift ProductCell.swift
+import UIKit
+import StringbootSDK
+
+class ProductCell: UITableViewCell {
+    let productNameLabel = UILabel()
+    let priceLabel = SBLabel(key: "product_price_label")
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        setupViews()
+    }
+
+    func configure(with product: Product) {
+        productNameLabel.text = product.name
+
+        Task {
+            let template = await StringProvider.shared.get("product_price_label")
+            await MainActor.run {
+                priceLabel.text = String(format: template, product.price)
+            }
+        }
+    }
+}
+```
+
+---
+
+## Handling Missing Strings
+
+### Fallback Behavior
+
+When a string key doesn't exist, Stringboot returns the key itself:
+
+```swift
+let text = await StringProvider.shared.get("non_existent_key")
+// Returns: "non_existent_key"
+```
+
+### Provide Default Values
+
+```swift
+func getString(_ key: String, fallback: String) async -> String {
+    let text = await StringProvider.shared.get(key)
+    return text == key ? fallback : text
+}
+
+// Usage
+let title = await getString("product_title", fallback: "Product")
+```
+
+### Check if String Exists
+
+```swift
+func stringExists(_ key: String) async -> Bool {
+    let text = await StringProvider.shared.get(key)
+    return text != key
+}
+
+if await stringExists("special_offer_title") {
+    specialOfferView.isHidden = false
+    let title = await StringProvider.shared.get("special_offer_title")
+    specialOfferLabel.text = title
+}
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use SBText for Static Content in SwiftUI">
+    **Recommended:**
+    ```swift
+    SBText("welcome_message")
+        .font(.title)
+    ```
+
+    **Avoid:**
+    ```swift
+    @State private var text = ""
+
+    Text(text)
+        .task {
+            text = await StringProvider.shared.get("welcome_message")
+        }
+    ```
+
+    SBText automatically handles updates and lifecycle.
+  </Accordion>
+
+  <Accordion title="Use Combine Publishers for Dynamic Content">
+    **Recommended:**
+    ```swift
+    StringProvider.shared.getPublisher(for: "status_message")
+        .assign(to: &$statusMessage)
+    ```
+
+    **Avoid:**
+    ```swift
+    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        Task {
+            statusMessage = await StringProvider.shared.get("status_message")
+        }
+    }
+    ```
+
+    Publishers automatically update when content changes.
+  </Accordion>
+
+  <Accordion title="Preload Before Heavy Screens">
+    ```swift
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        Task {
+            await StringProvider.shared.preloadLanguage("en", maxStrings: 500)
+
+            await MainActor.run {
+                loadingView.isHidden = true
+                contentView.isHidden = false
+            }
+        }
+    }
+    ```
+
+    Eliminates database queries during UI rendering.
+  </Accordion>
+
+  <Accordion title="Use @MainActor for UI Updates">
+    ```swift
+    Task {
+        let text = await StringProvider.shared.get("message")
+
+        await MainActor.run {
+            label.text = text
+        }
+    }
+    ```
+
+    Or mark your method with @MainActor:
+    ```swift
+    @MainActor
+    func updateUI() async {
+        let text = await StringProvider.shared.get("message")
+        label.text = text  // Already on main actor
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Common Use Cases
+
+### Marketing Campaigns
+
+Update promotional messages instantly without app updates.
+
+**Dashboard Strings:**
+- `campaign_banner_title`: "50% Off All Items!"
+- `campaign_banner_subtitle`: "Limited time offer - ends Friday"
+- `campaign_cta_button`: "Shop Now"
+
+**SwiftUI Code:**
+```swift
+VStack(spacing: 12) {
+    SBText("campaign_banner_title")
+        .font(.title)
+        .fontWeight(.bold)
+
+    SBText("campaign_banner_subtitle")
+        .font(.subheadline)
+
+    Button(action: shopNow) {
+        SBText("campaign_cta_button")
+    }
+    .buttonStyle(.borderedProminent)
+}
+```
+
+Update campaign text from dashboard as needed—no code changes required!
+
+---
+
+### Seasonal Content
+
+```swift
+struct SeasonalGreetingView: View {
+    @State private var greeting = ""
+
+    var body: some View {
+        Text(greeting)
+            .font(.largeTitle)
+            .task {
+                for await text in StringProvider.shared.getPublisher(for: "seasonal_greeting").values {
+                    greeting = text
+                }
+            }
+    }
+}
+```
+
+**Dashboard** (update as seasons change):
+- December: "seasonal_greeting" = "Happy Holidays!"
+- January: "seasonal_greeting" = "Happy New Year!"
+- Spring: "seasonal_greeting" = "Spring Sale!"
+
+---
+
+### Fix Typos Instantly
+
+Found a typo in production? Fix it immediately from the dashboard.
+
+**Before:**
+```
+"Welcom to our app!"  ❌
+```
+
+**Fix:** Edit string in dashboard → Save
+
+**After:**
+```
+"Welcome to our app!"  ✅
+```
+
+Users see the fix next time they open the app—no App Store review needed!
+
+---
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Translations" icon="language" href="/ios-sdk/translations">
+    Add multi-language support and language switching
+  </Card>
+  <Card title="A/B Testing" icon="flask" href="/ios-sdk/ab-testing">
+    Optimize messaging with experiments
+  </Card>
+  <Card title="Best Practices" icon="star" href="/ios-sdk/best-practices">
+    Production patterns and optimization
+  </Card>
+</CardGroup>
+
+---
+
+## API Reference
+
+### StringProvider Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `get(_ key, lang?)` | Get string asynchronously | `async String` |
+| `getPublisher(for:lang:)` | Get Combine publisher for string | `AnyPublisher<String, Never>` |
+| `getMultiple(_ keys, lang?)` | Get multiple strings | `async [String: String]` |
+| `preloadLanguage(lang, maxStrings?)` | Preload strings into cache | `async Void` |
+| `refreshFromNetwork(lang:)` | Sync latest strings from server | `async Bool` |
+
+### SwiftUI Components
+
+| Component | Description |
+|-----------|-------------|
+| `SBText(_ key)` | Auto-updating Text view |
+| `SBLabel(key:)` | UIKit auto-updating label |
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="SBText shows key instead of value">
+    **Causes:**
+    1. String key doesn't exist in dashboard
+    2. Network sync hasn't happened yet
+    3. String not in cache or database
+
+    **Solutions:**
+    - Verify key exists in Stringboot Dashboard
+    - Call `await StringProvider.shared.refreshFromNetwork()` to sync
+    - Check logs with `StringbootLogger.isLoggingEnabled = true`
+  </Accordion>
+
+  <Accordion title="UI doesn't update when string changes in dashboard">
+    **For SBText:**
+    SBText automatically updates—check if SDK initialized correctly.
+
+    **For manual updates:**
+    ```swift
+    // Trigger manual sync
+    await StringProvider.shared.refreshFromNetwork("en")
+    // SBText and Publishers auto-update
+    ```
+  </Accordion>
+
+  <Accordion title="Performance issues with many strings">
+    **Use preloading:**
+    ```swift
+    await StringProvider.shared.preloadLanguage("en", maxStrings: 1000)
+    ```
+
+    **Batch retrieve:**
+    ```swift
+    let strings = await StringProvider.shared.getMultiple([
+        "key1", "key2", "key3"
+    ])
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Support
+
+<CardGroup cols={2}>
+  <Card title="Installation Guide" icon="download" href="/ios-sdk/installation">
+    Complete setup instructions
+  </Card>
+  <Card title="Advanced Usage" icon="code" href="/ios-sdk/usage">
+    Advanced patterns and techniques
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/core-concepts">
+    Understanding caching and sync
+  </Card>
+</CardGroup>

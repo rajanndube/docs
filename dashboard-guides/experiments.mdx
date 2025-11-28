@@ -1,0 +1,762 @@
+---
+title: "Experiments & A/B Testing"
+description: "Create and manage A/B test experiments to optimize your app's messaging"
+---
+
+## Overview
+
+Experiments in Stringboot allow you to A/B test different string variations to find the most effective messaging for your users. Test headlines, CTAs, error messages, and more to make data-driven decisions about your app's copy.
+
+### What You Can Test
+
+<CardGroup cols={2}>
+  <Card title="Call-to-Action Buttons" icon="hand-pointer">
+    Test different button text to improve conversion rates
+  </Card>
+  <Card title="Headlines & Titles" icon="heading">
+    Find the most engaging headlines for your screens
+  </Card>
+  <Card title="Error Messages" icon="triangle-exclamation">
+    Test clearer, more helpful error messaging
+  </Card>
+  <Card title="Onboarding Copy" icon="rocket">
+    Optimize onboarding flows for better retention
+  </Card>
+</CardGroup>
+
+### How It Works
+
+1. **Create variants** of your strings in the dashboard
+2. **Set traffic distribution** (e.g., 50% control, 50% variant-a)
+3. **SDK automatically assigns users** to variants based on device ID
+4. **Track results** in your analytics platform (Firebase, Mixpanel, etc.)
+5. **Choose the winner** and roll out to 100% of users
+
+---
+
+## Prerequisites
+
+Before creating an experiment, ensure you have:
+
+<Check>
+  ✓ An application created in Stringboot
+</Check>
+
+<Check>
+  ✓ String keys added to your application
+</Check>
+
+<Check>
+  ✓ At least one active language configured
+</Check>
+
+<Check>
+  ✓ SDK integrated in your app (recommended for tracking)
+</Check>
+
+<Check>
+  ✓ Analytics handler configured (recommended for results)
+</Check>
+
+<Note>
+  **Tip:** Set up analytics integration in your SDK before running experiments. See the [Android A/B Testing](/android-sdk/ab-testing), [iOS A/B Testing](/ios-sdk/ab-testing), or Web SDK guides for setup instructions.
+</Note>
+
+---
+
+## Creating an Experiment
+
+Navigate to **Experiments** in your dashboard sidebar and click **Create Experiment**. You'll be guided through a 5-step wizard:
+
+### Step 1: Basics
+
+Define your experiment's foundation.
+
+<Steps>
+  <Step title="Enter Experiment Name">
+    Choose a descriptive name that explains what you're testing.
+
+    **Example:** "Homepage CTA Button Test"
+
+    The system auto-generates an `experimentKey` (slug) from your name: `homepage-cta-button-test`
+  </Step>
+
+  <Step title="Add Description (Optional)">
+    Explain the hypothesis or goal of your experiment.
+
+    **Example:** "Testing whether 'Get Started Free' performs better than 'Start Free Trial' for conversions"
+  </Step>
+
+  <Step title="Add Notes (Optional)">
+    Internal notes for your team (not visible to users).
+
+    **Example:** "Recommended by growth team based on Q4 user research"
+  </Step>
+
+  <Step title="Select Languages">
+    Choose which languages to test. You can test the same keys across multiple languages.
+
+    - Must select at least one language
+    - Only active languages for your app are available
+  </Step>
+</Steps>
+
+**Validation:**
+- Experiment name: 1-100 characters (required)
+- At least one language must be selected
+
+---
+
+### Step 2: Select String Keys
+
+Choose which string keys to include in your experiment.
+
+<Steps>
+  <Step title="Search or Browse Keys">
+    Use the search bar to find specific keys or browse the full list.
+
+    The table shows:
+    - Key name
+    - Current values for each selected language
+    - Page/context where the string appears
+  </Step>
+
+  <Step title="Select Keys to Test">
+    Check the boxes next to keys you want to test.
+
+    **You can test multiple keys in one experiment** (e.g., test both a headline and CTA together)
+  </Step>
+</Steps>
+
+**Validation:**
+- Must select at least one string key
+
+**Example:** Testing a signup flow might include keys like:
+- `signup_headline`
+- `signup_cta_button`
+- `signup_subheadline`
+
+---
+
+### Step 3: Create Variants
+
+Define the test variations for each selected key and language.
+
+<Accordion title="Understanding Control vs Variants">
+  **Control Variant:**
+  - The current/live value from your app
+  - Automatically pulled from your string catalog
+  - Serves as the baseline for comparison
+
+  **Test Variants:**
+  - New variations you want to test
+  - Can create multiple (variant-a, variant-b, variant-c, etc.)
+  - Each variant gets a unique name and value
+</Accordion>
+
+<Steps>
+  <Step title="Review Control Values">
+    For each key + language combination, the system shows the current live value as the "control" variant.
+
+    **Example:**
+    - Key: `signup_cta_button`
+    - Language: English
+    - Control: "Start Free Trial"
+  </Step>
+
+  <Step title="Add Test Variants">
+    Click **Add Variant** to create new variations.
+
+    **Example variants:**
+    - variant-a: "Get Started Free"
+    - variant-b: "Try It Free"
+    - variant-c: "Start Your Free Trial"
+  </Step>
+
+  <Step title="Edit Variant Text">
+    Type or paste the variant text for each variation.
+
+    Keep variants similar enough to isolate what you're testing (length, tone, specific words).
+  </Step>
+
+  <Step title="Delete Variants (Optional)">
+    Remove variants you don't need using the delete button.
+  </Step>
+</Steps>
+
+**Validation:**
+- At least one variant must have text for each key/language combination
+
+**Tips:**
+- Test one variable at a time for clear results
+- Keep variant lengths similar for UI consistency
+- Use meaningful changes (not just punctuation)
+
+---
+
+### Step 4: Set Traffic Weights
+
+Define what percentage of users see each variant.
+
+<Accordion title="Traffic Distribution Modes">
+  **Per-Key Mode:**
+  - Each key can have different weight distribution
+  - More flexibility but more complex
+
+  **Global Mode:**
+  - Same weights apply to all keys in the experiment
+  - Simpler and recommended for most experiments
+</Accordion>
+
+<Steps>
+  <Step title="Choose Distribution Mode">
+    Toggle between **Per-Key** or **Global** mode.
+
+    **Recommendation:** Use Global mode for simplicity unless you have specific reasons to vary weights per key.
+  </Step>
+
+  <Step title="Set Percentages">
+    Assign traffic percentage to each variant.
+
+    **Example for 3 variants:**
+    - Control: 34%
+    - variant-a: 33%
+    - variant-b: 33%
+
+    Or use the **Auto-Distribute** button for even splits.
+  </Step>
+
+  <Step title="Verify Totals">
+    Weights must add up to exactly **100%** for each key/language.
+
+    The system validates this before allowing you to proceed.
+  </Step>
+</Steps>
+
+**Validation:**
+- All weights must sum to exactly 100% per key/language combination
+
+**Common Distributions:**
+- **50/50 split:** 50% control, 50% variant-a (simple A/B test)
+- **Equal 3-way:** 34% / 33% / 33% (test 2 variants against control)
+- **Challenger test:** 80% control, 20% variant-a (low-risk testing)
+
+---
+
+### Step 5: Review & Publish
+
+Final review before launching your experiment.
+
+<Steps>
+  <Step title="Review All Settings">
+    Check the summary of:
+    - Experiment name and description
+    - Selected languages
+    - String keys included
+    - All variants and their values
+    - Traffic distribution
+  </Step>
+
+  <Step title="Final Validation">
+    The system runs final checks:
+    - All required fields completed
+    - Weights total 100%
+    - At least one variant per key/language
+  </Step>
+
+  <Step title="Save or Publish">
+    Choose your action:
+
+    **Save as Draft:**
+    - Saves your work without starting the experiment
+    - Can edit later before publishing
+    - No users are assigned to variants yet
+
+    **Publish & Start:**
+    - Immediately starts the experiment
+    - Users begin seeing variants based on traffic weights
+    - Cannot edit once started (can only pause/end)
+  </Step>
+</Steps>
+
+<Success>
+  **Experiment Created!** Your experiment is now running and users will be assigned to variants based on your traffic distribution.
+</Success>
+
+---
+
+## Experiment Statuses
+
+Experiments move through different statuses during their lifecycle:
+
+| Status | Description | Available Actions |
+|--------|-------------|-------------------|
+| **DRAFT** | Experiment saved but not started | Edit, Delete, Start |
+| **RUNNING** | Experiment is live and assigning users | Pause, End, Delete |
+| **PAUSED** | Temporarily stopped | Resume, End, Delete, Edit |
+| **ENDED** | Experiment completed | Delete, View Results |
+
+<Warning>
+  **Important:** You can only edit experiments in DRAFT status. Once an experiment is RUNNING, you must pause it to make changes, or end it and create a new one.
+</Warning>
+
+---
+
+## Managing Experiments
+
+### Starting an Experiment
+
+1. Navigate to the experiment detail page
+2. Click **Start Experiment**
+3. Confirm the action
+4. Status changes from DRAFT → RUNNING
+5. Users immediately begin receiving variant assignments
+
+### Pausing an Experiment
+
+Temporarily stop variant assignments while keeping data:
+
+1. Open a RUNNING experiment
+2. Click **Pause Experiment**
+3. Status changes to PAUSED
+4. No new users are assigned (existing assignments persist)
+
+**Use Cases:**
+- Discovered an issue with a variant
+- Need to make adjustments
+- External factors affecting results (holiday, outage, etc.)
+
+### Resuming an Experiment
+
+Continue a paused experiment:
+
+1. Open a PAUSED experiment
+2. Click **Resume Experiment**
+3. Status changes back to RUNNING
+4. Variant assignments resume
+
+### Ending an Experiment
+
+Permanently complete an experiment:
+
+1. Open a RUNNING or PAUSED experiment
+2. Click **End Experiment**
+3. Confirm the action
+4. Status changes to ENDED
+5. Variant assignments stop
+6. Results are finalized
+
+**After ending:**
+- Roll out the winning variant to 100% of users
+- Update the string key with the winning text
+- Archive the experiment
+
+### Deleting an Experiment
+
+Remove an experiment completely:
+
+1. Navigate to the experiment
+2. Click **Delete** (available in any status)
+3. Confirm deletion
+4. Experiment and all data are removed
+
+<Warning>
+  **Deletion is permanent.** Make sure to save analytics data before deleting an experiment.
+</Warning>
+
+---
+
+## Understanding Results
+
+### Viewing Analytics
+
+Experiment results are tracked through:
+
+1. **Dashboard Analytics** (if integrated)
+   - Variant assignment counts
+   - Distribution percentages
+   - Total impressions
+   - Active user counts per variant
+
+2. **Your Analytics Platform** (Firebase, Mixpanel, Amplitude, etc.)
+   - User properties show variant assignments
+   - Track conversions, events, revenue by variant
+   - Statistical significance testing
+   - Detailed user behavior analysis
+
+### How Variant Assignment Works
+
+<Steps>
+  <Step title="User Opens App">
+    SDK sends device ID with API request
+  </Step>
+
+  <Step title="Server Assigns Variant">
+    Backend uses device ID to deterministically assign user to a variant based on traffic weights
+  </Step>
+
+  <Step title="SDK Receives Assignment">
+    SDK gets the variant string value for assigned variant
+  </Step>
+
+  <Step title="Analytics Tracking">
+    SDK calls your analytics handler with experiment assignment
+
+    ```javascript
+    // Example callback
+    onExperimentsAssigned({
+      "signup-cta-test": {
+        variantName: "variant-a",
+        experimentId: "uuid-here"
+      }
+    })
+    ```
+  </Step>
+
+  <Step title="User Sees Variant">
+    App displays the variant text to the user
+  </Step>
+</Steps>
+
+**Key Points:**
+- Same device ID always gets same variant (consistent experience)
+- Assignment persists across sessions
+- Multiple experiments can run simultaneously
+- Each experiment is independent
+
+### SDK Integration
+
+For complete analytics tracking, integrate the SDK with your analytics platform:
+
+<CardGroup cols={3}>
+  <Card title="Android SDK" icon="android" href="/android-sdk/ab-testing">
+    Set up analytics handler for Android
+  </Card>
+
+  <Card title="iOS SDK" icon="apple" href="/ios-sdk/ab-testing">
+    Set up analytics handler for iOS
+  </Card>
+
+  <Card title="Web SDK" icon="globe" href="/web-sdk/usage">
+    Configure analytics for Web
+  </Card>
+</CardGroup>
+
+---
+
+## Best Practices
+
+### 1. Test One Hypothesis at a Time
+
+<Tabs>
+  <Tab title="Good">
+    **Experiment:** "CTA Button Text Test"
+    - Control: "Start Free Trial"
+    - variant-a: "Get Started Free"
+
+    **Clear hypothesis:** Does removing "trial" language increase signups?
+  </Tab>
+
+  <Tab title="Bad">
+    **Experiment:** "Signup Page Overhaul"
+    - Control: "Start Free Trial" + short headline
+    - variant-a: "Get Started Free" + long headline + different button color
+
+    **Problem:** Can't tell which change caused the result
+  </Tab>
+</Tabs>
+
+### 2. Run Experiments Long Enough
+
+<Check>
+  ✓ At least 1-2 weeks for statistical significance
+</Check>
+
+<Check>
+  ✓ Minimum 100 users per variant (ideally 1000+)
+</Check>
+
+<Check>
+  ✓ Include full week cycles to account for weekday/weekend differences
+</Check>
+
+<Check>
+  ✓ Don't end early even if one variant is clearly winning
+</Check>
+
+### 3. Use Meaningful Distributions
+
+**For Initial Tests:**
+- 50/50 split between control and one variant
+- Fastest path to statistical significance
+
+**For Multiple Variants:**
+- Equal distribution: 33% / 33% / 34%
+- Clear comparison between options
+
+**For Low-Risk Testing:**
+- 90% control / 10% variant
+- Test radical changes with limited exposure
+
+### 4. Document Everything
+
+Use the **Notes** field to record:
+- Hypothesis being tested
+- Expected impact
+- Stakeholder discussions
+- External factors during test period
+- Learnings and results
+
+### 5. Choose High-Impact Strings
+
+Prioritize testing strings that affect:
+- Conversion funnels (signup, purchase, subscription)
+- User activation and onboarding
+- Critical error messages
+- Primary CTAs
+
+### 6. Respect Statistical Significance
+
+Don't declare a winner until:
+- Sufficient sample size reached
+- 95%+ confidence interval
+- Results are consistent over time
+- Accounted for external factors
+
+**Tools for statistical analysis:**
+- Online A/B test calculators
+- Your analytics platform's experiment tools
+- Statistical software (R, Python)
+
+---
+
+## Common Use Cases
+
+### Testing CTA Buttons
+
+**Goal:** Improve click-through or conversion rates
+
+**Example Keys:**
+- `cta_signup_button`
+- `cta_subscribe_button`
+- `cta_purchase_button`
+
+**Variants to Test:**
+- Action-oriented: "Get Started" vs "Start Now" vs "Begin Free"
+- Value-focused: "Start Free Trial" vs "Try Free for 30 Days"
+- Urgency: "Start Now" vs "Start Today" vs "Get Instant Access"
+
+### Testing Headlines
+
+**Goal:** Increase engagement or time-on-page
+
+**Example Keys:**
+- `homepage_headline`
+- `feature_section_title`
+- `pricing_page_headline`
+
+**Variants to Test:**
+- Benefit-focused vs feature-focused
+- Question vs statement format
+- Short vs descriptive
+
+### Testing Error Messages
+
+**Goal:** Reduce user frustration and support requests
+
+**Example Keys:**
+- `error_network_offline`
+- `error_invalid_email`
+- `error_payment_failed`
+
+**Variants to Test:**
+- Technical vs plain language
+- Including vs excluding next steps
+- Apologetic vs matter-of-fact tone
+
+### Testing Onboarding
+
+**Goal:** Improve activation and retention
+
+**Example Keys:**
+- `onboarding_welcome_title`
+- `onboarding_step1_description`
+- `onboarding_complete_message`
+
+**Variants to Test:**
+- Length: Brief vs detailed instructions
+- Tone: Formal vs casual
+- Focus: Feature benefits vs use cases
+
+---
+
+## Integration with SDKs
+
+Once you create an experiment in the dashboard, your SDKs automatically receive variant assignments:
+
+### How It Works
+
+1. **Dashboard:** Create experiment with variants and weights
+2. **Backend:** Stores experiment configuration
+3. **SDK:** Requests strings with device ID header
+4. **Backend:** Assigns device to variant based on configuration
+5. **SDK:** Receives variant string value
+6. **SDK:** Calls analytics handler with assignment
+7. **Analytics:** Tracks which users see which variants
+
+### Platform-Specific Setup
+
+<Tabs>
+  <Tab title="Android">
+    Configure analytics handler in your Application class:
+
+    ```kotlin
+    val analyticsHandler = object : StringbootAnalyticsHandler {
+        override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
+            experiments.forEach { (key, assignment) ->
+                firebaseAnalytics.setUserProperty(
+                    "stringboot_exp_$key",
+                    assignment.variantName
+                )
+            }
+        }
+    }
+
+    StringbootExtensions.autoInitialize(
+        context = this,
+        analyticsHandler = analyticsHandler
+    )
+    ```
+
+    See the [Android A/B Testing Guide](/android-sdk/ab-testing) for complete setup.
+  </Tab>
+
+  <Tab title="iOS">
+    Configure analytics handler during SDK initialization:
+
+    ```swift
+    class MyAnalyticsHandler: StringbootAnalyticsHandler {
+        func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+            for (key, assignment) in experiments {
+                Analytics.setUserProperty(
+                    assignment.variantName,
+                    forName: "stringboot_exp_\(key)"
+                )
+            }
+        }
+    }
+
+    StringProvider.shared.initialize(
+        cacheSize: 1000,
+        apiToken: "YOUR_TOKEN",
+        baseURL: "https://api.stringboot.com",
+        autoSync: true,
+        analyticsHandler: MyAnalyticsHandler()
+    )
+    ```
+
+    See the [iOS A/B Testing Guide](/ios-sdk/ab-testing) for complete setup.
+  </Tab>
+
+  <Tab title="Web">
+    Configure analytics handler during initialization:
+
+    ```javascript
+    await StringBoot.initialize({
+      apiToken: 'YOUR_TOKEN',
+      baseUrl: 'https://api.stringboot.com',
+      analyticsHandler: (experiments) => {
+        Object.entries(experiments).forEach(([key, assignment]) => {
+          // Send to analytics
+          analytics.setUserProperty(
+            `stringboot_exp_${key}`,
+            assignment.variantName
+          );
+        });
+      }
+    });
+    ```
+
+    See the [Web SDK documentation](/web-sdk/usage) for complete setup.
+  </Tab>
+</Tabs>
+
+---
+
+## Troubleshooting
+
+<Accordion title="Variants Not Showing in App">
+  **Possible causes:**
+  1. Experiment is in DRAFT status (not started)
+  2. SDK not integrated or initialized correctly
+  3. Device ID not being sent with requests
+  4. Cache needs to be cleared
+
+  **Solutions:**
+  - Verify experiment status is RUNNING
+  - Check SDK initialization logs
+  - Confirm device ID in SDK configuration
+  - Clear app cache or reinstall
+</Accordion>
+
+<Accordion title="All Users Getting Same Variant">
+  **Possible causes:**
+  1. Traffic weights set to 100% for one variant
+  2. Device ID generation issue
+  3. Cache serving same value
+
+  **Solutions:**
+  - Verify traffic weights in Step 4 of wizard
+  - Check device ID is unique per installation
+  - Force cache refresh in SDK
+</Accordion>
+
+<Accordion title="Can't Edit Running Experiment">
+  **This is expected behavior.**
+
+  Once an experiment is RUNNING, you cannot edit it to ensure data integrity.
+
+  **Options:**
+  - Pause the experiment (allows limited edits)
+  - End the experiment and create a new one
+  - Clone the experiment and modify the copy
+</Accordion>
+
+<Accordion title="Analytics Not Tracking Assignments">
+  **Possible causes:**
+  1. Analytics handler not configured in SDK
+  2. Analytics integration issue
+  3. Network blocking analytics calls
+
+  **Solutions:**
+  - Verify analytics handler implementation
+  - Check analytics platform integration
+  - Test with SDK debug logging enabled
+  - See platform-specific A/B testing guides
+</Accordion>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="SDK Integration" icon="code" href="/android-sdk/ab-testing">
+    Set up analytics tracking in your SDKs
+  </Card>
+
+  <Card title="String Management" icon="text" href="/dashboard-guides/strings">
+    Learn how to manage string keys
+  </Card>
+
+  <Card title="Languages" icon="language" href="/dashboard-guides/languages">
+    Configure languages for your app
+  </Card>
+
+  <Card title="Best Practices" icon="star" href="/advanced/troubleshooting">
+    Advanced tips and troubleshooting
+  </Card>
+</CardGroup>
+
+---
+
+**Questions?** Contact support at [developer@stringboot.com](mailto:developer@stringboot.com)

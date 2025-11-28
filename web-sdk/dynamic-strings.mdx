@@ -1,0 +1,567 @@
+---
+title: "Dynamic Strings"
+description: "Update app text instantly without releasing new versions using Stringboot"
+---
+
+## Overview
+
+Dynamic strings allow you to update your web app's text content instantly without deploying new code. Change marketing copy, fix typos, run time-sensitive campaigns, or adjust messaging—all from the Stringboot Dashboard.
+
+### Key Benefits
+
+<CardGroup cols={2}>
+  <Card title="Instant Updates" icon="bolt">
+    Change text content without code deploys
+  </Card>
+  <Card title="Offline-First" icon="wifi-slash">
+    Strings cached in IndexedDB—works offline
+  </Card>
+  <Card title="React Hooks" icon="react">
+    `useString` for automatic updates
+  </Card>
+  <Card title="Zero Dependencies" icon="feather">
+    Lightweight 6.6 kB gzipped SDK
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Start
+
+### 1. Add String to Dashboard
+
+Go to [Stringboot Dashboard](https://dashboard.stringboot.com) → **Strings** → **Add New String**:
+
+- **Key**: `welcome_message`
+- **Value**: `"Welcome to our app!"`
+- **Language**: `en`
+
+### 2. Use in Your App
+
+<Tabs>
+  <Tab title="React Hooks (Recommended)">
+    ```jsx Component.jsx
+    import { useString } from '@stringboot/web-sdk/react';
+
+    function WelcomeMessage() {
+      const welcomeText = useString('welcome_message');
+
+      return <h1>{welcomeText}</h1>;
+    }
+    ```
+
+    **That's it!** The text automatically shows "Welcome to our app!" and updates whenever you change it in the dashboard.
+  </Tab>
+
+  <Tab title="Vanilla JavaScript">
+    ```javascript
+    import StringBoot from '@stringboot/web-sdk';
+
+    // Get string
+    const welcomeText = await StringBoot.get('welcome_message');
+    document.getElementById('welcome').textContent = welcomeText;
+
+    // Watch for changes (reactive)
+    StringBoot.watch('welcome_message', (value) => {
+      document.getElementById('welcome').textContent = value;
+    });
+    ```
+  </Tab>
+
+  <Tab title="TypeScript">
+    ```typescript
+    import StringBoot from '@stringboot/web-sdk';
+
+    async function updateWelcome() {
+      const welcomeText: string = await StringBoot.get('welcome_message');
+      const element = document.getElementById('welcome');
+      if (element) {
+        element.textContent = welcomeText;
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### 3. Update from Dashboard
+
+Go to **Strings** → Edit `welcome_message` → Change to `"Welcome back!"` → **Save**
+
+Your app automatically shows the new text next time it syncs.
+
+---
+
+## String Retrieval Methods
+
+### 1. React Hooks (Recommended)
+
+#### useString - Single String
+
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
+
+function ProductTitle() {
+  const title = useString('product_title');
+
+  return <h2>{title}</h2>;
+}
+```
+
+**Benefits:**
+- Automatically updates when language changes
+- Updates when network sync completes
+- Zero boilerplate
+
+#### useStrings - Multiple Strings
+
+```jsx
+import { useStrings } from '@stringboot/web-sdk/react';
+
+function ProductCard() {
+  const strings = useStrings(['product_title', 'product_description', 'button_buy']);
+
+  return (
+    <div>
+      <h2>{strings.product_title}</h2>
+      <p>{strings.product_description}</p>
+      <button>{strings.button_buy}</button>
+    </div>
+  );
+}
+```
+
+**Benefits:**
+- Fetch multiple strings efficiently
+- Single hook for all strings in component
+- Returns object with key-value pairs
+
+---
+
+### 2. Vanilla JavaScript
+
+#### Get String (Async)
+
+```javascript
+const text = await StringBoot.get('welcome_message');
+// Returns: "Welcome to our app!"
+```
+
+**Full Signature:**
+```javascript
+const text = await StringBoot.get(
+  key,           // string key
+  lang           // optional language code (defaults to current)
+);
+```
+
+#### Watch for Changes (Reactive)
+
+```javascript
+// Start watching
+StringBoot.watch('welcome_message', (value) => {
+  document.getElementById('welcome').textContent = value;
+});
+
+// Stop watching
+StringBoot.unwatch('welcome_message');
+```
+
+**Benefits:**
+- Automatically updates when string changes
+- Perfect for vanilla JS apps
+- Lifecycle management needed
+
+---
+
+### 3. Get Multiple Strings
+
+```javascript
+const keys = ['title', 'subtitle', 'description'];
+const strings = await StringBoot.getMultiple(keys);
+
+console.log(strings.title);        // "Product Title"
+console.log(strings.subtitle);     // "Amazing product"
+console.log(strings.description);  // "Full description"
+```
+
+**React version:**
+```jsx
+const strings = useStrings(['title', 'subtitle', 'description']);
+```
+
+---
+
+## Advanced Patterns
+
+### String Templates with Formatting
+
+**Dashboard String:**
+```
+Key: welcome_user
+Value: "Welcome back, %s! You have %d new messages."
+```
+
+**React Code:**
+```jsx
+function WelcomeMessage({ userName, messageCount }) {
+  const template = useString('welcome_user');
+  const formattedText = template
+    .replace('%s', userName)
+    .replace('%d', messageCount.toString());
+
+  return <p>{formattedText}</p>;
+}
+```
+
+**Vanilla JS:**
+```javascript
+const template = await StringBoot.get('welcome_user');
+const text = template
+  .replace('%s', userName)
+  .replace('%d', messageCount);
+
+element.textContent = text;
+```
+
+---
+
+### Manual Sync
+
+Trigger a manual sync to get latest strings:
+
+```javascript
+// Vanilla JS
+await StringBoot.sync();
+
+// React Hook
+import { useSync } from '@stringboot/web-sdk/react';
+
+function RefreshButton() {
+  const { sync, syncing } = useSync();
+
+  return (
+    <button onClick={sync} disabled={syncing}>
+      {syncing ? 'Syncing...' : 'Refresh Content'}
+    </button>
+  );
+}
+```
+
+---
+
+### Clear Cache
+
+```javascript
+StringBoot.clearCache();
+```
+
+Useful for debugging or forcing a fresh fetch from server.
+
+---
+
+## React Patterns
+
+### Component with Loading State
+
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
+
+function ProductTitle() {
+  const title = useString('product_title');
+
+  if (!title) {
+    return <div>Loading...</div>;
+  }
+
+  return <h1>{title}</h1>;
+}
+```
+
+### Dynamic Content
+
+```jsx
+function OfferBanner({ daysRemaining }) {
+  const template = useString('offer_expires');
+  const text = template.replace('%d', daysRemaining.toString());
+
+  return (
+    <div className="banner">
+      <p>{text}</p>
+    </div>
+  );
+}
+```
+
+### Lists
+
+```jsx
+function ProductList({ products }) {
+  const addToCartText = useString('button_add_to_cart');
+  const outOfStockText = useString('label_out_of_stock');
+
+  return (
+    <ul>
+      {products.map(product => (
+        <li key={product.id}>
+          <h3>{product.name}</h3>
+          <p>${product.price}</p>
+          <button disabled={!product.inStock}>
+            {product.inStock ? addToCartText : outOfStockText}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+---
+
+## Next.js Patterns
+
+### App Router (Server Components)
+
+```tsx app/product/[id]/page.tsx
+import { cookies } from 'next/headers';
+
+async function getStrings(lang: string) {
+  // Fetch strings server-side
+  const res = await fetch(`https://api.stringboot.com/strings?lang=${lang}`, {
+    headers: {
+      'Authorization': `Bearer ${process.env.STRINGBOOT_API_TOKEN}`
+    }
+  });
+  return res.json();
+}
+
+export default async function ProductPage() {
+  const cookieStore = cookies();
+  const lang = cookieStore.get('language')?.value || 'en';
+  const strings = await getStrings(lang);
+
+  return (
+    <div>
+      <h1>{strings.product_title}</h1>
+      <p>{strings.product_description}</p>
+    </div>
+  );
+}
+```
+
+### App Router (Client Components)
+
+```tsx 'use client'
+import { useString } from '@stringboot/web-sdk/react';
+
+export default function ProductTitle() {
+  const title = useString('product_title');
+  return <h1>{title}</h1>;
+}
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use React Hooks in React Apps">
+    **Recommended:**
+    ```jsx
+    const title = useString('product_title');
+    ```
+
+    **Avoid:**
+    ```jsx
+    const [title, setTitle] = useState('');
+
+    useEffect(() => {
+      StringBoot.get('product_title').then(setTitle);
+    }, []);
+    ```
+
+    Hooks handle updates and lifecycle automatically.
+  </Accordion>
+
+  <Accordion title="Batch String Requests">
+    **Recommended:**
+    ```jsx
+    const strings = useStrings(['title', 'subtitle', 'description']);
+    ```
+
+    **Avoid:**
+    ```jsx
+    const title = useString('title');
+    const subtitle = useString('subtitle');
+    const description = useString('description');
+    ```
+
+    Single hook is more efficient.
+  </Accordion>
+
+  <Accordion title="Unwatch When Component Unmounts">
+    **Vanilla JS:**
+    ```javascript
+    const watchers = [];
+
+    // Add watcher
+    watchers.push('welcome_message');
+    StringBoot.watch('welcome_message', updateUI);
+
+    // Cleanup
+    function cleanup() {
+      watchers.forEach(key => StringBoot.unwatch(key));
+    }
+    ```
+
+    React hooks handle this automatically.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Common Use Cases
+
+### Marketing Campaigns
+
+```jsx CampaignBanner.jsx
+import { useStrings } from '@stringboot/web-sdk/react';
+
+function CampaignBanner() {
+  const strings = useStrings([
+    'campaign_banner_title',
+    'campaign_banner_subtitle',
+    'campaign_cta_button'
+  ]);
+
+  return (
+    <div className="campaign-banner">
+      <h2>{strings.campaign_banner_title}</h2>
+      <p>{strings.campaign_banner_subtitle}</p>
+      <button>{strings.campaign_cta_button}</button>
+    </div>
+  );
+}
+```
+
+Update campaign text from dashboard—no code changes!
+
+---
+
+### Seasonal Content
+
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
+
+function SeasonalGreeting() {
+  const greeting = useString('seasonal_greeting');
+  return <h1>{greeting}</h1>;
+}
+```
+
+**Dashboard** (update as seasons change):
+- December: "Happy Holidays!"
+- January: "Happy New Year!"
+- Spring: "Spring Sale!"
+
+---
+
+### Fix Typos Instantly
+
+Found a typo? Fix it in the dashboard and users see the correction immediately on next page load.
+
+---
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Translations" icon="language" href="/web-sdk/translations">
+    Multi-language support and switching
+  </Card>
+  <Card title="A/B Testing" icon="flask" href="/web-sdk/ab-testing">
+    Optimize messaging with experiments
+  </Card>
+  <Card title="React Hooks" icon="react" href="/web-sdk/react-hooks">
+    Complete hooks reference
+  </Card>
+</CardGroup>
+
+---
+
+## API Reference
+
+### Core Methods
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `get(key, lang?)` | Get string asynchronously | `Promise<string>` |
+| `getMultiple(keys, lang?)` | Get multiple strings | `Promise<Record<string, string>>` |
+| `watch(key, callback)` | Watch for changes | `void` |
+| `unwatch(key)` | Stop watching | `void` |
+| `sync()` | Manual sync with server | `Promise<void>` |
+| `clearCache()` | Clear local cache | `void` |
+
+### React Hooks
+
+| Hook | Description | Returns |
+|------|-------------|---------|
+| `useString(key)` | Get single string | `string` |
+| `useStrings(keys)` | Get multiple strings | `Record<string, string>` |
+| `useSync()` | Manual sync control | `{ sync, syncing }` |
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Strings not updating">
+    **Check:**
+    - Is SDK initialized?
+    - Did you call `sync()` after dashboard update?
+    - Check browser DevTools → Network for API calls
+
+    **Solution:**
+    ```javascript
+    await StringBoot.sync();
+    ```
+  </Accordion>
+
+  <Accordion title="React hooks not working">
+    **Check:**
+    - Did you initialize SDK with `useStringBoot` at app root?
+    - Is component inside the initialized app tree?
+
+    **Solution:**
+    ```jsx App.jsx
+    import { useStringBoot } from '@stringboot/web-sdk/react';
+
+    function App() {
+      const { initialized } = useStringBoot({
+        apiToken: 'YOUR_TOKEN',
+        baseUrl: 'https://api.stringboot.com'
+      });
+
+      if (!initialized) return <div>Loading...</div>;
+      return <YourApp />;
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Support
+
+<CardGroup cols={2}>
+  <Card title="Installation Guide" icon="download" href="/web-sdk/installation">
+    Complete setup instructions
+  </Card>
+  <Card title="React Hooks" icon="react" href="/web-sdk/react-hooks">
+    Complete hooks reference
+  </Card>
+  <Card title="Next.js Integration" icon="window" href="/web-sdk/nextjs">
+    SSR and App Router patterns
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>
