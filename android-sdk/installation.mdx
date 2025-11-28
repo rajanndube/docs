@@ -100,20 +100,7 @@ android {
 Add required permissions and SDK configuration:
 
 ```xml AndroidManifest.xml
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- Required permissions -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <application
-        android:name=".StringbootApplication"
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:theme="@style/Theme.AppName">
-
+<application
         <!-- Stringboot SDK Configuration -->
         <meta-data
             android:name="com.stringboot.api_url"
@@ -127,19 +114,7 @@ Add required permissions and SDK configuration:
         <meta-data
             android:name="com.stringboot.cache_size"
             android:value="1000" />
-
-        <!-- Your activities -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-    </application>
-</manifest>
+</application>
 ```
 
 ---
@@ -149,6 +124,7 @@ Add required permissions and SDK configuration:
 ### Why Analytics Integration is Required
 
 The analytics handler enables:
+
 - **Experiment tracking**: Know which users see which variants
 - **Results analysis**: Measure impact of string changes
 - **Data-driven decisions**: Use analytics platforms for statistical analysis
@@ -172,17 +148,17 @@ The analytics handler enables:
     import com.google.firebase.ktx.Firebase
     import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
     import com.stringboot.sdk.models.ExperimentAssignment
-
+    
     class StringbootApplication : Application() {
-
+    
         private lateinit var firebaseAnalytics: FirebaseAnalytics
-
+    
         override fun onCreate() {
             super.onCreate()
-
+    
             // Initialize Firebase
             firebaseAnalytics = Firebase.analytics
-
+    
             // Create analytics handler
             val analyticsHandler = object : StringbootAnalyticsHandler {
                 override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
@@ -192,12 +168,12 @@ The analytics handler enables:
                             "stringboot_exp_$key",
                             assignment.variantName
                         )
-
+    
                         StringbootLogger.i("Experiment: $key → ${assignment.variantName}")
                     }
                 }
             }
-
+    
             // Initialize Stringboot with analytics
             StringbootExtensions.autoInitialize(
                 context = this,
@@ -207,7 +183,6 @@ The analytics handler enables:
     }
     ```
   </Tab>
-
   <Tab title="Mixpanel">
     ### Add Mixpanel Dependency
 
@@ -224,17 +199,17 @@ The analytics handler enables:
     import com.mixpanel.android.mpmetrics.MixpanelAPI
     import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
     import com.stringboot.sdk.models.ExperimentAssignment
-
+    
     class StringbootApplication : Application() {
-
+    
         private lateinit var mixpanel: MixpanelAPI
-
+    
         override fun onCreate() {
             super.onCreate()
-
+    
             // Initialize Mixpanel
             mixpanel = MixpanelAPI.getInstance(this, "YOUR_MIXPANEL_TOKEN", true)
-
+    
             // Create analytics handler
             val analyticsHandler = object : StringbootAnalyticsHandler {
                 override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
@@ -244,12 +219,12 @@ The analytics handler enables:
                             "stringboot_exp_$key",
                             assignment.variantName
                         )
-
+    
                         StringbootLogger.i("Experiment: $key → ${assignment.variantName}")
                     }
                 }
             }
-
+    
             // Initialize Stringboot with analytics
             StringbootExtensions.autoInitialize(
                 context = this,
@@ -259,7 +234,6 @@ The analytics handler enables:
     }
     ```
   </Tab>
-
   <Tab title="Amplitude">
     ### Add Amplitude Dependency
 
@@ -277,33 +251,33 @@ The analytics handler enables:
     import com.amplitude.api.Identify
     import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
     import com.stringboot.sdk.models.ExperimentAssignment
-
+    
     class StringbootApplication : Application() {
-
+    
         override fun onCreate() {
             super.onCreate()
-
+    
             // Initialize Amplitude
             Amplitude.getInstance()
                 .initialize(this, "YOUR_AMPLITUDE_API_KEY")
                 .enableForegroundTracking(this)
-
+    
             // Create analytics handler
             val analyticsHandler = object : StringbootAnalyticsHandler {
                 override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
                     val identify = Identify()
-
+    
                     experiments.forEach { (key, assignment) ->
                         // Set user property
                         identify.set("stringboot_exp_$key", assignment.variantName)
-
+    
                         StringbootLogger.i("Experiment: $key → ${assignment.variantName}")
                     }
-
+    
                     Amplitude.getInstance().identify(identify)
                 }
             }
-
+    
             // Initialize Stringboot with analytics
             StringbootExtensions.autoInitialize(
                 context = this,
@@ -313,7 +287,6 @@ The analytics handler enables:
     }
     ```
   </Tab>
-
   <Tab title="Custom Analytics">
     ### Implement Custom Handler
 
@@ -322,12 +295,12 @@ The analytics handler enables:
     ```kotlin StringbootApplication.kt
     import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
     import com.stringboot.sdk.models.ExperimentAssignment
-
+    
     class StringbootApplication : Application() {
-
+    
         override fun onCreate() {
             super.onCreate()
-
+    
             // Create custom analytics handler
             val analyticsHandler = object : StringbootAnalyticsHandler {
                 override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
@@ -337,19 +310,19 @@ The analytics handler enables:
                             "stringboot_exp_$key",
                             assignment.variantName
                         )
-
+    
                         // Or send as event
                         yourAnalytics.track("experiment_assigned", mapOf(
                             "experiment_key" to key,
                             "variant" to assignment.variantName,
                             "experiment_id" to assignment.experimentId
                         ))
-
+    
                         StringbootLogger.i("Experiment: $key → ${assignment.variantName}")
                     }
                 }
             }
-
+    
             // Initialize Stringboot with analytics
             StringbootExtensions.autoInitialize(
                 context = this,
@@ -360,6 +333,7 @@ The analytics handler enables:
     ```
 
     **Key Points:**
+
     - Use **user properties** (not events) for best analysis
     - Property name format: `stringboot_exp_{experiment_key}`
     - Value is the variant name: `control`, `variant-a`, etc.
@@ -386,7 +360,7 @@ The analytics handler enables:
     class StringbootApplication : Application() {
         override fun onCreate() {
             super.onCreate()
-
+    
             // SDK automatically generates and persists a UUID
             StringbootExtensions.autoInitialize(
                 context = this,
@@ -398,12 +372,12 @@ The analytics handler enables:
     ```
 
     **Characteristics:**
+
     - Persists across app launches
     - Unique per app installation
     - Automatically managed by SDK
     - **Use this unless you have a specific reason to use custom ID**
   </Tab>
-
   <Tab title="Firebase Installation ID">
     ### Use Firebase Installation ID
 
@@ -419,18 +393,18 @@ The analytics handler enables:
     ```kotlin StringbootApplication.kt
     import com.google.firebase.installations.FirebaseInstallations
     import kotlinx.coroutines.tasks.await
-
+    
     class StringbootApplication : Application() {
-
+    
         private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
+    
         override fun onCreate() {
             super.onCreate()
-
+    
             // Initialize with Firebase Installation ID
             applicationScope.launch {
                 val deviceId = getFirebaseInstallationId()
-
+    
                 StringbootExtensions.autoInitialize(
                     context = this@StringbootApplication,
                     providedDeviceId = deviceId,
@@ -438,7 +412,7 @@ The analytics handler enables:
                 )
             }
         }
-
+    
         private suspend fun getFirebaseInstallationId(): String? {
             return try {
                 FirebaseInstallations.getInstance().id.await()
@@ -451,11 +425,11 @@ The analytics handler enables:
     ```
 
     **When to use:**
+
     - Already using Firebase in your app
     - Want same device ID across multiple SDKs
     - Need to correlate Stringboot experiments with Firebase data
   </Tab>
-
   <Tab title="Custom Device ID">
     ### Provide Your Own Device ID
 
@@ -463,41 +437,43 @@ The analytics handler enables:
 
     ```kotlin StringbootApplication.kt
     class StringbootApplication : Application() {
-
+    
         override fun onCreate() {
             super.onCreate()
-
+    
             val customDeviceId = getYourAppDeviceId()
-
+    
             StringbootExtensions.autoInitialize(
                 context = this,
                 providedDeviceId = customDeviceId,
                 analyticsHandler = analyticsHandler
             )
         }
-
+    
         private fun getYourAppDeviceId(): String? {
             // Option 1: Your app's existing user/device ID
             return sharedPreferences.getString("app_device_id", null)
-
+    
             // Option 2: Generated UUID stored in preferences
             // return UUID.randomUUID().toString()  // Store this!
-
+    
             // Option 3: Advertising ID (requires user consent)
             // return AdvertisingIdClient.getAdvertisingIdInfo(this).id
-
+    
             // Return null to let SDK generate UUID
         }
     }
     ```
 
     **Requirements for custom device ID:**
+
     - Must be persistent across app launches
     - Must be unique per installation
     - Must not change during experiments
     - Should be available before SDK initialization
 
     **❌ Don't use:**
+
     - Session IDs (change each launch)
     - Temporary identifiers
     - User IDs that change on logout
@@ -658,40 +634,43 @@ Log.i("StringbootTest", "Device ID: $deviceId")
     **Cause:** API token not in gradle.properties
 
     **Solution:**
+
     1. Create `gradle.properties` in project root (next to settings.gradle.kts)
     2. Add `STRINGBOOT_API_TOKEN=your_token_here`
     3. Add `gradle.properties` to `.gitignore`
     4. Sync project
   </Accordion>
-
   <Accordion title="Analytics handler not called">
     **Possible causes:**
+
     1. No experiments running in dashboard
     2. Analytics handler not passed to `autoInitialize()`
     3. Device not assigned to any experiments
 
     **Solutions:**
+
     - Create test experiment in dashboard
     - Verify `analyticsHandler` parameter is set
     - Check device ID is being sent with requests
   </Accordion>
-
   <Accordion title="Strings show '??key??' pattern">
     **Causes:**
+
     1. API token invalid
     2. No network connectivity
     3. Strings not created in dashboard
 
     **Solutions:**
+
     - Verify API token in dashboard
     - Check internet permission in manifest
     - Ensure strings exist for your app
   </Accordion>
-
   <Accordion title="Device ID changes on each launch">
     **Cause:** Using non-persistent ID or regenerating UUID
 
     **Solution:**
+
     - Use default SDK-generated UUID (it persists automatically)
     - If using custom ID, store it in SharedPreferences
     - Don't generate new UUID on each launch
@@ -708,11 +687,9 @@ Now that setup is complete, learn how to use the three core features:
   <Card title="Dynamic Strings" icon="text" href="/android-sdk/dynamic-strings">
     Update app copy without releases
   </Card>
-
   <Card title="Translations" icon="language" href="/android-sdk/translations">
     Multi-language support and switching
   </Card>
-
   <Card title="A/B Testing" icon="flask" href="/android-sdk/ab-testing">
     Run experiments to optimize messaging
   </Card>
@@ -724,15 +701,12 @@ Now that setup is complete, learn how to use the three core features:
   <Card title="Best Practices" icon="star" href="/android-sdk/best-practices">
     Production-ready patterns
   </Card>
-
   <Card title="Advanced Usage" icon="code" href="/android-sdk/advanced-usage">
     FAQ management, caching, optimization
   </Card>
-
   <Card title="Core Concepts" icon="book" href="/core-concepts">
     Architecture and offline behavior
   </Card>
-
   <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
     Common issues and solutions
   </Card>
