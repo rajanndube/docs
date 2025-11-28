@@ -1,40 +1,23 @@
 ---
 title: "Android SDK"
-description: "Complete guide to integrating Stringboot in your Android application"
+description: "High-performance string localization for Android applications"
 ---
 
 ## Overview
 
 The Stringboot Android SDK provides high-performance string localization for Android applications with offline-first architecture, smart caching, and reactive UI updates. Built with Kotlin and optimized for modern Android development.
 
-### Three Core Features
+### Core Features
 
 <CardGroup cols={3}>
   <Card title="Dynamic Strings" icon="font">
     Update app text instantly without releasing new versions
   </Card>
-  <Card title="Multi-Language Support" icon="language">
-    Seamless translations and language switching for global users
+  <Card title="Multi-Language" icon="language">
+    Seamless translations and language switching
   </Card>
   <Card title="A/B Testing" icon="flask">
     Optimize messaging with built-in experiment tracking
-  </Card>
-</CardGroup>
-
-### Additional Features
-
-<CardGroup cols={2}>
-  <Card title="Offline-First" icon="wifi-slash">
-    Works seamlessly without network using Room database persistence
-  </Card>
-  <Card title="XML Tag Integration" icon="tag">
-    Zero-code string updates with `applyStringbootTags()`
-  </Card>
-  <Card title="Reactive Flow API" icon="arrows-rotate">
-    Automatic UI updates when language changes
-  </Card>
-  <Card title="Analytics Integration" icon="chart-mixed">
-    Firebase, Mixpanel, Amplitude, and custom analytics
   </Card>
 </CardGroup>
 
@@ -44,283 +27,55 @@ The Stringboot Android SDK provides high-performance string localization for And
 | --------------- | ---------------- |
 | **Min SDK**     | 24 (Android 7.0) |
 | **Target SDK**  | 34 (Android 14)  |
-| **SDK Version** | 1.2.0            |
 | **Kotlin**      | 1.9.22+          |
 
 ---
 
-## Installation
+## Start Integration
 
-### Step 1: Add Repository
+To get started with the Android SDK, follow our complete installation guide which covers:
+- Gradle dependency setup
+- Manifest configuration
+- Analytics integration (Required for A/B testing)
+- Device ID configuration
+- Initialization and usage
 
-Add Maven Central to your project's `settings.gradle.kts`:
-
-```kotlin settings.gradle.kts
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()  // Stringboot SDK is hosted on Maven Central
-    }
-}
-```
-
-### Step 2: Add Dependency
-
-In your app's `build.gradle.kts`:
-
-```kotlin build.gradle.kts
-dependencies {
-    implementation("com.stringboot:stringboot-android-sdk:1.2.0")
-}
-```
-
-All transitive dependencies are included automatically (Room, Retrofit, OkHttp, Coroutines, etc.).
-
-**Latest Version:** Check [Maven Central](https://search.maven.org/artifact/com.stringboot/stringboot-android-sdk) for the latest available version.
-
-### Step 3: Sync Project
-
-Click **Sync Now** in Android Studio or run:
-
-```bash
-./gradlew build
-```
+<Card title="Start Installation Guide" icon="play" href="/android-sdk/installation">
+  Step-by-step guide to integrate Stringboot Android SDK
+</Card>
 
 ---
 
-## Configuration
-
-### Secure API Credentials
-
-<Warning>
-  **Never hardcode API tokens** in your source code or manifest files. Use environment variables or gradle.properties instead.
-</Warning>
-
-In `gradle.properties` (add to `.gitignore`):
-
-```properties gradle.properties
-STRINGBOOT_API_URL=https://api.stringboot.com
-STRINGBOOT_API_TOKEN=your_token_here
-```
-
-In `app/build.gradle.kts`:
-
-```kotlin build.gradle.kts
-android {
-    defaultConfig {
-        // Configure API URL and Token using manifest placeholders
-        val apiUrl = project.findProperty("STRINGBOOT_API_URL")?.toString()
-            ?: System.getenv("STRINGBOOT_API_URL")
-            ?: error("STRINGBOOT_API_URL not configured")
-
-        val apiToken = project.findProperty("STRINGBOOT_API_TOKEN")?.toString()
-            ?: System.getenv("STRINGBOOT_API_TOKEN")
-            ?: error("STRINGBOOT_API_TOKEN not configured")
-
-        // Manifest placeholders (for auto-initialization)
-        manifestPlaceholders["STRINGBOOT_API_URL"] = apiUrl
-        manifestPlaceholders["STRINGBOOT_API_TOKEN"] = apiToken
-    }
-}
-```
-
-### Configure AndroidManifest.xml
-
-Add permissions and SDK configuration:
-
-```xml AndroidManifest.xml
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- Required permissions -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <application
-        android:name=".StringbootApplication"
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.AppName">
-
-        <!-- Stringboot SDK Configuration -->
-        <meta-data
-            android:name="com.stringboot.api_url"
-            android:value="${STRINGBOOT_API_URL}" />
-        <meta-data
-            android:name="com.stringboot.api_token"
-            android:value="${STRINGBOOT_API_TOKEN}" />
-        <meta-data
-            android:name="com.stringboot.default_locale"
-            android:value="en" />
-        <meta-data
-            android:name="com.stringboot.cache_size"
-            android:value="1000" />
-
-        <!-- Your activities -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-    </application>
-</manifest>
-```
-
----
-
-## Initialization
-
-Create an Application class to initialize the SDK:
-
-```kotlin StringbootApplication.kt
-package com.stringboot.android
-
-import android.app.Application
-import com.stringboot.sdk.StringProvider
-import com.stringboot.sdk.StringbootExtensions
-import com.stringboot.sdk.utils.StringbootLogger
-
-class StringbootApplication : Application() {
-
-    override fun onCreate() {
-        super.onCreate()
-
-        // Auto-initialize from manifest configuration
-        val success = StringbootExtensions.autoInitialize(this)
-
-        if (success) {
-            StringbootLogger.i("✅ Stringboot initialized successfully")
-        } else {
-            StringbootLogger.w("⚠️ Stringboot auto-initialization failed")
-
-            // Fallback: Initialize without network for offline-only mode
-            try {
-                StringProvider.initialize(
-                    context = this,
-                    cacheSize = 1000,
-                    api = null // Offline mode
-                )
-                StringbootLogger.i("✅ Stringboot initialized in offline mode")
-            } catch (e: Exception) {
-                StringbootLogger.e("❌ Stringboot fallback initialization failed: ${e.message}", e)
-            }
-        }
-    }
-}
-```
-
-**The SDK automatically:**
-
-- Reads configuration from AndroidManifest.xml
-- Creates and configures the API client
-- Initializes the Room database
-- Sets up smart caching with specified size
-
----
-
-## Your First String
-
-### 1. Add a String Key to Your Dashboard
-
-Go to [Stringboot Dashboard](https://dashboard.stringboot.com) and create a string with key `welcome_message`.
-
-### 2. Use XML Tag-Based Integration (Recommended)
-
-Add the tag to your TextView:
-
-```xml activity_main.xml
-<TextView
-    android:id="@+id/welcome"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:tag="welcome_message"
-    android:text="Loading..."
-    android:textSize="24sp" />
-```
-
-Apply Stringboot tags in your Activity:
-
-```kotlin MainActivity.kt
-class MainActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivityMainBinding
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        // Auto-apply Stringboot to all TextViews with android:tag
-        binding.root.applyStringbootTags()
-    }
-}
-```
-
-### 3. Or Get Strings Programmatically
-
-```kotlin
-// Simple string fetch (cache-first, offline-safe)
-val text = StringProvider.get(
-    key = "welcome_message",
-    lang = "en"
-)
-textView.text = text
-```
-
-<Note>
-  That's it! Your app now uses Stringboot for localization. The SDK handles caching, offline support, and network sync automatically.
-</Note>
-
----
-
-## What's Next?
-
-Explore the three core features of Stringboot:
-
-<CardGroup cols={3}>
-  <Card title="Dynamic Strings" icon="font" href="/android-sdk/dynamic-strings">
-    Update app text without releases
-  </Card>
-  <Card title="Translations" icon="language" href="/android-sdk/translations">
-    Multi-language support and switching
-  </Card>
-  <Card title="A/B Testing" icon="flask" href="/android-sdk/ab-testing">
-    Optimize messaging with experiments
-  </Card>
-</CardGroup>
-
-### Additional Resources
+## Key Capabilities
 
 <CardGroup cols={2}>
-  <Card title="Installation Guide" icon="download" href="/android-sdk/installation">
-    Complete setup with analytics integration
+  <Card title="XML Integration" icon="code">
+    Zero-code integration with `applyStringbootTags()`
   </Card>
-  <Card title="Best Practices" icon="star" href="/android-sdk/best-practices">
-    Production-ready patterns and optimization
+  <Card title="Flow API" icon="arrows-rotate">
+    Reactive updates for automatic UI refresh
   </Card>
-  <Card title="Advanced Usage" icon="code" href="/android-sdk/usage">
-    Advanced patterns and techniques
+  <Card title="Offline-First" icon="wifi-slash">
+    Works seamlessly without network using Room database
   </Card>
-  <Card title="Core Concepts" icon="book" href="/core-concepts">
-    Understand caching, sync, and offline behavior
+  <Card title="Analytics" icon="chart-mixed">
+    Built-in support for Firebase, Mixpanel, and Amplitude
   </Card>
 </CardGroup>
 
----
+## Next Steps
 
-## Quick Links
-
-- [Installation Guide](/android-sdk/installation) - Complete setup with analytics
-- [Dynamic Strings](/android-sdk/dynamic-strings) - Update text without releases
-- [Translations](/android-sdk/translations) - Multi-language support
-- [A/B Testing](/android-sdk/ab-testing) - Experiment tracking setup
-- [Best Practices](/android-sdk/best-practices) - Production patterns
-- [Troubleshooting](/advanced/troubleshooting) - Common issues and solutions
-- [GitHub Repository](https://github.com/Stringboot-SDK/stringboot-android-sdk) - Source code and samples
+<CardGroup cols={2}>
+  <Card title="Dynamic Strings" icon="font" href="/android-sdk/dynamic-strings">
+    Update text without releases
+  </Card>
+  <Card title="Translations" icon="language" href="/android-sdk/translations">
+    Multi-language support
+  </Card>
+  <Card title="A/B Testing" icon="flask" href="/android-sdk/ab-testing">
+    Experiment tracking setup
+  </Card>
+  <Card title="Best Practices" icon="star" href="/android-sdk/best-practices">
+    Production patterns
+  </Card>
+</CardGroup>

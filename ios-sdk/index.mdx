@@ -1,40 +1,23 @@
 ---
 title: "iOS SDK"
-description: "Complete guide to integrating Stringboot in your iOS application"
+description: "High-performance string localization for iOS applications"
 ---
 
 ## Overview
 
 The Stringboot iOS SDK provides high-performance string localization for iOS and macOS applications with offline-first architecture, Core Data persistence, and reactive SwiftUI/UIKit integration.
 
-### Three Core Features
+### Core Features
 
 <CardGroup cols={3}>
   <Card title="Dynamic Strings" icon="font">
     Update app text instantly without releasing new versions
   </Card>
-  <Card title="Multi-Language Support" icon="language">
-    Seamless translations and language switching for global users
+  <Card title="Multi-Language" icon="language">
+    Seamless translations and language switching
   </Card>
   <Card title="A/B Testing" icon="flask">
     Optimize messaging with built-in experiment tracking
-  </Card>
-</CardGroup>
-
-### Additional Features
-
-<CardGroup cols={2}>
-  <Card title="Offline-First" icon="wifi-slash">
-    Works seamlessly without network using Core Data persistence
-  </Card>
-  <Card title="SwiftUI Native" icon="swift">
-    Auto-updating `SBText` components with reactive updates
-  </Card>
-  <Card title="Combine Publishers" icon="arrows-rotate">
-    Reactive string updates for automatic UI refresh
-  </Card>
-  <Card title="Analytics Integration" icon="chart-mixed">
-    Firebase, Mixpanel, Amplitude, and custom analytics
   </Card>
 </CardGroup>
 
@@ -46,326 +29,53 @@ The Stringboot iOS SDK provides high-performance string localization for iOS and
 | **Minimum macOS** | 11.0+   |
 | **Swift**         | 5.9+    |
 | **Xcode**         | 15.0+   |
-| **SDK Version**   | 1.2.0   |
 
 ---
 
-## Installation
+## Start Integration
 
-### Swift Package Manager
+To get started with the iOS SDK, follow our complete installation guide which covers:
+- Swift Package Manager setup
+- Analytics integration (Required for A/B testing)
+- Device ID configuration
+- Initialization and usage
 
-#### Step 1: Add Swift Package Dependency
-
-In Xcode, navigate to **File → Add Packages** and enter the repository URL:
-
-```
-https://github.com/Stringboot-SDK/stringboot-ios-sdk.git
-```
-
-Select: **Up to next major version** = `1.2.0`
-
-#### Step 2: Add to Your Target
-
-Select your app target and add `StringbootSDK` to **Frameworks, Libraries, and Embedded Content**.
-
-Alternatively, add to your `Package.swift`:
-
-```swift Package.swift
-dependencies: [
-    .package(
-        url: "https://github.com/Stringboot-SDK/stringboot-ios-sdk.git",
-        from: "1.2.0"
-    )
-]
-
-targets: [
-    .target(
-        name: "YourApp",
-        dependencies: ["StringbootSDK"]
-    )
-]
-```
-
-#### Step 3: Import the SDK
-
-```swift
-import StringbootSDK
-```
+<Card title="Start Installation Guide" icon="play" href="/ios-sdk/installation">
+  Step-by-step guide to integrate Stringboot iOS SDK
+</Card>
 
 ---
 
-## Initialization
-
-### SwiftUI App
-
-Initialize the SDK in your app's `@main` struct:
-
-```swift App.swift
-import SwiftUI
-import StringbootSDK
-
-@main
-struct MyApp: App {
-
-    init() {
-        // Configure logging (disable in production)
-        StringbootLogger.isLoggingEnabled = true
-        StringbootLogger.logLevel = .debug
-
-        // Initialize Stringboot SDK
-        StringProvider.shared.initialize(
-            cacheSize: 1000,
-            apiToken: "YOUR_API_TOKEN",
-            baseURL: "https://api.stringboot.com",
-            autoSync: true
-        )
-
-        // Set saved language or use device locale
-        let currentLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
-            ?? StringProvider.shared.deviceLocale()
-        StringProvider.shared.setLocale(currentLang)
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
-}
-```
-
-### UIKit App
-
-Initialize in your `AppDelegate`:
-
-```swift AppDelegate.swift
-import UIKit
-import StringbootSDK
-
-@main
-class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-    ) -> Bool {
-
-        // Configure logging
-        StringbootLogger.isLoggingEnabled = true
-        StringbootLogger.logLevel = .debug
-
-        // Initialize SDK
-        StringProvider.shared.initialize(
-            cacheSize: 1000,
-            apiToken: "YOUR_API_TOKEN",
-            baseURL: "https://api.stringboot.com",
-            autoSync: true
-        )
-
-        return true
-    }
-}
-```
-
-### Initialization Parameters
-
-| Parameter          | Type                                  | Description                                               |
-| ------------------ | ------------------------------------- | --------------------------------------------------------- |
-| `cacheSize`        | Int                                   | Maximum strings in memory cache (recommended: 1000)       |
-| `apiToken`         | String                                | Your Stringboot API token from the dashboard              |
-| `baseURL`          | String                                | API endpoint (default: `https://api.stringboot.com`)      |
-| `autoSync`         | Bool                                  | Automatically sync strings on app launch                  |
-| `providedDeviceId` | String? (optional)                    | Custom device ID for consistent A/B testing (v1.2.0+)     |
-| `analyticsHandler` | StringbootAnalyticsHandler? (optional) | Handler for A/B test experiment assignments (v1.2.0+)     |
-
----
-
-## Logger Configuration
-
-Control SDK logging for debugging:
-
-```swift
-// Enable detailed logging for development
-StringbootLogger.isLoggingEnabled = true
-StringbootLogger.logLevel = .debug  // Options: .debug, .info, .warning, .error
-
-// Disable logging for production
-StringbootLogger.isLoggingEnabled = false
-```
-
-**Log Levels:**
-- **`.debug`** - All SDK activity and detailed tracing
-- **`.info`** - Important operations and state changes
-- **`.warning`** - Potential issues and edge cases
-- **`.error`** - Errors only
-
----
-
-## Your First String
-
-### 1. Add a String Key to Your Dashboard
-
-Go to [Stringboot Dashboard](https://dashboard.stringboot.com) and create a string with key `welcome_message`.
-
-### 2. Use in SwiftUI
-
-The SDK provides `SBText` for auto-updating text:
-
-```swift ContentView.swift
-import SwiftUI
-import StringbootSDK
-
-struct ContentView: View {
-    @ObservedObject var stringProvider = StringProvider.shared
-
-    var body: some View {
-        VStack(spacing: 20) {
-            // Auto-updating text view
-            SBText("welcome_message")
-                .font(.title)
-                .fontWeight(.bold)
-
-            SBText("app_description")
-                .font(.body)
-                .foregroundColor(.secondary)
-        }
-        .padding()
-    }
-}
-```
-
-### 3. Or Use in UIKit
-
-The SDK provides `SBLabel` for UIKit:
-
-```swift ViewController.swift
-import UIKit
-import StringbootSDK
-
-class ViewController: UIViewController {
-
-    let titleLabel = SBLabel(key: "welcome_message")
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        titleLabel.font = .systemFont(ofSize: 24, weight: .bold)
-        titleLabel.textAlignment = .center
-        view.addSubview(titleLabel)
-
-        // Layout constraints...
-    }
-}
-```
-
-### 4. Or Get Strings with Async/Await
-
-```swift
-Task {
-    let welcomeText = await StringProvider.shared.get(
-        "welcome_message",
-        lang: "en"
-    )
-    print(welcomeText)
-}
-```
-
-<Success>
-  **That's it!** Your app now uses Stringboot for localization. The SDK handles caching, offline support, and network sync automatically.
-</Success>
-
----
-
-## Handle SDK States
-
-Always handle the three SDK states for a better user experience:
-
-```swift
-struct ContentView: View {
-    @ObservedObject var stringProvider = StringProvider.shared
-
-    var body: some View {
-        Group {
-            if stringProvider.isReady {
-                mainContent
-            } else if let error = stringProvider.initializationError {
-                errorView(error)
-            } else {
-                loadingView
-            }
-        }
-    }
-
-    private var loadingView: some View {
-        VStack(spacing: 20) {
-            ProgressView()
-                .scaleEffect(2.0)
-            Text("Loading strings...")
-                .font(.headline)
-        }
-    }
-
-    private func errorView(_ message: String) -> some View {
-        VStack {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 60))
-            Text("Initialization Failed")
-                .font(.title2)
-            Text(message)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    private var mainContent: some View {
-        // Your app content
-        Text("App ready!")
-    }
-}
-```
-
----
-
-## What's Next?
-
-Explore the three core features of Stringboot:
-
-<CardGroup cols={3}>
-  <Card title="Dynamic Strings" icon="font" href="/ios-sdk/dynamic-strings">
-    Update app text without releases
-  </Card>
-  <Card title="Translations" icon="language" href="/ios-sdk/translations">
-    Multi-language support and switching
-  </Card>
-  <Card title="A/B Testing" icon="flask" href="/ios-sdk/ab-testing">
-    Optimize messaging with experiments
-  </Card>
-</CardGroup>
-
-### Additional Resources
+## Key Capabilities
 
 <CardGroup cols={2}>
-  <Card title="Installation Guide" icon="download" href="/ios-sdk/installation">
-    Complete setup with analytics integration
+  <Card title="SwiftUI Native" icon="swift">
+    Auto-updating `SBText` components with reactive updates
   </Card>
-  <Card title="Best Practices" icon="star" href="/ios-sdk/best-practices">
-    Production-ready patterns and optimization
+  <Card title="Combine Publishers" icon="arrows-rotate">
+    Reactive string updates for automatic UI refresh
   </Card>
-  <Card title="Advanced Usage" icon="code" href="/ios-sdk/usage">
-    Advanced patterns and techniques
+  <Card title="Offline-First" icon="wifi-slash">
+    Works seamlessly without network using Core Data
   </Card>
-  <Card title="Core Concepts" icon="book" href="/core-concepts">
-    Understand caching, sync, and offline behavior
+  <Card title="Analytics" icon="chart-mixed">
+    Built-in support for Firebase, Mixpanel, and Amplitude
   </Card>
 </CardGroup>
 
----
+## Next Steps
 
-## Quick Links
-
-- [Installation Guide](/ios-sdk/installation) - Complete setup with analytics
-- [Dynamic Strings](/ios-sdk/dynamic-strings) - Update text without releases
-- [Translations](/ios-sdk/translations) - Multi-language support
-- [A/B Testing](/ios-sdk/ab-testing) - Experiment tracking setup
-- [Best Practices](/ios-sdk/best-practices) - Production patterns
-- [Troubleshooting](/advanced/troubleshooting) - Common issues and solutions
-- [GitHub Repository](https://github.com/Stringboot-SDK/stringboot-ios-sdk) - Source code and samples
+<CardGroup cols={2}>
+  <Card title="Dynamic Strings" icon="font" href="/ios-sdk/dynamic-strings">
+    Update text without releases
+  </Card>
+  <Card title="Translations" icon="language" href="/ios-sdk/translations">
+    Multi-language support
+  </Card>
+  <Card title="A/B Testing" icon="flask" href="/ios-sdk/ab-testing">
+    Experiment tracking setup
+  </Card>
+  <Card title="Best Practices" icon="star" href="/ios-sdk/best-practices">
+    Production patterns
+  </Card>
+</CardGroup>

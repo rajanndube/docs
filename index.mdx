@@ -5,9 +5,7 @@ description: "High-performance internationalization (i18n) SDK for Web, Android,
 
 ## What is Stringboot?
 
-Stringboot is a powerful internationalization (i18n) SDK that provides high-performance string localization for modern applications across Web, Android, and iOS platforms. It features smart multi-layered caching, offline support, and reactive string updates with minimal overhead.
-
-### Key Features
+Stringboot is a powerful internationalization (i18n) SDK that provides high-performance string localization for modern applications. It features smart multi-layered caching, offline support, and reactive string updates with minimal overhead.
 
 <CardGroup cols={2}>
   <Card title="Offline-First" icon="wifi-slash">
@@ -24,67 +22,21 @@ Stringboot is a powerful internationalization (i18n) SDK that provides high-perf
   </Card>
 </CardGroup>
 
-## Platform Support
-
-Stringboot provides native SDKs for all major platforms:
-
-<Tabs>
-  <Tab title="Web">
-    **Zero Dependencies** • Lightweight SDK with no external dependencies
-
-    **React Integration** • 6 optimized hooks with built-in state management
-
-    **Browser Support** • Chrome 87+, Firefox 78+, Safari 14+, Edge 88+
-
-    <Card title="Web SDK Guide" icon="globe" href="/web-sdk/installation">
-      Get started with the Web SDK
-    </Card>
-  </Tab>
-
-  <Tab title="Android">
-    **Min SDK 24** • Android 7.0 and above
-
-    **XML Integration** • Zero-code integration with `applyStringbootTags()`
-
-    **Flow API** • Reactive updates for automatic UI refresh
-
-    <Card title="Android SDK Guide" icon="android" href="/android-sdk/installation">
-      Get started with the Android SDK
-    </Card>
-  </Tab>
-
-  <Tab title="iOS">
-    **iOS 14+** • Swift 5.9+ with async/await support
-
-    **SwiftUI Native** • Auto-updating SBText components
-
-    **Combine Publishers** • Reactive string updates
-
-    <Card title="iOS SDK Guide" icon="apple" href="/ios-sdk/installation">
-      Get started with the iOS SDK
-    </Card>
-  </Tab>
-</Tabs>
-
 ## Get Started
 
-<Steps>
-  <Step title="Choose your platform">
-    Select the SDK for your platform: [Web](/web-sdk/installation), [Android](/android-sdk/installation), or [iOS](/ios-sdk/installation)
-  </Step>
+Choose your platform to start integrating Stringboot:
 
-  <Step title="Install the SDK">
-    Follow the installation guide for your chosen platform
-  </Step>
-
-  <Step title="Initialize">
-    Configure the SDK with your API credentials
-  </Step>
-
-  <Step title="Start localizing">
-    Begin using localized strings in your application
-  </Step>
-</Steps>
+<CardGroup cols={3}>
+  <Card title="Web SDK" icon="globe" href="/web-sdk/installation">
+    React, Next.js, and Vanilla JS
+  </Card>
+  <Card title="Android SDK" icon="android" href="/android-sdk/installation">
+    Kotlin and Java
+  </Card>
+  <Card title="iOS SDK" icon="apple" href="/ios-sdk/installation">
+    Swift and SwiftUI
+  </Card>
+</CardGroup>
 
 ## Why Stringboot?
 
@@ -106,87 +58,3 @@ Stringboot provides native SDKs for all major platforms:
   </Accordion>
 </AccordionGroup>
 
-## Quick Example
-
-See how easy it is to get started with Stringboot:
-
-<CodeGroup>
-
-```javascript Web SDK
-import StringBoot from '@stringboot/web-sdk';
-
-// Initialize
-await StringBoot.initialize({
-  apiToken: 'your-api-token',
-  baseUrl: 'https://api.stringboot.com',
-  defaultLanguage: 'en'
-});
-
-// Get a string
-const welcome = await StringBoot.get('welcome_message');
-console.log(welcome); // "Welcome to our app!"
-
-// Change language
-await StringBoot.changeLanguage('es');
-// Strings automatically update
-```
-
-```kotlin Android SDK
-// Initialize in Application class
-StringbootExtensions.autoInitialize(this)
-
-// Use in XML
-<TextView
-    android:tag="welcome_message"
-    android:text="@string/welcome_message" />
-
-// Apply strings
-binding.root.applyStringbootTags()
-
-// Or get programmatically
-val text = StringProvider.get("welcome_message")
-```
-
-```swift iOS SDK
-// Initialize in App
-StringProvider.shared.initialize(
-    cacheSize: 1000,
-    apiToken: "your-api-token",
-    baseURL: "https://api.stringboot.com",
-    autoSync: true
-)
-
-// Use in SwiftUI
-SBText("welcome_message")
-    .font(.title)
-```
-
-</CodeGroup>
-
-## Next Steps
-
-<CardGroup cols={2}>
-  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
-    Get up and running in 5 minutes
-  </Card>
-
-  <Card title="Core Concepts" icon="book" href="/core-concepts">
-    Learn about caching, sync, and offline behavior
-  </Card>
-
-  <Card title="Web SDK" icon="globe" href="/web-sdk/installation">
-    Build localized web applications
-  </Card>
-
-  <Card title="Android SDK" icon="android" href="/android-sdk/installation">
-    Add i18n to your Android apps
-  </Card>
-
-  <Card title="iOS SDK" icon="apple" href="/ios-sdk/installation">
-    Localize your iOS applications
-  </Card>
-
-  <Card title="Best Practices" icon="star" href="/advanced/best-practices">
-    Production-ready patterns and tips
-  </Card>
-</CardGroup>

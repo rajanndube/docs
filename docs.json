@@ -14,7 +14,7 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Overview",
             "pages": [
               "index",
               "quickstart"
@@ -75,6 +75,7 @@
           {
             "group": "Advanced",
             "pages": [
+              "core-concepts",
               "advanced/error-handling",
               "advanced/caching",
               "advanced/troubleshooting"
