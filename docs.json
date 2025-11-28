@@ -7,9 +7,6 @@
     "light": "#FE5D05",
     "dark": "#E55100"
   },
-  "fonts": {
-  "family": "Inter"
-  },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
