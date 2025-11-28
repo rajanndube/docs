@@ -1,0 +1,314 @@
+---
+title: "Web SDK"
+description: "Complete guide to integrating Stringboot in your web application"
+---
+
+## Overview
+
+The Stringboot Web SDK provides high-performance string localization for web applications with offline-first architecture, IndexedDB persistence, and optimized React hooks for seamless integration.
+
+### Key Features
+
+<CardGroup cols={2}>
+  <Card title="Offline-First" icon="wifi-slash">
+    Works seamlessly without network using IndexedDB persistence
+  </Card>
+  <Card title="Zero Dependencies" icon="feather">
+    Lightweight SDK (6.6 kB gzipped) with no external dependencies
+  </Card>
+  <Card title="React Hooks" icon="react">
+    7 optimized hooks with built-in state management
+  </Card>
+  <Card title="A/B Testing" icon="flask">
+    Built-in experiment tracking with analytics integration
+  </Card>
+</CardGroup>
+
+### Browser Support
+
+| Browser         | Minimum Version |
+| --------------- | --------------- |
+| **Chrome**      | 87+             |
+| **Firefox**     | 78+             |
+| **Safari**      | 14+             |
+| **Edge**        | 88+             |
+| **SDK Version** | 1.0.5           |
+
+---
+
+## Installation
+
+### NPM
+
+```bash
+npm install @stringboot/web-sdk
+```
+
+### Yarn
+
+```bash
+yarn add @stringboot/web-sdk
+```
+
+### PNPM
+
+```bash
+pnpm add @stringboot/web-sdk
+```
+
+**Package Size:** 6.6 kB gzipped • Dual exports: ESM + CommonJS
+
+---
+
+## Initialization
+
+### Vanilla JavaScript/TypeScript
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+// Initialize once at app startup
+await StringBoot.initialize({
+  apiToken: 'YOUR_API_TOKEN',
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+  debug: true // Set to false in production
+});
+
+console.log('✅ Stringboot initialized');
+```
+
+### React
+
+Use the `useStringBoot` hook to initialize:
+
+```jsx App.jsx
+import { useStringBoot } from '@stringboot/web-sdk/react';
+
+function App() {
+  const { initialized, error } = useStringBoot({
+    apiToken: 'YOUR_API_TOKEN',
+    baseUrl: 'https://api.stringboot.com',
+    defaultLanguage: 'en',
+  });
+
+  if (error) {
+    return <div>Error initializing: {error}</div>;
+  }
+
+  if (!initialized) {
+    return <div>Loading...</div>;
+  }
+
+  return <YourApp />;
+}
+```
+
+### Next.js
+
+See the [Next.js Integration Guide](/web-sdk/nextjs) for detailed setup.
+
+### Configuration Options
+
+| Option             | Type    | Default                      | Description                            |
+| ------------------ | ------- | ---------------------------- | -------------------------------------- |
+| `apiToken`         | string  | **Required**                 | Your Stringboot API token              |
+| `baseUrl`          | string  | `https://api.stringboot.com` | API endpoint URL                       |
+| `defaultLanguage`  | string  | `'en'`                       | Initial language code                  |
+| `cacheSize`        | number  | `1000`                       | Memory cache size (number of strings)  |
+| `debug`            | boolean | `false`                      | Enable debug logging                   |
+| `providedDeviceId` | string  | (auto-generated)             | Custom device ID for A/B testing       |
+| `analyticsHandler` | function | `undefined`                  | Handler for experiment assignments     |
+
+---
+
+## Your First String
+
+### 1. Add a String Key to Your Dashboard
+
+Go to [Stringboot Dashboard](https://dashboard.stringboot.com) and create a string with key `welcome_message`.
+
+### 2. Use in Vanilla JavaScript
+
+```javascript
+// Get a string
+const welcome = await StringBoot.get('welcome_message');
+console.log(welcome); // "Welcome to our app!"
+
+// Watch for changes (reactive)
+StringBoot.watch('welcome_message', (value) => {
+  document.getElementById('welcome').textContent = value;
+});
+
+// Change language
+await StringBoot.changeLanguage('es');
+// Watchers automatically update!
+```
+
+### 3. Use in React
+
+```jsx Component.jsx
+import { useString, useLanguage } from '@stringboot/web-sdk/react';
+
+function WelcomeMessage() {
+  const title = useString('welcome_message');
+  const [currentLang, setLanguage] = useLanguage();
+
+  return (
+    <div>
+      <h1>{title}</h1>
+      <button onClick={() => setLanguage('es')}>
+        Español
+      </button>
+      <button onClick={() => setLanguage('en')}>
+        English
+      </button>
+    </div>
+  );
+}
+```
+
+<Success>
+  **That's it!** Your app now uses Stringboot for localization. The SDK handles caching, offline support, and network sync automatically.
+</Success>
+
+---
+
+## React Hooks
+
+The Web SDK provides 7 optimized React hooks:
+
+### useStringBoot
+
+Initialize the SDK (use once at app root):
+
+```jsx
+const { initialized, error } = useStringBoot({
+  apiToken: 'YOUR_TOKEN',
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+});
+```
+
+### useString
+
+Get a single string with auto-updates:
+
+```jsx
+const welcomeText = useString('welcome_message');
+```
+
+### useStrings
+
+Get multiple strings efficiently:
+
+```jsx
+const strings = useStrings(['title', 'subtitle', 'description']);
+// { title: '...', subtitle: '...', description: '...' }
+```
+
+### useLanguage
+
+Manage current language:
+
+```jsx
+const [language, setLanguage] = useLanguage();
+```
+
+### useActiveLanguages
+
+Get available languages:
+
+```jsx
+const { languages, loading, error } = useActiveLanguages();
+// languages: [{ code: 'en', name: 'English' }, ...]
+```
+
+### useSync
+
+Manual sync trigger:
+
+```jsx
+const { sync, syncing } = useSync();
+
+// Trigger manual sync
+await sync();
+```
+
+### useStringState
+
+Advanced state management for strings:
+
+```jsx
+const [value, loading, error] = useStringState('welcome_message');
+```
+
+See the [React Hooks Guide](/web-sdk/react-hooks) for detailed documentation.
+
+---
+
+## API Methods
+
+### Core Methods
+
+```javascript
+// Initialize SDK
+await StringBoot.initialize(config);
+
+// Get a string
+const text = await StringBoot.get('key', lang);
+
+// Get multiple strings
+const strings = await StringBoot.getMultiple(['key1', 'key2'], lang);
+
+// Watch for changes
+StringBoot.watch('key', (value) => console.log(value));
+
+// Unwatch
+StringBoot.unwatch('key');
+
+// Change language
+await StringBoot.changeLanguage('es');
+
+// Get available languages
+const languages = await StringBoot.getActiveLanguages();
+
+// Manual sync
+await StringBoot.sync();
+
+// Clear cache
+StringBoot.clearCache();
+```
+
+---
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="React Hooks" icon="react" href="/web-sdk/react-hooks">
+    Complete guide to all 7 React hooks
+  </Card>
+
+  <Card title="Next.js Integration" icon="window" href="/web-sdk/nextjs">
+    Server-side rendering and App Router setup
+  </Card>
+
+  <Card title="Usage Examples" icon="code" href="/web-sdk/usage">
+    Advanced patterns and real-world examples
+  </Card>
+
+  <Card title="Best Practices" icon="star" href="/web-sdk/best-practices">
+    Production-ready patterns and optimization tips
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Links
+
+- [React Hooks](/web-sdk/react-hooks) - Complete hooks reference
+- [Next.js Guide](/web-sdk/nextjs) - SSR and App Router setup
+- [Usage Guide](/web-sdk/usage) - Advanced usage patterns
+- [Best Practices](/web-sdk/best-practices) - Production patterns
+- [Troubleshooting](/advanced/troubleshooting) - Common issues
+- [NPM Package](https://www.npmjs.com/package/@stringboot/web-sdk) - Official package

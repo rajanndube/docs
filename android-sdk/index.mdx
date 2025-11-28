@@ -1,16 +1,47 @@
 ---
-title: "Installation & Setup"
-description: "Install and configure the Stringboot Android SDK"
+title: "Android SDK"
+description: "Complete guide to integrating Stringboot in your Android application"
 ---
 
-Install and configure the Stringboot Android SDK for your Android application.
+## Overview
 
-## Step 1: Add Repository
+The Stringboot Android SDK provides high-performance string localization for Android applications with offline-first architecture, smart caching, and reactive UI updates. Built with Kotlin and optimized for modern Android development.
+
+### Key Features
+
+<CardGroup cols={2}>
+  <Card title="Offline-First" icon="wifi-slash">
+    Works seamlessly without network using Room database persistence
+  </Card>
+  <Card title="XML Tag Integration" icon="tag">
+    Zero-code string updates with `applyStringbootTags()`
+  </Card>
+  <Card title="Reactive Flow API" icon="arrows-rotate">
+    Automatic UI updates when language changes
+  </Card>
+  <Card title="A/B Testing" icon="flask">
+    Built-in experiment tracking with analytics integration
+  </Card>
+</CardGroup>
+
+### Platform Requirements
+
+| Requirement     | Version          |
+| --------------- | ---------------- |
+| **Min SDK**     | 24 (Android 7.0) |
+| **Target SDK**  | 34 (Android 14)  |
+| **SDK Version** | 1.2.0            |
+| **Kotlin**      | 1.9.22+          |
+
+---
+
+## Installation
+
+### Step 1: Add Repository
 
 Add Maven Central to your project's `settings.gradle.kts`:
 
-```kotlin
-// settings.gradle.kts (Kotlin DSL)
+```kotlin settings.gradle.kts
 dependencyResolutionManagement {
     repositories {
         google()
@@ -19,11 +50,11 @@ dependencyResolutionManagement {
 }
 ```
 
-## Step 2: Add Dependency
+### Step 2: Add Dependency
 
 In your app's `build.gradle.kts`:
 
-```kotlin
+```kotlin build.gradle.kts
 dependencies {
     implementation("com.stringboot:stringboot-android-sdk:1.2.0")
 }
@@ -33,28 +64,34 @@ All transitive dependencies are included automatically (Room, Retrofit, OkHttp, 
 
 **Latest Version:** Check [Maven Central](https://search.maven.org/artifact/com.stringboot/stringboot-android-sdk) for the latest available version.
 
-## Step 3: Sync Project
+### Step 3: Sync Project
 
-Click **Sync Now** in Android Studio or run the following command in your terminal:
+Click **Sync Now** in Android Studio or run:
 
 ```bash
 ./gradlew build
 ```
 
-## Step 4: Secure API Credentials
+---
 
-**Important:** Never hardcode API tokens in your source code or manifest files. Use environment variables or gradle.properties instead.
+## Configuration
+
+### Secure API Credentials
+
+<Warning>
+  **Never hardcode API tokens** in your source code or manifest files. Use environment variables or gradle.properties instead.
+</Warning>
 
 In `gradle.properties` (add to `.gitignore`):
 
-```properties
+```properties gradle.properties
 STRINGBOOT_API_URL=https://api.stringboot.com
 STRINGBOOT_API_TOKEN=your_token_here
 ```
 
 In `app/build.gradle.kts`:
 
-```kotlin
+```kotlin build.gradle.kts
 android {
     defaultConfig {
         // Configure API URL and Token using manifest placeholders
@@ -73,11 +110,11 @@ android {
 }
 ```
 
-## Step 5: Configure AndroidManifest.xml
+### Configure AndroidManifest.xml
 
-Add permissions and configuration in your `AndroidManifest.xml`:
+Add permissions and SDK configuration:
 
-```xml
+```xml AndroidManifest.xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -106,9 +143,6 @@ Add permissions and configuration in your `AndroidManifest.xml`:
         <meta-data
             android:name="com.stringboot.cache_size"
             android:value="1000" />
-        <meta-data
-            android:name="com.stringboot.auto_replace"
-            android:value="false" />
 
         <!-- Your activities -->
         <activity
@@ -124,11 +158,13 @@ Add permissions and configuration in your `AndroidManifest.xml`:
 </manifest>
 ```
 
-## Step 6: Initialize SDK
+---
+
+## Initialization
 
 Create an Application class to initialize the SDK:
 
-```kotlin
+```kotlin StringbootApplication.kt
 package com.stringboot.android
 
 import android.app.Application
@@ -171,15 +207,90 @@ class StringbootApplication : Application() {
 - Initializes the Room database
 - Sets up smart caching with specified size
 
-## Platform Support
+---
 
-| Feature         | Version          |
-| --------------- | ---------------- |
-| **Min SDK**     | 24 (Android 7.0) |
-| **Target SDK**  | 34 (Android 14)  |
-| **SDK Version** | 1.2.0            |
-| **Kotlin**      | 1.9.22+          |
+## Your First String
 
-## Next Steps
+### 1. Add a String Key to Your Dashboard
 
-After installation, proceed to the [Usage Guide](/android-sdk/usage) to learn how to integrate the SDK into your application, including A/B testing support.
+Go to [Stringboot Dashboard](https://dashboard.stringboot.com) and create a string with key `welcome_message`.
+
+### 2. Use XML Tag-Based Integration (Recommended)
+
+Add the tag to your TextView:
+
+```xml activity_main.xml
+<TextView
+    android:id="@+id/welcome"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:tag="welcome_message"
+    android:text="Loading..."
+    android:textSize="24sp" />
+```
+
+Apply Stringboot tags in your Activity:
+
+```kotlin MainActivity.kt
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Auto-apply Stringboot to all TextViews with android:tag
+        binding.root.applyStringbootTags()
+    }
+}
+```
+
+### 3. Or Get Strings Programmatically
+
+```kotlin
+// Simple string fetch (cache-first, offline-safe)
+val text = StringProvider.get(
+    key = "welcome_message",
+    lang = "en"
+)
+textView.text = text
+```
+
+<Success>
+  **That's it!** Your app now uses Stringboot for localization. The SDK handles caching, offline support, and network sync automatically.
+</Success>
+
+---
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Basic Usage" icon="code" href="/android-sdk/usage">
+    Learn all the ways to use strings in your app
+  </Card>
+
+  <Card title="A/B Testing" icon="flask" href="/android-sdk/ab-testing">
+    Add experiment tracking and analytics integration
+  </Card>
+
+  <Card title="Best Practices" icon="star" href="/android-sdk/best-practices">
+    Production-ready patterns and optimization tips
+  </Card>
+
+  <Card title="Core Concepts" icon="book" href="/core-concepts">
+    Understand caching, sync, and offline behavior
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Links
+
+- [Usage Guide](/android-sdk/usage) - Detailed usage examples
+- [A/B Testing](/android-sdk/ab-testing) - Experiment tracking setup
+- [Best Practices](/android-sdk/best-practices) - Production patterns
+- [Troubleshooting](/advanced/troubleshooting) - Common issues and solutions
+- [GitHub Repository](https://github.com/Stringboot-SDK/stringboot-android-sdk) - Source code and samples

@@ -25,31 +25,19 @@
             ]
           },
           {
-            "group": "Dashboard Guides",
-            "pages": [
-              "dashboard-guides/dashboard-overview",
-              "dashboard-guides/authentication",
-              "dashboard-guides/applications",
-              "dashboard-guides/strings",
-              "dashboard-guides/languages",
-              "dashboard-guides/faqs",
-              "dashboard-guides/api-tokens",
-              "dashboard-guides/settings"
-            ]
-          },
-          {
             "group": "Web SDK",
             "pages": [
-              "web-sdk/installation",
-              "web-sdk/usage",
+              "web-sdk/index",
               "web-sdk/react-hooks",
+              "web-sdk/nextjs",
+              "web-sdk/usage",
               "web-sdk/best-practices"
             ]
           },
           {
             "group": "Android SDK",
             "pages": [
-              "android-sdk/installation",
+              "android-sdk/index",
               "android-sdk/usage",
               "android-sdk/best-practices"
             ]
@@ -57,7 +45,7 @@
           {
             "group": "iOS SDK",
             "pages": [
-              "ios-sdk/installation",
+              "ios-sdk/index",
               "ios-sdk/usage",
               "ios-sdk/best-practices"
             ]
@@ -68,6 +56,19 @@
               "advanced/error-handling",
               "advanced/caching",
               "advanced/troubleshooting"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "dashboard-guides/dashboard-overview",
+              "dashboard-guides/authentication",
+              "dashboard-guides/applications",
+              "dashboard-guides/strings",
+              "dashboard-guides/languages",
+              "dashboard-guides/faqs",
+              "dashboard-guides/api-tokens",
+              "dashboard-guides/settings"
             ]
           }
         ]
