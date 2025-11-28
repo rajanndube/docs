@@ -25,20 +25,6 @@
             ]
           },
           {
-            "group": "Web SDK",
-            "pages": [
-              "web-sdk/index",
-              "web-sdk/installation",
-              "web-sdk/dynamic-strings",
-              "web-sdk/translations",
-              "web-sdk/ab-testing",
-              "web-sdk/react-hooks",
-              "web-sdk/nextjs",
-              "web-sdk/usage",
-              "web-sdk/best-practices"
-            ]
-          },
-          {
             "group": "Android SDK",
             "pages": [
               "android-sdk/index",
@@ -63,11 +49,17 @@
             ]
           },
           {
-            "group": "Advanced",
+            "group": "Web SDK",
             "pages": [
-              "advanced/error-handling",
-              "advanced/caching",
-              "advanced/troubleshooting"
+              "web-sdk/index",
+              "web-sdk/installation",
+              "web-sdk/dynamic-strings",
+              "web-sdk/translations",
+              "web-sdk/ab-testing",
+              "web-sdk/react-hooks",
+              "web-sdk/nextjs",
+              "web-sdk/usage",
+              "web-sdk/best-practices"
             ]
           },
           {
@@ -82,6 +74,14 @@
               "dashboard-guides/faqs",
               "dashboard-guides/api-tokens",
               "dashboard-guides/settings"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/error-handling",
+              "advanced/caching",
+              "advanced/troubleshooting"
             ]
           }
         ]
