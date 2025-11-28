@@ -27,7 +27,6 @@
               "android-sdk/installation",
               "android-sdk/dynamic-strings",
               "android-sdk/translations",
-              "android-sdk/ab-testing",
               "android-sdk/usage",
               "android-sdk/best-practices"
             ]
@@ -39,7 +38,6 @@
               "ios-sdk/installation",
               "ios-sdk/dynamic-strings",
               "ios-sdk/translations",
-              "ios-sdk/ab-testing",
               "ios-sdk/usage",
               "ios-sdk/best-practices"
             ]
@@ -51,7 +49,6 @@
               "web-sdk/installation",
               "web-sdk/dynamic-strings",
               "web-sdk/translations",
-              "web-sdk/ab-testing",
               "web-sdk/react-hooks",
               "web-sdk/nextjs",
               "web-sdk/usage",
