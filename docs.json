@@ -91,14 +91,14 @@
   "navbar": {
     "links": [
       {
-        "label": "Dashboard",
-        "href": "https://dashboard.stringboot.com"
+        "label": "Get API Key",
+        "href": "https://dashboard.stringboot.com/tokens"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Get API Key",
-      "href": "https://dashboard.stringboot.com/tokens"
+      "label": "Signup",
+      "href": "https://dashboard.stringboot.com"
     }
   },
   "contextual": {
