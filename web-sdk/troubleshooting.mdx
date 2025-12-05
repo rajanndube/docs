@@ -1,0 +1,45 @@
+---
+title: Troubleshooting
+description: 'Common issues and solutions for Web SDK'
+icon: 'wrench'
+---
+
+---
+
+## Initialization Issues
+
+<AccordionGroup>
+  <Accordion title="SDK Not Initialized">
+    **Error**: `Stringboot SDK is not initialized`
+
+    **Solution**: Ensure you are wrapping your app with `StringbootProvider` (React) or calling `Stringboot.init()` (Vanilla) before accessing any strings.
+  </Accordion>
+  <Accordion title="CORS Errors">
+    **Error**: `Access to fetch at ... has been blocked by CORS policy`
+
+    **Solution**: This usually happens if you are using a development token in a production environment or vice versa. Check your allowed domains in the Stringboot Dashboard settings.
+  </Accordion>
+</AccordionGroup>
+
+## String Issues
+
+<AccordionGroup>
+  <Accordion title="Strings showing as ??key??">
+    **Cause**: The string key was not found in the local cache.
+
+    **Solutions**:
+    1.  Ensure the key exists in the dashboard.
+    2.  Check if the SDK has finished initializing (`loading` state).
+    3.  Clear your browser's IndexedDB and reload to force a fresh sync.
+  </Accordion>
+</AccordionGroup>
+
+## Next.js Issues
+
+<AccordionGroup>
+  <Accordion title="Hydration Mismatch">
+    **Error**: `Text content does not match server-rendered HTML`
+
+    **Solution**: Ensure you are using the `StringbootProvider` correctly in your `layout.tsx` or `_app.tsx`. For Server Components, ensure you are awaiting the string fetch properly. See the [Next.js Guide](/web-sdk/nextjs) for details.
+  </Accordion>
+</AccordionGroup>

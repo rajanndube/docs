@@ -1,0 +1,56 @@
+---
+title: Troubleshooting
+description: 'Common issues and solutions for Android SDK'
+icon: 'wrench'
+---
+
+---
+
+## Initialization Issues
+
+<AccordionGroup>
+  <Accordion title="SDK Not Initialized">
+    **Error**: `Stringboot SDK is not initialized`
+
+    **Solution**: Ensure you have configured the `AndroidManifest.xml` correctly or called `StringProvider.initialize()` in your `Application.onCreate()`.
+  </Accordion>
+  <Accordion title="Invalid API Token">
+    **Error**: `401 Unauthorized`
+
+    **Solution**: Double-check your API token in the dashboard. Ensure you are using the correct token for the environment (Dev vs Prod).
+  </Accordion>
+</AccordionGroup>
+
+## String Issues
+
+<AccordionGroup>
+  <Accordion title="Strings showing as ??key??">
+    **Cause**: The string key was not found in the local cache.
+
+    **Solutions**:
+    1.  Ensure the key exists in the dashboard.
+    2.  Ensure you have run `StringProvider.refreshFromNetwork()` at least once.
+    3.  Check if the device is offline and the cache is empty.
+  </Accordion>
+  <Accordion title="UI Not Updating">
+    **Cause**: XML views do not automatically update when the locale changes.
+
+    **Solution**: Call `binding.root.applyStringbootTags()` after changing the locale or receiving a sync update.
+  </Accordion>
+</AccordionGroup>
+
+## Build Issues
+
+<AccordionGroup>
+  <Accordion title="Duplicate Class Definition">
+    **Cause**: Conflict with another library using similar dependencies (e.g., Room, Retrofit).
+
+    **Solution**: Check your dependency tree and exclude conflicting transitive dependencies if necessary.
+
+    ```kotlin
+    implementation("com.stringboot:stringboot-android-sdk:1.1.0") {
+        exclude(group = "com.squareup.retrofit2", module = "retrofit")
+    }
+    ```
+  </Accordion>
+</AccordionGroup>

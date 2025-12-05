@@ -1,0 +1,61 @@
+---
+title: Web Samples
+description: 'React, Next.js, and Vanilla JS recipes'
+icon: 'react'
+---
+
+---
+
+## Recipes
+
+<AccordionGroup>
+  <Accordion title="Dynamic Pluralization" icon="list-ol">
+    Handle singular/plural forms automatically based on count.
+
+    ```jsx
+    import { useString } from '@stringboot/web-sdk/react';
+
+    function CartSummary({ itemCount }) {
+      // Key: "cart_summary"
+      // Value: "{count, plural, =0 {Cart is empty} one {# item in cart} other {# items in cart}}"
+      const summary = useString('cart_summary', { count: itemCount });
+
+      return <p>{summary}</p>;
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Date Formatting" icon="calendar">
+    Format dates according to the current locale.
+
+    ```jsx
+    import { useLocale } from '@stringboot/web-sdk/react';
+
+    function OrderDate({ date }) {
+      const { locale } = useLocale();
+      
+      const formattedDate = new Intl.DateTimeFormat(locale, {
+        dateStyle: 'long',
+        timeStyle: 'short'
+      }).format(new Date(date));
+
+      return <span>Ordered on: {formattedDate}</span>;
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Rich Text with HTML" icon="code">
+    Safely render HTML content stored in your strings.
+
+    ```jsx
+    import { useString } from '@stringboot/web-sdk/react';
+
+    function PromoBanner() {
+      // Value: "Get <b>50% off</b> on all <i>summer items</i>!"
+      const promoText = useString('promo_banner_html');
+
+      return <div dangerouslySetInnerHTML={{ __html: promoText }} />;
+    }
+    ```
+  </Accordion>
+</AccordionGroup>

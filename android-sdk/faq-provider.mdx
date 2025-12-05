@@ -1,0 +1,95 @@
+---
+title: FAQ Provider
+description: 'Render dynamic FAQs in your Android app'
+icon: 'circle-question'
+---
+
+---
+
+The **FAQ Provider** allows you to manage and deliver multilingual FAQs dynamically. It uses the same offline-first architecture as the string system.
+
+## Features
+
+- **Offline-First**: FAQs are cached locally in the Room database.
+- **Tagging**: Filter FAQs by tags (e.g., "payments", "account") and sub-tags.
+- **Reactive**: Listen for updates using Kotlin Flows.
+
+## Initialization
+
+Before using the FAQ Provider, ensure the Stringboot SDK is initialized in your `Application` class:
+
+```kotlin
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        
+        // Initialize the main SDK first
+        StringProvider.initialize(
+            context = this,
+            apiToken = "YOUR_API_TOKEN"
+        )
+
+        // Initialize FAQ Provider separately
+        FAQProvider.initialize(
+            context = this,
+            cacheSize = 200 // Optional: Configure cache size
+        )
+    }
+}
+```
+
+## Usage
+
+### Fetching FAQs
+
+Use `FAQProvider.getFAQs()` to fetch a list of FAQs.
+
+```kotlin
+lifecycleScope.launch {
+    // Fetch all FAQs with tag "payments"
+    val faqs = FAQProvider.getFAQs(tag = "payments")
+    
+    faqs.forEach { faq ->
+        println("Q: ${faq.question}")
+        println("A: ${faq.answer}")
+    }
+}
+```
+
+### Reactive Flow
+
+Use `getFAQsFlow()` to observe changes:
+
+```kotlin
+lifecycleScope.launch {
+    FAQProvider.getFAQsFlow(tag = "payments")
+        .collect { faqs ->
+            // Update RecyclerView or Compose list
+            adapter.submitList(faqs)
+        }
+}
+```
+
+### Filtering by Sub-Tags
+
+You can filter by sub-tags to get more specific results:
+
+```kotlin
+val refundFAQs = FAQProvider.getFAQs(
+    tag = "payments",
+    subTags = listOf("refunds")
+)
+```
+
+## Syncing
+
+FAQs are synced automatically, but you can force a refresh:
+
+```kotlin
+lifecycleScope.launch {
+    val success = FAQProvider.refreshFromNetwork()
+    if (success) {
+        Log.d("Stringboot", "FAQs updated")
+    }
+}
+```

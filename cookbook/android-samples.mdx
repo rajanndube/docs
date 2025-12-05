@@ -1,0 +1,259 @@
+---
+title: Android Samples
+description: 'Kotlin and Jetpack Compose recipes'
+icon: 'android'
+---
+
+---
+
+## Recipes
+
+Common patterns and solutions for Android applications.
+
+<AccordionGroup>
+  <Accordion title="Jetpack Compose Integration" icon="android">
+    A reusable Composable for rendering dynamic strings.
+
+    ```kotlin
+    @Composable
+    fun StringbootText(
+        key: String,
+        modifier: Modifier = Modifier,
+        style: TextStyle = LocalTextStyle.current,
+        params: Map<String, Any> = emptyMap()
+    ) {
+        val text by Stringboot.observe(key, params).collectAsState(initial = "")
+        
+        Text(
+            text = text,
+            modifier = modifier,
+            style = style
+        )
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="ViewModel Integration" icon="layer-group">
+    Fetching strings in a ViewModel for business logic.
+
+    ```kotlin
+    class CheckoutViewModel : ViewModel() {
+        private val _orderSummary = MutableStateFlow("")
+        val orderSummary = _orderSummary.asStateFlow()
+
+        fun updateSummary(count: Int, total: Double) {
+            viewModelScope.launch {
+                val template = Stringboot.getString("order_total_message")
+                _orderSummary.value = template
+                    .replace("{count}", count.toString())
+                    .replace("{total}", NumberFormat.getCurrencyInstance().format(total))
+            }
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Language Switcher Logic" icon="globe">
+    Simple language switching logic.
+
+    ```kotlin
+    fun switchLanguage(context: Context, languageCode: String) {
+        Stringboot.setLocale(languageCode)
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("language", languageCode).apply()
+        (context as? Activity)?.recreate()
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Plug-and-Play Components
+
+Ready-to-use UI components for your app.
+
+<AccordionGroup>
+  <Accordion title="Language Picker Modal" icon="list">
+    A Jetpack Compose bottom sheet for selecting languages.
+
+    ```kotlin
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun LanguagePickerSheet(
+        onDismiss: () -> Unit,
+        onLanguageSelected: (String) -> Unit
+    ) {
+        val languages = remember { Stringboot.getAvailableLanguages() }
+        val currentLocale = Stringboot.getCurrentLocale()
+
+        ModalBottomSheet(onDismissRequest = onDismiss) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Select Language",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                LazyColumn {
+                    items(languages) { lang ->
+                        ListItem(
+                            headlineContent = { Text(lang.name) },
+                            leadingContent = { 
+                                if (lang.code == currentLocale) {
+                                    Icon(Icons.Default.Check, contentDescription = null)
+                                }
+                            },
+                            modifier = Modifier.clickable {
+                                onLanguageSelected(lang.code)
+                                onDismiss()
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="FAQ Bottom Sheet" icon="circle-question">
+    A production-ready FAQ browser with caching, search, and expandable items.
+
+    **1. Data Model**
+    ```kotlin
+    data class ContextualFAQUiModel(
+        val question: String,
+        val answer: String,
+        val id: String = java.util.UUID.randomUUID().toString()
+    )
+    ```
+
+    **2. Data Provider**
+    ```kotlin
+    object ContextualFAQProvider {
+        suspend fun getFaqs(
+            tag: String,
+            subTags: List<String> = emptyList(),
+            lang: String = "en"
+        ): List<ContextualFAQUiModel> {
+            return withContext(Dispatchers.IO) {
+                try {
+                    val rawFaqs = FAQProvider.getFAQs(
+                        tag = tag,
+                        subTags = subTags,
+                        lang = lang,
+                        allowNetworkFetch = true
+                    )
+                    
+                    rawFaqs.map { sdkItem ->
+                        ContextualFAQUiModel(
+                            question = sdkItem.question,
+                            answer = sdkItem.answer
+                        )
+                    }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }
+        }
+    }
+    ```
+
+    **3. UI Component**
+    ```kotlin
+    @Composable
+    fun ContextualFaqContainer(
+        tag: String,
+        title: String = "Help & Support",
+        onDismiss: () -> Unit
+    ) {
+        var faqList by remember { mutableStateOf<List<ContextualFAQUiModel>>(emptyList()) }
+        var isLoading by remember { mutableStateOf(true) }
+
+        LaunchedEffect(tag) {
+            isLoading = true
+            faqList = ContextualFAQProvider.getFaqs(tag = tag)
+            isLoading = false
+        }
+
+        if (isLoading) {
+            Box(Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.85f)
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(Color.White)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
+                // List
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(faqList) { item ->
+                        FAQItem(item)
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun FAQItem(item: ContextualFAQUiModel) {
+        var expanded by remember { mutableStateOf(false) }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFFF0F1F5))
+                .clickable { expanded = !expanded }
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = item.question,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(0.9f)
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+
+            AnimatedVisibility(visible = expanded) {
+                Column {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = item.answer,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>

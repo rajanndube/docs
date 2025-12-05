@@ -1,0 +1,120 @@
+---
+title: A/B Testing
+description: 'Run copy experiments in your Android app'
+icon: 'flask'
+---
+
+---
+
+Stringboot includes a native A/B testing engine that allows you to test different string variations without changing your code.
+
+## How It Works
+
+
+
+<Steps>
+  <Step title="Assignment">
+    The SDK generates a unique Device ID and assigns the user to an experiment variant (e.g., "Control", "Variant A").
+  </Step>
+  <Step title="Delivery">
+    When you request a string (e.g., `StringProvider.get("cta_button")`), the SDK automatically returns the text for the assigned variant.
+  </Step>
+  <Step title="Tracking">
+    You log the assignment to your analytics provider to track conversion.
+  </Step>
+</Steps>
+
+## Setup
+
+No additional code is required to *run* the experiment. The SDK handles variant delivery automatically. To *track* the experiment, follow these steps:
+
+<Steps>
+  <Step title="Implement Analytics Handler">
+    Create a class implementing `StringbootAnalyticsHandler`. Choose your analytics provider below:
+
+    <Tabs>
+      <Tab title="Firebase">
+        ```kotlin
+        class MyAnalyticsHandler : StringbootAnalyticsHandler {
+            override fun onExperimentAssigned(assignment: ExperimentAssignment) {
+                Firebase.analytics.logEvent("experiment_assigned") {
+                    param("experiment_key", assignment.experimentKey)
+                    param("variant_name", assignment.variantName)
+                    param("string_key", assignment.stringKey)
+                }
+            }
+
+            override fun onExperimentViewed(experimentKey: String, variantName: String) {
+                Firebase.analytics.logEvent("experiment_viewed") {
+                    param("experiment_key", experimentKey)
+                    param("variant_name", variantName)
+                }
+            }
+        }
+        ```
+      </Tab>
+      <Tab title="Mixpanel">
+        ```kotlin
+        class MyAnalyticsHandler : StringbootAnalyticsHandler {
+            override fun onExperimentAssigned(assignment: ExperimentAssignment) {
+                mixpanel.track("Experiment Assigned", JSONObject().apply {
+                    put("experiment_key", assignment.experimentKey)
+                    put("variant_name", assignment.variantName)
+                    put("string_key", assignment.stringKey)
+                })
+            }
+
+            override fun onExperimentViewed(experimentKey: String, variantName: String) {
+                mixpanel.track("Experiment Viewed", JSONObject().apply {
+                    put("experiment_key", experimentKey)
+                    put("variant_name", variantName)
+                })
+            }
+        }
+        ```
+      </Tab>
+      <Tab title="Amplitude">
+        ```kotlin
+        class MyAnalyticsHandler : StringbootAnalyticsHandler {
+            override fun onExperimentAssigned(assignment: ExperimentAssignment) {
+                Amplitude.getInstance().logEvent("Experiment Assigned", JSONObject().apply {
+                    put("experiment_key", assignment.experimentKey)
+                    put("variant", assignment.variantName)
+                    put("string_key", assignment.stringKey)
+                })
+            }
+
+            override fun onExperimentViewed(experimentKey: String, variantName: String) {
+                Amplitude.getInstance().logEvent("Experiment Viewed", JSONObject().apply {
+                    put("experiment_key", experimentKey)
+                    put("variant", variantName)
+                })
+            }
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Register Handler">
+    Pass the handler during initialization:
+
+    ```kotlin
+    StringProvider.initialize(
+        context = this,
+        cacheSize = 1000,
+        analyticsHandler = MyAnalyticsHandler()
+    )
+    ```
+  </Step>
+</Steps>
+
+## Debugging Experiments
+
+You can check the current experiment assignments for debugging purposes:
+
+```kotlin
+val experiments = StringProvider.getActiveExperiments()
+experiments.forEach { exp ->
+    Log.d("Stringboot", "Experiment: ${exp.experimentKey}, Variant: ${exp.variantName}")
+}
+```

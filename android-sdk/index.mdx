@@ -1,81 +1,50 @@
 ---
-title: "Android SDK"
-description: "High-performance string localization for Android applications"
+title: Overview
+description: 'High-performance Android SDK for Stringboot'
+icon: 'android'
 ---
 
-## Overview
+---
 
-The Stringboot Android SDK provides high-performance string localization for Android applications with offline-first architecture, smart caching, and reactive UI updates. Built with Kotlin and optimized for modern Android development.
+The Stringboot Android SDK is a high-performance, offline-first library for managing dynamic strings in your Android applications. It supports both **Jetpack Compose** and **XML-based layouts**.
 
-### Core Features
-
-<CardGroup cols={3}>
-  <Card title="Dynamic Strings" icon="font">
-    Update app text instantly without releasing new versions
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/android-sdk/installation">
+    Add the SDK to your Gradle project.
   </Card>
-  <Card title="Multi-Language" icon="language">
-    Seamless translations and language switching
+  <Card title="Usage" icon="code" href="/android-sdk/usage">
+    Learn how to fetch and use strings.
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="High Performance" icon="rocket">
+    Sub-300ms string lookups on 4G networks.
+  </Card>
+  <Card title="Offline-First" icon="database">
+    Full functionality without network via Room database persistence.
+  </Card>
+  <Card title="Smart Caching" icon="memory">
+    Multi-layered cache (Memory + Disk) with language-aware eviction.
+  </Card>
+  <Card title="Reactive" icon="arrows-rotate">
+    Kotlin Flow support for automatic UI synchronization.
+  </Card>
+  <Card title="Multi-Language" icon="globe">
+    Runtime language switching with instant UI updates.
   </Card>
   <Card title="A/B Testing" icon="flask">
-    Optimize messaging with built-in experiment tracking
+    Native support for copy testing and experiments.
   </Card>
 </CardGroup>
 
-### Platform Requirements
+## Requirements
 
-| Requirement     | Version          |
-| --------------- | ---------------- |
-| **Min SDK**     | 24 (Android 7.0) |
-| **Target SDK**  | 34 (Android 14)  |
-| **Kotlin**      | 1.9.22+          |
-
----
-
-## Start Integration
-
-To get started with the Android SDK, follow our complete installation guide which covers:
-- Gradle dependency setup
-- Manifest configuration
-- Analytics integration (Required for A/B testing)
-- Device ID configuration
-- Initialization and usage
-
-<Card title="Start Installation Guide" icon="play" href="/android-sdk/installation">
-  Step-by-step guide to integrate Stringboot Android SDK
-</Card>
-
----
-
-## Key Capabilities
-
-<CardGroup cols={2}>
-  <Card title="XML Integration" icon="code">
-    Zero-code integration with `applyStringbootTags()`
-  </Card>
-  <Card title="Flow API" icon="arrows-rotate">
-    Reactive updates for automatic UI refresh
-  </Card>
-  <Card title="Offline-First" icon="wifi-slash">
-    Works seamlessly without network using Room database
-  </Card>
-  <Card title="Analytics" icon="chart-mixed">
-    Built-in support for Firebase, Mixpanel, and Amplitude
-  </Card>
-</CardGroup>
-
-## Next Steps
-
-<CardGroup cols={2}>
-  <Card title="Dynamic Strings" icon="font" href="/android-sdk/dynamic-strings">
-    Update text without releases
-  </Card>
-  <Card title="Translations" icon="language" href="/android-sdk/translations">
-    Multi-language support
-  </Card>
-  <Card title="A/B Testing" icon="flask" href="/android-sdk/ab-testing">
-    Experiment tracking setup
-  </Card>
-  <Card title="Best Practices" icon="star" href="/android-sdk/best-practices">
-    Production patterns
-  </Card>
-</CardGroup>
+| Requirement | Version |
+| :--- | :--- |
+| **Min SDK** | API 24 (Android 7.0) |
+| **Target SDK** | API 34 (Android 14) |
+| **Kotlin** | 1.9.22+ |
+| **Gradle** | 8.2.2+ |

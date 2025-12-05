@@ -1,333 +1,114 @@
 ---
-title: "Core Concepts"
-description: "Understanding Stringboot's architecture and key features"
+title: Core Concepts
+description: 'Understand how Stringboot works under the hood'
+icon: 'layer-group'
 ---
 
-## Overview
+---
 
-Stringboot is built on three core principles: **offline-first architecture**, **smart caching**, and **efficient synchronization**. Understanding these concepts will help you build better localized applications.
+Stringboot is built on a robust architecture designed for performance, reliability, and developer experience. Understanding these core concepts will help you get the most out of the platform.
 
-## Three-Layer Cache Architecture
+## Architecture
 
-Stringboot uses a sophisticated three-layer caching system for optimal performance:
+At its heart, Stringboot is a **synchronized state management system** for your application's text content.
+
+```mermaid
+graph TD
+    A[Dashboard] -->|Publish| B(Global CDN)
+    B -->|Sync| C[Client SDK]
+    C <-->|Read/Write| D[(Smart Cache)]
+    C -->|Serve| E[Your App UI]
+```
 
 <Steps>
-  <Step title="Layer 1: In-Memory Cache" stepNumber={1}>
-    LRU, 1000 entries by default  `Access: <1ms `
-
-    <Icon icon="arrow-down-from-line" iconType="solid" color="#00C853" /> Cache miss
+  <Step title="Dashboard">
+    The command center where you manage strings, languages, and experiments. Changes published here are instantly propagated.
   </Step>
-  <Step title="Layer 2: Local Database">
-    IndexedDB / Room / CoreData
-
-    <Icon icon="arrow-down-from-line" iconType="solid" color="#00C853" /> Not Found
+  <Step title="Global CDN">
+    A low-latency edge network that distributes your content worldwide, ensuring fast sync times for users everywhere.
   </Step>
-  <Step title="Layer 3: Network Sync">
-    String-Sync v2 with ETag `Access: 100-500ms`
+  <Step title="Client SDK">
+    The intelligent engine running in your app. It handles synchronization, caching, and offline logic transparently.
+  </Step>
+  <Step title="Smart Cache">
+    A multi-layered caching system (Memory + Disk) that guarantees instant string retrieval and offline availability.
   </Step>
 </Steps>
 
-<Accordion title="Layer 1: In-Memory Cache">
-  **Fastest access** - Strings are cached in memory for instant retrieval
+## Offline-First Design
 
-  **LRU Eviction** - Least recently used strings are removed when cache is full
+Stringboot is designed to be **offline-first**, ensuring resilience and performance.
 
-  **Frequency-based priority** - Frequently accessed strings stay in cache longer
+<CardGroup cols={3}>
+  <Card title="No Blocking Calls" icon="bolt">
+    String retrieval is always synchronous (from cache) or non-blocking async.
+  </Card>
+  <Card title="Resilience" icon="shield-check">
+    Your app works perfectly even if the Stringboot API is down or the user has no internet.
+  </Card>
+  <Card title="Background Sync" icon="arrows-rotate">
+    The SDK handles network operations in the background, updating the cache silently.
+  </Card>
+</CardGroup>
 
-  **Platform-specific size**: Configurable (default: 1000 entries)
-</Accordion>
+## The Caching Strategy
 
-<Accordion title="Layer 2: Local Database">
-  **Persistent storage** - Survives app restarts and device reboots
+We use a sophisticated **3-Tier Caching Strategy**:
 
-  **Full offline capability** - All synced strings available without network
+<CardGroup cols={1}>
+  <Card title="L1: Memory Cache (RAM)" icon="memory">
+    **Speed:** Instant (< 0.1ms) | **Purpose:** Serves the most frequently used strings (e.g., UI labels).
+  </Card>
+  <Card title="L2: Persistent Cache (Disk/DB)" icon="database">
+    **Speed:** Fast (< 10ms) | **Purpose:** Stores the entire string catalog for offline access.
+  </Card>
+  <Card title="L3: Network (CDN)" icon="globe">
+    **Speed:** Variable (50ms - 500ms) | **Purpose:** Source of truth for updates.
+  </Card>
+</CardGroup>
 
-  **Technology**: IndexedDB (Web), Room (Android), Core Data (iOS)
+## String-Sync Protocol
 
-  **Soft deletes** - Removed strings are marked, not immediately deleted
-</Accordion>
-
-<Accordion title="Layer 3: Network Sync">
-  **String-Sync v2 Protocol** - Efficient delta sync for changed strings only
-
-  **ETag-based caching** - Prevents unnecessary downloads
-
-  **Automatic retries** - Failed requests retry with exponential backoff
-
-  **Background sync** - Non-blocking network operations
-</Accordion>
-
-## String-Sync v2 Protocol
-
-Stringboot uses a custom delta synchronization protocol to minimize bandwidth and ensure fast updates.
-
-### How Delta Sync Works
+Stringboot uses a custom **Delta Sync Protocol** to minimize data usage:
 
 <Steps>
-  <Step title="Metadata Check">
-    Client sends stored ETag to server
-
-    ```http
-    GET /strings/meta
-    If-None-Match: "etag123abc"
-    ```
+  <Step title="Meta Check">
+    The SDK first checks a lightweight "Meta" endpoint to see if anything changed (using ETags).
   </Step>
-  <Step title="Server Response">
-    **Case 1: No changes (304 Not Modified)**
-
-    ```
-    HTTP/1.1 304 Not Modified
-    ```
-
-    Result: No download needed, cache is current
-
-    **Case 2: Updates available (200 OK)**
-
-    ```json
-    {
-      "etag": "etag456def",
-      "changedKeys": ["welcome_message", "app_title"]
-    }
-    ```
+  <Step title="Delta Download">
+    If changes are detected, it downloads *only* the strings that have changed since the last sync.
   </Step>
-  <Step title="Download Delta">
-    Client downloads only changed strings
-
-    ```http
-    GET /strings/delta?keys=welcome_message,app_title&lang=en
-    ```
-  </Step>
-  <Step title="Update Cache">
-    SDK updates memory cache and local database with new strings
+  <Step title="Atomic Update">
+    The local cache is updated atomically to ensure consistency.
   </Step>
 </Steps>
 
-### Bandwidth Savings
+## A/B Testing Engine
+
+Stringboot includes a native A/B testing engine.
 
 <CardGroup cols={2}>
-  <Card title="Traditional Approach" icon="download">
-    **Every sync**: Download full catalog (~100-500KB)
-
-    **Monthly bandwidth**: ~3-15MB per user
+  <Card title="Assignment" icon="users">
+    Users are assigned to experiment variants deterministically based on their Device ID.
   </Card>
-  <Card title="String-Sync v2" icon="bolt">
-    **Metadata check**: ~2KB
-
-    **Delta download**: Only changed strings
-
-    **Monthly bandwidth**: ~50-200KB per user
+  <Card title="Sticky" icon="magnet">
+    Once assigned, a user sees the same variant until the experiment ends.
+  </Card>
+  <Card title="Analytics" icon="chart-line">
+    The SDK emits events that you can send to your analytics provider (e.g., Firebase, Mixpanel).
   </Card>
 </CardGroup>
 
-## Offline-First Architecture
+## Security
 
-Stringboot is designed to work perfectly offline after the initial synchronization.
-
-### Offline Behavior
-
-<Tabs>
-  <Tab title="With Network">
-    1. SDK checks memory cache first
-    2. Falls back to local database
-    3. Syncs with server in background
-    4. Updates cache with latest strings
-  </Tab>
-  <Tab title="Without Network">
-    1. SDK checks memory cache first
-    2. Falls back to local database
-    3. **Skips network sync** - no error thrown
-    4. Returns cached strings instantly
-  </Tab>
-</Tabs>
-
-### Offline Capabilities
-
-<Check>
-  ✓ All previously synced strings available
-</Check>
-
-<Check>
-  ✓ Language switching works with cached languages
-</Check>
-
-<Check>
-  ✓ No error messages or failed requests
-</Check>
-
-<Check>
-  ✓ Zero latency - instant string retrieval
-</Check>
-
-<Warning>
-  New or updated strings require network connectivity
-</Warning>
-
-## Smart Memory Management
-
-Stringboot automatically manages cache based on access patterns and memory pressure.
-
-### LRU Cache with Frequency Tracking
-
-The SDK uses a Least Recently Used (LRU) cache enhanced with access frequency tracking:
-
-```javascript
-// High-frequency strings stay in cache
-"welcome_message" -> accessed 150 times -> stays in memory
-"rare_error_msg" -> accessed 2 times -> evicted when cache full
-```
-
-### Platform-Specific Optimizations
-
-<Tabs>
-  <Tab title="Web">
-    - Memory cache: 1000 entries
-    - IndexedDB: Unlimited storage (quota-based)
-    - Automatic cleanup on storage pressure
-  </Tab>
-  <Tab title="Android">
-    - Memory cache: 1000 entries
-    - Room database: No hard limit
-    - Memory pressure listener for automatic cleanup
-  </Tab>
-  <Tab title="iOS">
-    - Memory cache: 1000 entries
-    - Core Data: No hard limit
-    - didReceiveMemoryWarning triggers cache reduction
-  </Tab>
-</Tabs>
-
-## Language Management
-
-### Language Preloading
-
-For instant language switching, preload languages into memory cache:
-
-<CodeGroup>
-
-```javascript Web
-// Preload Spanish for instant access
-await StringBoot.preloadLanguage('es', maxStrings = 500);
-
-// Now language change is instant
-await StringBoot.changeLanguage('es'); // <100ms
-```
-
-
-```kotlin Android
-// Preload in Application.onCreate()
-lifecycleScope.launch {
-    StringProvider.preloadLanguage("es", maxStrings = 500)
-}
-
-// Instant language switch
-StringProvider.setLocale("es")
-binding.root.applyStringbootTags()
-```
-
-
-```swift iOS
-// Preload synchronously to prevent flash
-runBlocking {
-    await StringProvider.shared.preloadLanguage("es", maxStrings: 500)
-}
-
-// Fast language change
-await StringProvider.shared.changeLanguage(to: "es")
-```
-
-</CodeGroup>
-
-### Available Languages
-
-Get list of languages with content:
-
-<CodeGroup>
-
-```javascript Web
-const languages = await StringBoot.getActiveLanguages();
-// [{ code: 'en', name: 'English' }, { code: 'es', name: 'Spanish' }]
-```
-
-
-```kotlin Android
-val languages = StringProvider.getAvailableLanguagesFromServer()
-// List<ActiveLanguage>
-```
-
-
-```swift iOS
-let languages = StringProvider.shared.availableLanguages
-// [ActiveLanguage]
-```
-
-</CodeGroup>
-
-## Error Handling & Fallbacks
-
-Stringboot provides multiple fallback mechanisms to ensure your app always has content:
-
-### Fallback Hierarchy
-
-```
-1. Requested string from network/cache
-   ↓ (not found)
-2. String from local app bundle (Localizable.strings / strings.xml)
-   ↓ (not found)
-3. Key wrapped in markers: "??missing_key??"
-```
-
-### Network Error Handling
-
-| Error Type               | SDK Behavior                         |
-| ------------------------ | ------------------------------------ |
-| **Network timeout**      | Use cached data, retry in background |
-| **401/403 Unauthorized** | Log error, use cache, disable sync   |
-| **404 Not Found**        | Language doesn't exist, use fallback |
-| **429 Rate Limited**     | Exponential backoff, max 3 retries   |
-| **500+ Server Error**    | Retry with backoff, use cache        |
-
-## Performance Characteristics
-
-### Lookup Times
-
-| Source               | Typical Latency | Use Case                    |
-| -------------------- | --------------- | --------------------------- |
-| **Memory cache**     | \<1ms           | Frequently accessed strings |
-| **Local database**   | 5-20ms          | Previously synced strings   |
-| **Network (cached)** | 50-100ms        | ETag check, no download     |
-| **Network (delta)**  | 100-300ms       | Download changed strings    |
-| **Network (full)**   | 200-500ms       | First sync or force refresh |
-
-### Best Practices
-
-<CardGroup cols={2}>
-  <Card title="Do: Preload on Start" icon="circle-check">
-    Preload common strings synchronously during app initialization
+<CardGroup cols={3}>
+  <Card title="Read-Only Tokens" icon="key">
+    Client SDKs use read-only API tokens. They cannot modify data on the server.
   </Card>
-  <Card title="Don't: Force Refresh Often" icon="circle-xmark">
-    Avoid bypassing ETag checks - wastes bandwidth
+  <Card title="HTTPS" icon="lock">
+    All communication is encrypted over HTTPS.
   </Card>
-  <Card title="Do: Use Watchers/Hooks" icon="circle-check">
-    Use reactive APIs for automatic UI updates
-  </Card>
-  <Card title="Don't: Poll for Updates" icon="circle-xmark">
-    SDK handles sync automatically - no need to poll
-  </Card>
-</CardGroup>
-
-## Next Steps
-
-<CardGroup cols={2}>
-  <Card title="Web SDK" icon="globe" href="/web-sdk/installation">
-    Implement these concepts in web apps
-  </Card>
-  <Card title="Android SDK" icon="android" href="/android-sdk/installation">
-    Apply concepts to Android development
-  </Card>
-  <Card title="iOS SDK" icon="apple" href="/ios-sdk/installation">
-    Use concepts in iOS applications
-  </Card>
-  <Card title="Best Practices" icon="star" href="/advanced/best-practices">
-    Production-ready patterns
+  <Card title="Integrity" icon="file-signature">
+    Responses are signed to prevent tampering.
   </Card>
 </CardGroup>

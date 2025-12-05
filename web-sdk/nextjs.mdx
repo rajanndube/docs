@@ -1,6 +1,9 @@
 ---
 title: "Next.js Integration"
 description: "Complete guide for integrating Stringboot in Next.js applications"
+icon: 'server'
+---
+
 ---
 
 ## Overview
@@ -229,7 +232,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async () => {
   return {
     props: {
       title: await StringBoot.get('page_title'),
-      description: await StringBoot.get('page_description'),
     },
   };
 };

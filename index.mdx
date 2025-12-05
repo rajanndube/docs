@@ -1,68 +1,81 @@
 ---
-title: "Introduction to Stringboot"
-description: "High-performance internationalization (i18n) SDK for Web, Android, and iOS applications"
+title: Introduction
+description: 'Welcome to the Stringboot documentation'
+icon: 'house'
 ---
+
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.svg"
+  alt="Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.svg"
+  alt="Hero Dark"
+/>
 
 ## What is Stringboot?
 
-Stringboot is a powerful internationalization (i18n) SDK that provides high-performance string localization for modern applications. It features smart multi-layered caching, offline support, and reactive string updates with minimal overhead.
+Stringboot is a modern **String Management Platform** designed for high-performance, offline-first applications. It allows you to manage your application's copy, translations, and configurations remotely without requiring app updates.
+
+Unlike traditional i18n solutions, Stringboot is built for the AI era, providing:
+
+- **Instant Updates**: Push string changes to your users in real-time.
+- **Offline-First**: Robust caching ensures your app works perfectly without an internet connection.
+- **A/B Testing**: Native support for testing copy variations to optimize conversion.
+- **AI Translations**: Integrated AI tools to translate your content instantly.
+
+## Getting Started
+
+Choose your platform to get started with Stringboot.
 
 <CardGroup cols={2}>
-  <Card title="Offline-First" icon="wifi-slash">
-    Works seamlessly without network connectivity using smart caching
+  <Card
+    title="Android SDK"
+    icon="android"
+    href="/android-sdk/index"
+  >
+    Native Android integration with Jetpack Compose and XML support.
+  </Card>
+  <Card
+    title="iOS SDK"
+    icon="apple"
+    href="/ios-sdk/index"
+  >
+    Swift SDK for iOS and macOS with SwiftUI and UIKit support.
+  </Card>
+  <Card
+    title="Web SDK"
+    icon="js"
+    href="/web-sdk/index"
+  >
+    JavaScript/TypeScript SDK for React, Next.js, Vue, and more.
+  </Card>
+  <Card
+    title="Dashboard"
+    icon="gauge"
+    href="/dashboard-guides/dashboard-overview"
+  >
+    Manage your strings, languages, and API tokens.
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Dynamic Strings" icon="pen-to-square">
+    Update text, labels, and messages instantly without app store releases.
   </Card>
   <Card title="Smart Caching" icon="database">
-    Multi-layer caching with LRU memory management and persistent storage
+    Multi-layered caching (Memory + Disk) ensures sub-millisecond access times.
   </Card>
-  <Card title="Delta Sync" icon="arrows-rotate">
-    Only downloads changed strings using String-Sync v2 protocol
+  <Card title="A/B Testing" icon="flask">
+    Run experiments on your copy to see what drives better engagement.
   </Card>
-  <Card title="Fast Lookups" icon="bolt">
-    Target &lt;300ms string lookups on 4G networks
-  </Card>
-</CardGroup>
-
-## Get Started
-
-Choose your platform to start integrating Stringboot:
-
-<CardGroup cols={3}>
-  <Card title="Web SDK" icon="globe" href="/web-sdk/installation">
-    React, Next.js, and Vanilla JS
-  </Card>
-  <Card title="Android SDK" icon="android" href="/android-sdk/installation">
-    Kotlin and Java
-  </Card>
-  <Card title="iOS SDK" icon="apple" href="/ios-sdk/installation">
-    Swift and SwiftUI
+  <Card title="FAQ Provider" icon="circle-question">
+    Manage dynamic FAQs with tag-based filtering and search.
   </Card>
 </CardGroup>
-
-## Why Stringboot?
-
-<AccordionGroup>
-  <Accordion title="Offline-First Architecture" icon="wifi-slash">
-    Stringboot is designed to work seamlessly offline. After the initial sync, all strings are cached locally, ensuring your app works perfectly without network connectivity.
-  </Accordion>
-
-  <Accordion title="Blazing Fast Performance" icon="bolt">
-    Multi-layer caching ensures sub-millisecond string lookups from memory, with automatic fallback to local database and network when needed.
-  </Accordion>
-
-  <Accordion title="Bandwidth Efficient" icon="chart-line">
-    Delta sync using String-Sync v2 protocol means only changed strings are downloaded. ETag-based caching prevents unnecessary network requests.
-  </Accordion>
-
-  <Accordion title="Developer Friendly" icon="code">
-    Native SDKs for each platform with idiomatic APIs. React hooks for web, Flow API for Android, SwiftUI integration for iOS.
-  </Accordion>
-</AccordionGroup>
-
-## Core Concepts
-
-Before diving into code, it's helpful to understand how Stringboot works:
-
-<Card title="Core Concepts" icon="book" href="/core-concepts">
-  Learn about offline-first architecture, smart caching, and delta sync
-</Card>
-

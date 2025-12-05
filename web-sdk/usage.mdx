@@ -1,196 +1,93 @@
 ---
-title: "Usage Guide"
-description: "Learn how to use the Stringboot Web SDK in your application"
+title: Basic Usage
+description: 'Learn how to use Stringboot in your Web app'
+icon: 'code'
 ---
 
-## Overview
+---
 
-The Stringboot Web SDK provides a simple API for fetching and managing localized strings. This guide covers the core functionality for both vanilla JavaScript and React applications.
+Stringboot provides framework-specific integrations for easy usage.
 
-## Fetching Strings
+## React
 
-### Using Watchers (Recommended)
+### useString Hook
 
-Watchers automatically update your UI when the language changes. This is the recommended approach for vanilla JavaScript:
+The `useString` hook is the simplest way to get a string. It automatically updates when the language changes.
 
-```javascript
-import StringBoot from '@stringboot/web-sdk';
+```jsx
+import { useString } from '@stringboot/web-sdk/react';
 
-// Set up watchers that automatically update on language change
-StringBoot.watch('welcome_message', (value) => {
-  document.getElementById('welcome').textContent = value;
-});
+function WelcomeMessage() {
+  const { value, loading } = useString('welcome_message');
 
-StringBoot.watch('app_title', (value) => {
-  document.getElementById('title').textContent = value;
-});
-
-StringBoot.watch('cta_button', (value) => {
-  document.getElementById('cta').textContent = value;
-});
-```
-
-<Tip>
-Watchers ensure your UI stays in sync when users change languages. Set them up once during initialization.
-</Tip>
-
-### Manual String Fetching
-
-For one-off string retrievals, use the `get()` method:
-
-```javascript
-import StringBoot from '@stringboot/web-sdk';
-
-async function loadStrings() {
-  try {
-    const title = await StringBoot.get('page_title');
-    const description = await StringBoot.get('page_description');
-
-    document.getElementById('title').textContent = title;
-    document.getElementById('desc').textContent = description;
-  } catch (error) {
-    console.error('Failed to load strings:', error);
-  }
+  if (loading) return <span>Loading...</span>;
+  return <h1>{value}</h1>;
 }
 ```
 
-## Language Switching
+### String Component
 
-Change the current language dynamically:
+You can also use the `<String />` component:
+
+```jsx
+import { String } from '@stringboot/web-sdk/react';
+
+function Header() {
+  return (
+    <h1>
+      <String keyName="welcome_message" />
+    </h1>
+  );
+}
+```
+
+## Vue
+
+### Composition API
 
 ```javascript
-import StringBoot from '@stringboot/web-sdk';
+<script setup>
+import { useString } from '@stringboot/web-sdk/vue';
 
-const languageSelect = document.getElementById('language');
+const { value: welcomeText } = useString('welcome_message');
+</script>
 
-languageSelect.addEventListener('change', async (e) => {
-  const newLanguage = e.target.value;
+<template>
+  <h1>{{ welcomeText }}</h1>
+</template>
+```
 
-  try {
-    // Change language - watchers will auto-update UI
-    await StringBoot.changeLanguage(newLanguage);
-    console.log(`✓ Language changed to ${newLanguage}`);
-  } catch (error) {
-    console.error('Language change failed:', error);
-  }
+### Directive
+
+```html
+<h1 v-string="'welcome_message'"></h1>
+```
+
+## Vanilla JS
+
+```javascript
+import { Stringboot } from '@stringboot/web-sdk';
+
+// Get string (async)
+const text = await Stringboot.get('welcome_message');
+
+// Subscribe to changes
+Stringboot.subscribe('welcome_message', (newValue) => {
+  document.getElementById('welcome').innerText = newValue;
 });
+```
+
+## Changing Language
+
+To switch the language of the app:
+
+```javascript
+import { Stringboot } from '@stringboot/web-sdk';
+
+// Switch to Spanish
+await Stringboot.setLocale('es');
 ```
 
 <Note>
-When you change languages, all watchers automatically receive updated strings. You don't need to manually update your UI.
+  In React and Vue, all components using `useString` or directives will re-render automatically with the new language.
 </Note>
-
-## Error Handling
-
-Always use try/catch to handle errors gracefully:
-
-```javascript
-import StringBoot from '@stringboot/web-sdk';
-
-async function fetchString() {
-  try {
-    const message = await StringBoot.get('welcome_message');
-    document.getElementById('welcome').textContent = message;
-  } catch (error) {
-    console.error('Failed to fetch string:', error);
-    // Show fallback or error message
-    document.getElementById('welcome').textContent = 'Welcome';
-  }
-}
-```
-
-## Offline Support
-
-The SDK automatically works offline using cached data:
-
-```javascript
-// Strings work automatically even when offline
-const title = await StringBoot.get('app_title');
-// Returns cached value if available
-```
-
-<Tip>
-The SDK caches all fetched strings locally. Your app will continue to work even without an internet connection.
-</Tip>
-
-## Complete Example
-
-Here's a complete vanilla JavaScript application:
-
-```javascript
-import StringBoot from '@stringboot/web-sdk';
-
-async function initApp() {
-  try {
-    // Initialize SDK
-    await StringBoot.initialize({
-      apiToken: import.meta.env.VITE_STRINGBOOT_TOKEN,
-      baseUrl: 'https://api.stringboot.com',
-      defaultLanguage: 'en',
-      debug: false
-    });
-
-    // Set up watchers for automatic UI updates
-    StringBoot.watch('page_title', (value) => {
-      document.getElementById('title').textContent = value;
-    });
-
-    StringBoot.watch('welcome_message', (value) => {
-      document.getElementById('welcome').textContent = value;
-    });
-
-    StringBoot.watch('cta_button', (value) => {
-      document.getElementById('cta-btn').textContent = value;
-    });
-
-    // Set up language switcher
-    const langSelect = document.getElementById('language');
-    langSelect.addEventListener('change', async (e) => {
-      try {
-        await StringBoot.changeLanguage(e.target.value);
-      } catch (error) {
-        console.error('Language change failed:', error);
-      }
-    });
-
-    console.log('✓ App initialized successfully');
-  } catch (error) {
-    console.error('✗ Initialization failed:', error);
-  }
-}
-
-// Initialize on page load
-initApp();
-```
-
-## API Reference
-
-### Core Methods
-
-| Method | Description | Returns |
-|--------|-------------|---------|
-| `initialize(config)` | Initialize the SDK | `Promise<void>` |
-| `get(key)` | Fetch a single string | `Promise<string>` |
-| `watch(key, callback)` | Watch for string changes | `void` |
-| `changeLanguage(code)` | Switch to a different language | `Promise<void>` |
-
-### Configuration Options
-
-| Option | Type | Required | Default |
-|--------|------|----------|---------|
-| `apiToken` | string | Yes | - |
-| `baseUrl` | string | No | `https://api.stringboot.com` |
-| `defaultLanguage` | string | No | `en` |
-| `debug` | boolean | No | `false` |
-| `enableIntegrityCheck` | boolean | No | `false` |
-
-## What's Next?
-
-<CardGroup cols={2}>
-  <Card title="React Hooks" icon="react" href="/web-sdk/react-hooks">
-    Learn about React-specific hooks and patterns
-  </Card>
-  <Card title="Best Practices" icon="star" href="/web-sdk/best-practices">
-    Production-ready patterns and tips
-  </Card>
-</CardGroup>

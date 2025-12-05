@@ -1,0 +1,49 @@
+---
+title: Troubleshooting
+description: 'Common issues and solutions for iOS SDK'
+icon: 'wrench'
+---
+
+---
+
+## Strings Not Loading
+
+<AccordionGroup>
+  <Accordion title="Check API Token">
+    Ensure your API token is correct and corresponds to the right environment.
+  </Accordion>
+  <Accordion title="Check Network">
+    If the device is offline and the cache is empty, strings will return the fallback format `??key??`.
+  </Accordion>
+  <Accordion title="Enable Logging">
+    Enable debug logging to see what's happening under the hood.
+
+    ```swift
+    #if DEBUG
+    StringbootLogger.isLoggingEnabled = true
+    StringbootLogger.logLevel = .debug
+    #endif
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Cache Issues
+
+<AccordionGroup>
+  <Accordion title="Cache Not Persisting">
+    Ensure you are initializing the SDK *before* accessing any strings. In SwiftUI, use the `init()` method of your `App` struct.
+  </Accordion>
+  <Accordion title="Memory Pressure">
+    If the system is under heavy memory pressure, the SDK might evict strings from the memory cache. They will be re-fetched from the disk cache or network when needed.
+  </Accordion>
+</AccordionGroup>
+
+## Certificate Pinning
+
+<AccordionGroup>
+  <Accordion title="Requests Failing in Debug">
+    The SDK enables SSL certificate pinning by default in **Release** builds. If you are using a proxy (like Charles or Proxyman) to debug network traffic, requests will fail.
+
+    **Solution**: Test network calls in a **Debug** build, where pinning is disabled.
+  </Accordion>
+</AccordionGroup>

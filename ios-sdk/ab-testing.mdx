@@ -1,0 +1,124 @@
+---
+title: A/B Testing
+description: 'Run copy experiments in your iOS app'
+icon: 'flask'
+---
+
+---
+
+Stringboot's A/B testing engine works seamlessly on iOS.
+
+## How It Works
+
+
+
+<Steps>
+  <Step title="Assignment">
+    The SDK assigns a unique Device ID and determines the user's variant.
+  </Step>
+  <Step title="Delivery">
+    `SBText`, `SBLabel`, and `StringProvider.get()` automatically return the variant string.
+  </Step>
+  <Step title="Tracking">
+    You log the assignment to your analytics provider.
+  </Step>
+</Steps>
+
+## Analytics Integration
+
+To track experiment performance, implement the `StringbootAnalyticsHandler` protocol.
+
+<Steps>
+  <Step title="Implement Analytics Handler">
+    Create a class conforming to `StringbootAnalyticsHandler`. Choose your analytics provider below:
+
+    <Tabs>
+      <Tab title="Firebase">
+        ```swift
+        class MyAnalyticsHandler: StringbootAnalyticsHandler {
+            func onExperimentAssigned(_ assignment: ExperimentAssignment) {
+                Analytics.logEvent("experiment_assigned", parameters: [
+                    "experiment_key": assignment.experimentKey,
+                    "variant_name": assignment.variantName,
+                    "string_key": assignment.stringKey
+                ])
+            }
+
+            func onExperimentViewed(_ experimentKey: String, variantName: String) {
+                Analytics.logEvent("experiment_viewed", parameters: [
+                    "experiment_key": experimentKey,
+                    "variant_name": variantName
+                ])
+            }
+        }
+        ```
+      </Tab>
+      <Tab title="Mixpanel">
+        ```swift
+        class MyAnalyticsHandler: StringbootAnalyticsHandler {
+            func onExperimentAssigned(_ assignment: ExperimentAssignment) {
+                Mixpanel.mainInstance().track(event: "Experiment Assigned", properties: [
+                    "experiment_key": assignment.experimentKey,
+                    "variant_name": assignment.variantName,
+                    "string_key": assignment.stringKey
+                ])
+            }
+
+            func onExperimentViewed(_ experimentKey: String, variantName: String) {
+                Mixpanel.mainInstance().track(event: "Experiment Viewed", properties: [
+                    "experiment_key": experimentKey,
+                    "variant_name": variantName
+                ])
+            }
+        }
+        ```
+      </Tab>
+      <Tab title="Amplitude">
+        ```swift
+        class MyAnalyticsHandler: StringbootAnalyticsHandler {
+            func onExperimentAssigned(_ assignment: ExperimentAssignment) {
+                Amplitude.instance().logEvent("Experiment Assigned", withEventProperties: [
+                    "experiment_key": assignment.experimentKey,
+                    "variant": assignment.variantName,
+                    "string_key": assignment.stringKey
+                ])
+            }
+
+            func onExperimentViewed(_ experimentKey: String, variantName: String) {
+                Amplitude.instance().logEvent("Experiment Viewed", withEventProperties: [
+                    "experiment_key": experimentKey,
+                    "variant": variantName
+                ])
+            }
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Register Handler">
+    Pass the handler during initialization:
+
+    ```swift
+    let analyticsHandler = FirebaseAnalyticsHandler()
+
+    StringProvider.shared.initialize(
+        cacheSize: 1000,
+        apiToken: "YOUR_API_TOKEN",
+        analyticsHandler: analyticsHandler
+    )
+    ```
+  </Step>
+</Steps>
+
+## Debugging
+
+You can inspect active experiments:
+
+```swift
+Task {
+    let experiments = await StringProvider.shared.getExperiments()
+    for (key, exp) in experiments {
+        print("Key: \(key), Variant: \(exp.variantName)")
+    }
+}
+```

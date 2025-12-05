@@ -1,0 +1,152 @@
+---
+title: iOS Samples
+description: 'Swift and SwiftUI recipes'
+icon: 'apple'
+---
+
+---
+
+## Recipes
+
+<AccordionGroup>
+  <Accordion title="SwiftUI View Modifier" icon="wand-magic-sparkles">
+    A custom modifier to easily apply string keys to Text views.
+
+    ```swift
+    struct StringbootKey: ViewModifier {
+        let key: String
+        let params: [String: Any]
+        @State private var text: String = ""
+
+        func body(content: Content) -> some View {
+            Text(text.isEmpty ? key : text)
+                .onAppear { loadString() }
+                .onReceive(Stringboot.shared.stringPublisher(for: key)) { newText in
+                    self.text = newText
+                }
+        }
+        
+        private func loadString() {
+            self.text = Stringboot.shared.string(forKey: key, params: params)
+        }
+    }
+
+    extension View {
+        func stringboot(_ key: String, params: [String: Any] = [:]) -> some View {
+            modifier(StringbootKey(key: key, params: params))
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Localized Alerts" icon="bell">
+    Showing localized alerts from a ViewModel.
+
+    ```swift
+    class ProfileViewModel: ObservableObject {
+        @Published var showError = false
+        @Published var errorMessage = ""
+        
+        func saveProfile() {
+            let errorKey = "error_save_failed"
+            self.errorMessage = Stringboot.shared.string(forKey: errorKey)
+            self.showError = true
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Dynamic Date Formatting" icon="calendar">
+    Formatting dates based on the active Stringboot locale.
+
+    ```swift
+    func localizedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Stringboot.shared.currentLocale
+        formatter.dateStyle = .long
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Plug-and-Play Components
+
+<AccordionGroup>
+  <Accordion title="Language Picker Sheet" icon="list">
+    A ready-to-use sheet for language selection.
+
+    ```swift
+    struct LanguagePickerView: View {
+        @Environment(\.dismiss) var dismiss
+        @State private var languages: [Language] = []
+        
+        var body: some View {
+            NavigationView {
+                List(languages, id: \.code) { lang in
+                    Button(action: {
+                        Stringboot.shared.setLocale(lang.code)
+                        dismiss()
+                    }) {
+                        HStack {
+                            Text(lang.name)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if lang.code == Stringboot.shared.currentLocale {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                }
+                .navigationTitle("Select Language")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { dismiss() }
+                    }
+                }
+            }
+            .onAppear {
+                self.languages = Stringboot.shared.availableLanguages
+            }
+        }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="FAQ Bottom Sheet" icon="circle-question">
+    A searchable FAQ browser.
+
+    ```swift
+    struct FAQSheet: View {
+        let tag: String
+        @State private var faqs: [FAQ] = []
+        @Environment(\.dismiss) var dismiss
+        
+        var body: some View {
+            NavigationView {
+                List(faqs) { faq in
+                    DisclosureGroup(
+                        content: { Text(faq.answer).padding(.vertical) },
+                        label: { Text(faq.question).font(.headline) }
+                    )
+                }
+                .navigationTitle("Help & Support")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                }
+            }
+            .onAppear {
+                Task {
+                    self.faqs = await FAQProvider.shared.getFAQs(tag: tag)
+                }
+            }
+        }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+```

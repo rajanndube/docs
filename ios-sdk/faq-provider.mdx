@@ -1,0 +1,77 @@
+---
+title: FAQ Provider
+description: 'Render dynamic FAQs in your iOS app'
+icon: 'circle-question'
+---
+
+---
+
+The **FAQ Provider** delivers cached, searchable FAQs to your iOS app.
+
+## Initialization
+
+**Important**: FAQProvider must be initialized separately from StringProvider.
+
+```swift
+FAQProvider.shared.initialize(
+    cacheSize: 200,
+    apiToken: "YOUR_API_TOKEN",
+    baseURL: "https://api.stringboot.com"
+)
+```
+
+## Usage
+
+### Fetching FAQs
+
+```swift
+Task {
+    // Get FAQs for a specific tag
+    let faqs = await FAQProvider.shared.getFAQs(tag: "payments")
+    
+    for faq in faqs {
+        print("Q: \(faq.question)")
+        print("A: \(faq.answer)")
+    }
+}
+```
+
+### SwiftUI Integration
+
+You can easily build an FAQ view in SwiftUI.
+
+```swift
+struct FAQListView: View {
+    @State private var faqs: [FAQ] = []
+
+    var body: some View {
+        List(faqs) { faq in
+            VStack(alignment: .leading) {
+                Text(faq.question).font(.headline)
+                Text(faq.answer).font(.body).foregroundColor(.secondary)
+            }
+        }
+        .task {
+            faqs = await FAQProvider.shared.getFAQs(tag: "general")
+        }
+    }
+}
+```
+
+### Reactive Updates
+
+Use Combine to listen for updates:
+
+```swift
+class FAQViewModel: ObservableObject {
+    @Published var faqs: [FAQ] = []
+    private var cancellables = Set<AnyCancellable>()
+
+    func subscribe(tag: String) {
+        FAQProvider.shared.getFAQsPublisher(tag: tag, lang: "en")
+            .receive(on: RunLoop.main)
+            .assign(to: \.faqs, on: self)
+            .store(in: &cancellables)
+    }
+}
+```

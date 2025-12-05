@@ -12,11 +12,15 @@
     "tabs": [
       {
         "tab": "Documentation",
+        "icon": "book",
         "groups": [
           {
-            "group": "Overview",
+            "group": "Getting Started",
             "pages": [
-              "index"
+              "index",
+              "quickstart",
+              "core-concepts",
+              "faq"
             ]
           },
           {
@@ -24,10 +28,10 @@
             "pages": [
               "android-sdk/index",
               "android-sdk/installation",
-              "android-sdk/dynamic-strings",
-              "android-sdk/translations",
               "android-sdk/usage",
-              "android-sdk/best-practices"
+              "android-sdk/ab-testing",
+              "android-sdk/faq-provider",
+              "android-sdk/troubleshooting"
             ]
           },
           {
@@ -35,10 +39,10 @@
             "pages": [
               "ios-sdk/index",
               "ios-sdk/installation",
-              "ios-sdk/dynamic-strings",
-              "ios-sdk/translations",
               "ios-sdk/usage",
-              "ios-sdk/best-practices"
+              "ios-sdk/ab-testing",
+              "ios-sdk/faq-provider",
+              "ios-sdk/troubleshooting"
             ]
           },
           {
@@ -46,12 +50,12 @@
             "pages": [
               "web-sdk/index",
               "web-sdk/installation",
-              "web-sdk/dynamic-strings",
-              "web-sdk/translations",
+              "web-sdk/usage",
               "web-sdk/react-hooks",
               "web-sdk/nextjs",
-              "web-sdk/usage",
-              "web-sdk/best-practices"
+              "web-sdk/ab-testing",
+              "web-sdk/faq-provider",
+              "web-sdk/troubleshooting"
             ]
           },
           {
@@ -67,14 +71,23 @@
               "dashboard-guides/api-tokens",
               "dashboard-guides/settings"
             ]
+          }
+        ]
+      },
+      {
+        "tab": "Cookbook",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["cookbook/index"]
           },
           {
-            "group": "Advanced",
+            "group": "Recipes",
             "pages": [
-              "core-concepts",
-              "advanced/error-handling",
-              "advanced/caching",
-              "advanced/troubleshooting"
+              "cookbook/web-samples",
+              "cookbook/android-samples",
+              "cookbook/ios-samples"
             ]
           }
         ]

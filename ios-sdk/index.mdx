@@ -1,81 +1,48 @@
 ---
-title: "iOS SDK"
-description: "High-performance string localization for iOS applications"
+title: Overview
+description: 'Integrate Stringboot into your iOS application'
+icon: 'apple'
 ---
-
-## Overview
-
-The Stringboot iOS SDK provides high-performance string localization for iOS and macOS applications with offline-first architecture, Core Data persistence, and reactive SwiftUI/UIKit integration.
-
-### Core Features
-
-<CardGroup cols={3}>
-  <Card title="Dynamic Strings" icon="font">
-    Update app text instantly without releasing new versions
-  </Card>
-  <Card title="Multi-Language" icon="language">
-    Seamless translations and language switching
-  </Card>
-  <Card title="A/B Testing" icon="flask">
-    Optimize messaging with built-in experiment tracking
-  </Card>
-</CardGroup>
-
-### Platform Requirements
-
-| Requirement       | Version |
-| ----------------- | ------- |
-| **Minimum iOS**   | 14.0+   |
-| **Minimum macOS** | 11.0+   |
-| **Swift**         | 5.9+    |
-| **Xcode**         | 15.0+   |
 
 ---
 
-## Start Integration
-
-To get started with the iOS SDK, follow our complete installation guide which covers:
-- Swift Package Manager setup
-- Analytics integration (Required for A/B testing)
-- Device ID configuration
-- Initialization and usage
-
-<Card title="Start Installation Guide" icon="play" href="/ios-sdk/installation">
-  Step-by-step guide to integrate Stringboot iOS SDK
-</Card>
-
----
-
-## Key Capabilities
+The Stringboot iOS SDK is a high-performance, offline-first library for managing dynamic strings in your iOS and macOS applications. It supports both **SwiftUI** and **UIKit**.
 
 <CardGroup cols={2}>
-  <Card title="SwiftUI Native" icon="swift">
-    Auto-updating `SBText` components with reactive updates
+  <Card title="Installation" icon="download" href="/ios-sdk/installation">
+    Add the SDK via Swift Package Manager.
   </Card>
-  <Card title="Combine Publishers" icon="arrows-rotate">
-    Reactive string updates for automatic UI refresh
-  </Card>
-  <Card title="Offline-First" icon="wifi-slash">
-    Works seamlessly without network using Core Data
-  </Card>
-  <Card title="Analytics" icon="chart-mixed">
-    Built-in support for Firebase, Mixpanel, and Amplitude
+  <Card title="Usage" icon="code" href="/ios-sdk/usage">
+    Learn how to fetch and use strings.
   </Card>
 </CardGroup>
 
-## Next Steps
+## Key Features
 
 <CardGroup cols={2}>
-  <Card title="Dynamic Strings" icon="font" href="/ios-sdk/dynamic-strings">
-    Update text without releases
+  <Card title="Smart Caching" icon="memory">
+    LRU cache with language-aware and frequency-based eviction.
   </Card>
-  <Card title="Translations" icon="language" href="/ios-sdk/translations">
-    Multi-language support
+  <Card title="Offline Support" icon="database">
+    Full functionality without network via Core Data.
   </Card>
-  <Card title="A/B Testing" icon="flask" href="/ios-sdk/ab-testing">
-    Experiment tracking setup
+  <Card title="SwiftUI Integration" icon="mobile">
+    Native property wrappers and view modifiers.
   </Card>
-  <Card title="Best Practices" icon="star" href="/ios-sdk/best-practices">
-    Production patterns
+  <Card title="UIKit Integration" icon="layer-group">
+    Extensions and custom components with automatic updates.
+  </Card>
+  <Card title="Memory Management" icon="microchip">
+    Automatic cache size adjustment and memory pressure handling.
+  </Card>
+  <Card title="Network Optimization" icon="wifi">
+    ETag-based conditional requests for bandwidth optimization.
   </Card>
 </CardGroup>
+
+## Requirements
+
+- **iOS**: 14.0+
+- **macOS**: 11.0+
+- **Swift**: 5.9+
+- **Xcode**: 15.0+

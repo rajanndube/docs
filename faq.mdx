@@ -1,0 +1,125 @@
+---
+title: FAQ
+description: 'Frequently Asked Questions about Stringboot'
+icon: 'question'
+---
+
+---
+
+## General
+
+<AccordionGroup>
+  <Accordion title="Does Stringboot work offline?">
+    Yes! All Stringboot SDKs use local caching (IndexedDB for Web, Room for Android, Core Data for iOS) to ensure your app works perfectly even without an internet connection.
+  </Accordion>
+
+  <Accordion title="How often does the SDK sync?">
+    The SDKs attempt to sync on initialization (app load) and can be configured to sync on specific events like window focus or network reconnection.
+  </Accordion>
+
+  <Accordion title="Will Stringboot slow down my app?">
+    No. String lookups are performed against an in-memory cache, which takes less than 1 millisecond. Network syncs happen asynchronously in the background and do not block the UI.
+  </Accordion>
+
+  <Accordion title="How does cache invalidation work?">
+    Stringboot uses a smart 3-tier caching strategy (Memory, Disk, Network). The SDK automatically checks for updates using lightweight ETags. If changes are detected, it downloads only the delta (changed strings) to minimize data usage.
+  </Accordion>
+
+  <Accordion title="Is my data secure?">
+    Yes. All communication is encrypted via HTTPS. Client SDKs use **read-only tokens** that cannot modify data. Your OpenAI API keys (for translation) are stored locally in your browser and never sent to our servers.
+  </Accordion>
+</AccordionGroup>
+
+## Dashboard
+
+<AccordionGroup>
+
+
+  <Accordion title="Does AI translation cost extra?">
+    Stringboot does not charge markup on AI translations. You use your own OpenAI API key, so you pay OpenAI directly based on their standard usage rates.
+  </Accordion>
+
+  <Accordion title="Can I recover deleted strings?">
+    Deleting a string or language is permanent and cannot be undone. We recommend exporting your data as a backup before performing bulk deletions.
+  </Accordion>
+</AccordionGroup>
+
+## Web SDK
+
+<AccordionGroup>
+  <Accordion title="Why do I see ??key?? instead of my text?">
+    This indicates the string key was not found in the local cache.
+    1.  **Check Dashboard**: Ensure the key exists and is published.
+    2.  **Wait for Init**: Ensure the SDK has finished initializing (`loading` state is false).
+    3.  **Clear Cache**: Clear IndexedDB (Web) or app data (Mobile) to force a fresh sync.
+  </Accordion>
+
+  <Accordion title="How do I handle CORS errors?">
+    If you see `Access to fetch has been blocked by CORS policy`, check your **Allowed Domains** in the Dashboard settings. Ensure you are not using a production token on `localhost`, or vice versa.
+  </Accordion>
+
+  <Accordion title="How do I fix Next.js hydration mismatches?">
+    If you see `Text content does not match server-rendered HTML`, ensure you are using the `StringbootProvider` correctly. For Server Components, await the string fetch before rendering. See our [Next.js Guide](/web-sdk/nextjs).
+  </Accordion>
+</AccordionGroup>
+
+## Android SDK
+
+<AccordionGroup>
+  <Accordion title="What is the minimum supported Android version?">
+    The Android SDK supports API level 21 (Android 5.0) and above.
+  </Accordion>
+
+  <Accordion title="Does it support Jetpack Compose?">
+    Yes, the SDK provides native support for Jetpack Compose as well as XML-based layouts.
+  </Accordion>
+
+  <Accordion title="Do I need to add Proguard rules?">
+    Yes. If you are using R8 or Proguard, add the following rule to your `proguard-rules.pro` file to prevent the SDK from being stripped:
+    ```properties
+    -keep class com.stringboot.sdk.** {*; }
+    ```
+  </Accordion>
+
+  <Accordion title="How do I configure the SDK without code?">
+    You can configure the SDK entirely via `AndroidManifest.xml` using `<meta-data>` tags. This allows for auto-initialization without writing any code in your `Application` class.
+    ```xml
+    <meta-data android:name="com.stringboot.api_token" android:value="${STRINGBOOT_API_TOKEN}" />
+    <meta-data android:name="com.stringboot.default_locale" android:value="en" />
+    ```
+  </Accordion>
+
+  <Accordion title="How do I secure my API token?">
+    Never commit your API token to version control. Instead, store it in your `gradle.properties` (added to `.gitignore`) or environment variables, and inject it into your manifest using placeholders.
+  </Accordion>
+
+  <Accordion title="What permissions are required?">
+    The SDK only requires the `INTERNET` permission to fetch updates. It optionally uses `ACCESS_NETWORK_STATE` to optimize sync behavior based on connectivity.
+  </Accordion>
+</AccordionGroup>
+
+## iOS SDK
+
+<AccordionGroup>
+  <Accordion title="Does it support SwiftUI?">
+    Yes, the iOS SDK provides property wrappers and view modifiers specifically designed for SwiftUI, alongside UIKit support.
+  </Accordion>
+
+  <Accordion title="Why do network requests fail when using a proxy?">
+    The SDK enables **SSL Certificate Pinning** by default in Release builds to prevent man-in-the-middle attacks. If you are using a proxy like Charles or Proxyman, test with a **Debug** build where pinning is disabled.
+  </Accordion>
+
+  <Accordion title="How do I enable debug logging?">
+    You can enable verbose logging to troubleshoot issues during development:
+    ```swift
+    #if DEBUG
+    StringbootLogger.isLoggingEnabled = true
+    StringbootLogger.logLevel = .debug
+    #endif
+    ```
+  </Accordion>
+
+  <Accordion title="Is it compatible with Objective-C?">
+    The SDK is written in Swift. While it can be used in Objective-C projects via a bridge, it is optimized for Swift usage.
+  </Accordion>
+</AccordionGroup>

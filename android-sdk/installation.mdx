@@ -1,717 +1,128 @@
 ---
-title: "Complete Installation & Setup"
-description: "Complete setup guide for Android SDK including analytics and A/B testing configuration"
+title: Installation
+description: 'Add the Stringboot SDK to your Android project'
+icon: 'download'
 ---
-
-## Overview
-
-This guide covers complete installation of the Stringboot Android SDK, including analytics integration for A/B testing. Follow all steps to unlock the full capabilities of dynamic strings, translations, and experiments.
-
-<Note>
-  **A/B Testing Setup is Included:** This guide includes analytics handler and device ID configuration required for experiments. These are core features, not optional add-ons.
-</Note>
 
 ---
 
-## Step 1: Add Maven Repository
+## 1. Add Dependency
 
-Add Maven Central to your project's `settings.gradle.kts`:
+Add the Stringboot SDK to your app-level `build.gradle.kts`:
 
-```kotlin settings.gradle.kts
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()  // Stringboot SDK is hosted on Maven Central
-    }
-}
-```
-
----
-
-## Step 2: Add SDK Dependency
-
-In your app's `build.gradle.kts`:
-
-```kotlin build.gradle.kts
+```kotlin
 dependencies {
-    implementation("com.stringboot:stringboot-android-sdk:1.2.0")
+    implementation("com.stringboot:stringboot-android-sdk:1.1.0")
 }
 ```
 
-All transitive dependencies (Room, Retrofit, OkHttp, Coroutines) are included automatically.
+Click **Sync Now** to download the SDK.
 
-**Latest Version:** Check [Maven Central](https://search.maven.org/artifact/com.stringboot/stringboot-android-sdk)
+## 2. Configure Manifest
 
----
+Add your API credentials to `AndroidManifest.xml` inside the `<application>` tag:
 
-## Step 3: Sync Project
-
-Click **Sync Now** in Android Studio or run:
-
-```bash
-./gradlew build
-```
-
----
-
-## Step 4: Secure API Credentials
-
-<Warning>
-  **Security Best Practice:** Never hardcode API tokens in source code or manifest files.
-</Warning>
-
-### Add to gradle.properties
-
-Create or edit `gradle.properties` in your project root and add to `.gitignore`:
-
-```properties gradle.properties
-# Add these lines
-STRINGBOOT_API_URL=https://api.stringboot.com
-STRINGBOOT_API_TOKEN=your_api_token_here
-```
-
-### Configure Build Script
-
-In `app/build.gradle.kts`, configure manifest placeholders:
-
-```kotlin build.gradle.kts
-android {
-    defaultConfig {
-        // Read from gradle.properties or environment variables
-        val apiUrl = project.findProperty("STRINGBOOT_API_URL")?.toString()
-            ?: System.getenv("STRINGBOOT_API_URL")
-            ?: error("STRINGBOOT_API_URL not configured. Add to gradle.properties")
-
-        val apiToken = project.findProperty("STRINGBOOT_API_TOKEN")?.toString()
-            ?: System.getenv("STRINGBOOT_API_TOKEN")
-            ?: error("STRINGBOOT_API_TOKEN not configured. Add to gradle.properties")
-
-        // Make available to AndroidManifest.xml
-        manifestPlaceholders["STRINGBOOT_API_URL"] = apiUrl
-        manifestPlaceholders["STRINGBOOT_API_TOKEN"] = apiToken
-    }
-}
-```
-
----
-
-## Step 5: Configure AndroidManifest.xml
-
-Add required permissions and SDK configuration:
-
-```xml AndroidManifest.xml
-<application
-        <!-- Stringboot SDK Configuration -->
-        <meta-data
-            android:name="com.stringboot.api_url"
-            android:value="${STRINGBOOT_API_URL}" />
-        <meta-data
-            android:name="com.stringboot.api_token"
-            android:value="${STRINGBOOT_API_TOKEN}" />
-        <meta-data
-            android:name="com.stringboot.default_locale"
-            android:value="en" />
-        <meta-data
-            android:name="com.stringboot.cache_size"
-            android:value="1000" />
+```xml
+<application ...>
+    <!-- Stringboot Configuration -->
+    <meta-data
+        android:name="com.stringboot.api_url"
+        android:value="https://api.stringboot.com" />
+    <meta-data
+        android:name="com.stringboot.api_token"
+        android:value="YOUR_API_TOKEN_HERE" />
+    <meta-data
+        android:name="com.stringboot.cache_size"
+        android:value="1000" />
 </application>
 ```
 
----
+<Note>
+  Replace `YOUR_API_TOKEN_HERE` with your actual API token from the Stringboot Dashboard.
+</Note>
 
-## Step 6: Analytics Handler (Required for A/B Testing)
+## 3. Initialize SDK
 
-### Why Analytics Integration is Required
-
-The analytics handler enables:
-
-- **Experiment tracking**: Know which users see which variants
-- **Results analysis**: Measure impact of string changes
-- **Data-driven decisions**: Use analytics platforms for statistical analysis
+We recommend initializing the SDK in your `Application` class. This "Production-Ready" snippet includes setup for all features (A/B Testing, FAQs, Logging).
 
 <Tabs>
-  <Tab title="Firebase Analytics">
-    ### Add Firebase Dependency
-
-    ```kotlin build.gradle.kts
-    dependencies {
-        implementation("com.stringboot:stringboot-android-sdk:1.2.0")
-        implementation("com.google.firebase:firebase-analytics-ktx:21.5.0")
-    }
-    ```
-
-    ### Implement Analytics Handler
-
-    ```kotlin StringbootApplication.kt
-    import com.google.firebase.analytics.FirebaseAnalytics
-    import com.google.firebase.analytics.ktx.analytics
-    import com.google.firebase.ktx.Firebase
-    import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
-    import com.stringboot.sdk.models.ExperimentAssignment
-    
-    class StringbootApplication : Application() {
-    
-        private lateinit var firebaseAnalytics: FirebaseAnalytics
-    
+  <Tab title="Basic">
+    ```kotlin
+    class MyApplication : Application() {
         override fun onCreate() {
             super.onCreate()
-    
-            // Initialize Firebase
-            firebaseAnalytics = Firebase.analytics
-    
-            // Create analytics handler
-            val analyticsHandler = object : StringbootAnalyticsHandler {
-                override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
-                    experiments.forEach { (key, assignment) ->
-                        // Set user property for each experiment
-                        firebaseAnalytics.setUserProperty(
-                            "stringboot_exp_$key",
-                            assignment.variantName
-                        )
-    
-                        StringbootLogger.i("Experiment: $key → ${assignment.variantName}")
-                    }
-                }
-            }
-    
-            // Initialize Stringboot with analytics
-            StringbootExtensions.autoInitialize(
+
+            StringProvider.initialize(
                 context = this,
-                analyticsHandler = analyticsHandler
+                cacheSize = 1000
             )
+            
+            // Trigger initial sync
+            CoroutineScope(Dispatchers.IO).launch {
+                 StringProvider.refreshFromNetwork(StringProvider.deviceLocale())
+            }
         }
     }
     ```
   </Tab>
-  <Tab title="Mixpanel">
-    ### Add Mixpanel Dependency
-
-    ```kotlin build.gradle.kts
-    dependencies {
-        implementation("com.stringboot:stringboot-android-sdk:1.2.0")
-        implementation("com.mixpanel.android:mixpanel-android:7.3.0")
-    }
-    ```
-
-    ### Implement Analytics Handler
-
-    ```kotlin StringbootApplication.kt
-    import com.mixpanel.android.mpmetrics.MixpanelAPI
-    import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
-    import com.stringboot.sdk.models.ExperimentAssignment
-    
-    class StringbootApplication : Application() {
-    
-        private lateinit var mixpanel: MixpanelAPI
-    
+  <Tab title="Production Ready">
+    ```kotlin
+    class MyApplication : Application() {
         override fun onCreate() {
             super.onCreate()
-    
-            // Initialize Mixpanel
-            mixpanel = MixpanelAPI.getInstance(this, "YOUR_MIXPANEL_TOKEN", true)
-    
-            // Create analytics handler
+
+            // 1. Define Analytics Handler (for A/B Testing)
             val analyticsHandler = object : StringbootAnalyticsHandler {
-                override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
-                    experiments.forEach { (key, assignment) ->
-                        // Set people property
-                        mixpanel.people.set(
-                            "stringboot_exp_$key",
-                            assignment.variantName
-                        )
-    
-                        StringbootLogger.i("Experiment: $key → ${assignment.variantName}")
+                override fun onExperimentAssigned(assignment: ExperimentAssignment) {
+                    // Log to your analytics provider
+                    Firebase.analytics.logEvent("experiment_assigned") {
+                        param("experiment_key", assignment.experimentKey)
+                        param("variant", assignment.variantName)
                     }
                 }
+                override fun onExperimentViewed(key: String, variant: String) {
+                     Firebase.analytics.logEvent("experiment_viewed") { ... }
+                }
             }
-    
-            // Initialize Stringboot with analytics
-            StringbootExtensions.autoInitialize(
+
+            // 2. Initialize Stringboot
+            StringProvider.initialize(
                 context = this,
-                analyticsHandler = analyticsHandler
+                cacheSize = 1000,
+                analyticsHandler = analyticsHandler,
+                providedDeviceId = "USER_ID" // Optional: Custom User ID
             )
+
+            // 3. Initialize FAQ Provider
+            FAQProvider.initialize(
+                context = this,
+                cacheSize = 200
+            )
+
+            // 4. Configure Logging (Debug builds only)
+            if (BuildConfig.DEBUG) {
+                StringbootLogger.logLevel = StringbootLogger.Level.DEBUG
+            }
+            
+            // 5. Trigger Initial Sync
+            CoroutineScope(Dispatchers.IO).launch {
+                 StringProvider.refreshFromNetwork(StringProvider.deviceLocale())
+                 FAQProvider.refreshFromNetwork()
+            }
         }
     }
     ```
-  </Tab>
-  <Tab title="Amplitude">
-    ### Add Amplitude Dependency
-
-    ```kotlin build.gradle.kts
-    dependencies {
-        implementation("com.stringboot:stringboot-android-sdk:1.2.0")
-        implementation("com.amplitude:android-sdk:3.35.1")
-    }
-    ```
-
-    ### Implement Analytics Handler
-
-    ```kotlin StringbootApplication.kt
-    import com.amplitude.api.Amplitude
-    import com.amplitude.api.Identify
-    import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
-    import com.stringboot.sdk.models.ExperimentAssignment
-    
-    class StringbootApplication : Application() {
-    
-        override fun onCreate() {
-            super.onCreate()
-    
-            // Initialize Amplitude
-            Amplitude.getInstance()
-                .initialize(this, "YOUR_AMPLITUDE_API_KEY")
-                .enableForegroundTracking(this)
-    
-            // Create analytics handler
-            val analyticsHandler = object : StringbootAnalyticsHandler {
-                override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
-                    val identify = Identify()
-    
-                    experiments.forEach { (key, assignment) ->
-                        // Set user property
-                        identify.set("stringboot_exp_$key", assignment.variantName)
-    
-                        StringbootLogger.i("Experiment: $key → ${assignment.variantName}")
-                    }
-    
-                    Amplitude.getInstance().identify(identify)
-                }
-            }
-    
-            // Initialize Stringboot with analytics
-            StringbootExtensions.autoInitialize(
-                context = this,
-                analyticsHandler = analyticsHandler
-            )
-        }
-    }
-    ```
-  </Tab>
-  <Tab title="Custom Analytics">
-    ### Implement Custom Handler
-
-    Integrate with any analytics platform by implementing the `StringbootAnalyticsHandler` interface:
-
-    ```kotlin StringbootApplication.kt
-    import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
-    import com.stringboot.sdk.models.ExperimentAssignment
-    
-    class StringbootApplication : Application() {
-    
-        override fun onCreate() {
-            super.onCreate()
-    
-            // Create custom analytics handler
-            val analyticsHandler = object : StringbootAnalyticsHandler {
-                override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
-                    experiments.forEach { (key, assignment) ->
-                        // Send to your analytics platform
-                        yourAnalytics.setUserProperty(
-                            "stringboot_exp_$key",
-                            assignment.variantName
-                        )
-    
-                        // Or send as event
-                        yourAnalytics.track("experiment_assigned", mapOf(
-                            "experiment_key" to key,
-                            "variant" to assignment.variantName,
-                            "experiment_id" to assignment.experimentId
-                        ))
-    
-                        StringbootLogger.i("Experiment: $key → ${assignment.variantName}")
-                    }
-                }
-            }
-    
-            // Initialize Stringboot with analytics
-            StringbootExtensions.autoInitialize(
-                context = this,
-                analyticsHandler = analyticsHandler
-            )
-        }
-    }
-    ```
-
-    **Key Points:**
-
-    - Use **user properties** (not events) for best analysis
-    - Property name format: `stringboot_exp_{experiment_key}`
-    - Value is the variant name: `control`, `variant-a`, etc.
   </Tab>
 </Tabs>
 
----
-
-## Step 7: Device ID Configuration (Required for A/B Testing)
-
-### Why Device ID is Required
-
-- **Consistent assignments**: Same device always gets same variant
-- **Cross-session persistence**: Experiments persist across app restarts
-- **Accurate results**: Users don't switch between variants randomly
-
-<Tabs>
-  <Tab title="Auto-Generated (Default)">
-    ### SDK-Generated UUID (Recommended)
-
-    By default, the SDK generates a persistent UUID per app installation:
-
-    ```kotlin StringbootApplication.kt
-    class StringbootApplication : Application() {
-        override fun onCreate() {
-            super.onCreate()
-    
-            // SDK automatically generates and persists a UUID
-            StringbootExtensions.autoInitialize(
-                context = this,
-                analyticsHandler = analyticsHandler
-                // providedDeviceId not specified - SDK generates UUID
-            )
-        }
-    }
-    ```
-
-    **Characteristics:**
-
-    - Persists across app launches
-    - Unique per app installation
-    - Automatically managed by SDK
-    - **Use this unless you have a specific reason to use custom ID**
-  </Tab>
-  <Tab title="Firebase Installation ID">
-    ### Use Firebase Installation ID
-
-    For consistency with Firebase Analytics and other Firebase services:
-
-    ```kotlin build.gradle.kts
-    dependencies {
-        implementation("com.stringboot:stringboot-android-sdk:1.2.0")
-        implementation("com.google.firebase:firebase-installations:17.1.3")
-    }
-    ```
-
-    ```kotlin StringbootApplication.kt
-    import com.google.firebase.installations.FirebaseInstallations
-    import kotlinx.coroutines.tasks.await
-    
-    class StringbootApplication : Application() {
-    
-        private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    
-        override fun onCreate() {
-            super.onCreate()
-    
-            // Initialize with Firebase Installation ID
-            applicationScope.launch {
-                val deviceId = getFirebaseInstallationId()
-    
-                StringbootExtensions.autoInitialize(
-                    context = this@StringbootApplication,
-                    providedDeviceId = deviceId,
-                    analyticsHandler = analyticsHandler
-                )
-            }
-        }
-    
-        private suspend fun getFirebaseInstallationId(): String? {
-            return try {
-                FirebaseInstallations.getInstance().id.await()
-            } catch (e: Exception) {
-                StringbootLogger.e("Failed to get Firebase Installation ID", e)
-                null // SDK will generate UUID as fallback
-            }
-        }
-    }
-    ```
-
-    **When to use:**
-
-    - Already using Firebase in your app
-    - Want same device ID across multiple SDKs
-    - Need to correlate Stringboot experiments with Firebase data
-  </Tab>
-  <Tab title="Custom Device ID">
-    ### Provide Your Own Device ID
-
-    Use your app's existing device identifier:
-
-    ```kotlin StringbootApplication.kt
-    class StringbootApplication : Application() {
-    
-        override fun onCreate() {
-            super.onCreate()
-    
-            val customDeviceId = getYourAppDeviceId()
-    
-            StringbootExtensions.autoInitialize(
-                context = this,
-                providedDeviceId = customDeviceId,
-                analyticsHandler = analyticsHandler
-            )
-        }
-    
-        private fun getYourAppDeviceId(): String? {
-            // Option 1: Your app's existing user/device ID
-            return sharedPreferences.getString("app_device_id", null)
-    
-            // Option 2: Generated UUID stored in preferences
-            // return UUID.randomUUID().toString()  // Store this!
-    
-            // Option 3: Advertising ID (requires user consent)
-            // return AdvertisingIdClient.getAdvertisingIdInfo(this).id
-    
-            // Return null to let SDK generate UUID
-        }
-    }
-    ```
-
-    **Requirements for custom device ID:**
-
-    - Must be persistent across app launches
-    - Must be unique per installation
-    - Must not change during experiments
-    - Should be available before SDK initialization
-
-    **❌ Don't use:**
-
-    - Session IDs (change each launch)
-    - Temporary identifiers
-    - User IDs that change on logout
-  </Tab>
-</Tabs>
-
----
-
-## Step 8: Complete SDK Initialization
-
-Here's the complete Application class with all components:
-
-```kotlin StringbootApplication.kt
-package com.yourapp
-
-import android.app.Application
-import androidx.lifecycle.ProcessLifecycleOwner
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.ktx.analytics
-import com.google.firebase.ktx.Firebase
-import com.stringboot.sdk.StringProvider
-import com.stringboot.sdk.StringbootExtensions
-import com.stringboot.sdk.analytics.StringbootAnalyticsHandler
-import com.stringboot.sdk.models.ExperimentAssignment
-import com.stringboot.sdk.utils.StringbootLogger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-
-class StringbootApplication : Application() {
-
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
-
-    override fun onCreate() {
-        super.onCreate()
-
-        // Initialize Firebase Analytics
-        firebaseAnalytics = Firebase.analytics
-
-        // Create analytics handler for experiments
-        val analyticsHandler = object : StringbootAnalyticsHandler {
-            override fun onExperimentsAssigned(experiments: Map<String, ExperimentAssignment>) {
-                experiments.forEach { (key, assignment) ->
-                    // Set user property in Firebase
-                    firebaseAnalytics.setUserProperty(
-                        "stringboot_exp_$key",
-                        assignment.variantName
-                    )
-
-                    StringbootLogger.i("📊 Experiment: $key → ${assignment.variantName}")
-                }
-            }
-        }
-
-        // Auto-initialize SDK from manifest configuration
-        val success = StringbootExtensions.autoInitialize(
-            context = this,
-            providedDeviceId = null,  // Let SDK generate UUID (or provide custom)
-            analyticsHandler = analyticsHandler
-        )
-
-        if (success) {
-            StringbootLogger.i("✅ Stringboot initialized successfully")
-
-            // Preload current language for instant access
-            runBlocking {
-                val locale = StringProvider.deviceLocale()
-                StringProvider.preloadLanguage(locale, maxStrings = 500)
-                StringbootLogger.i("📦 Preloaded $locale strings into memory")
-            }
-
-            // Refresh from network in background
-            applicationScope.launch {
-                val locale = StringProvider.deviceLocale()
-                StringProvider.refreshFromNetwork(locale)
-                StringbootLogger.i("🔄 Background sync complete for $locale")
-            }
-        } else {
-            StringbootLogger.w("⚠️ Stringboot auto-initialization failed")
-
-            // Fallback: offline-only mode
-            try {
-                StringProvider.initialize(
-                    context = this,
-                    cacheSize = 1000,
-                    api = null  // No network access
-                )
-                StringbootLogger.i("✅ Stringboot initialized in offline mode")
-            } catch (e: Exception) {
-                StringbootLogger.e("❌ Fallback initialization failed: ${e.message}", e)
-            }
-        }
-    }
-}
-```
-
----
-
-## Step 9: Verify Setup
-
-### Test SDK Initialization
-
-1. **Run your app** with debug logging enabled
-2. **Check Logcat** for Stringboot initialization messages:
-
-```
-I/Stringboot: ✅ Stringboot initialized successfully
-I/Stringboot: 📦 Preloaded en strings into memory
-I/Stringboot: 🔄 Background sync complete for en
-```
-
-### Test String Retrieval
-
-Add a test in your MainActivity:
-
-```kotlin MainActivity.kt
-class MainActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        // Test string retrieval
-        val testString = StringProvider.get("welcome_message", "en")
-        Log.i("StringbootTest", "String value: $testString")
-
-        // Should NOT see "??welcome_message??" (means string loaded)
-    }
-}
-```
-
-### Test Experiment Assignment
-
-If you have experiments running:
-
-```kotlin
-// Check device ID
-val deviceId = StringProvider.getDeviceId()
-Log.i("StringbootTest", "Device ID: $deviceId")
-
-// Look for experiment logs
-// I/Stringboot: 📊 Experiment: cta-test → variant-a
-```
-
-### Verify Analytics Integration
-
-1. Check your analytics platform (Firebase/Mixpanel/Amplitude)
-2. Look for user properties like `stringboot_exp_cta_test`
-3. Value should be variant name: `control`, `variant-a`, etc.
-
----
-
-## Common Setup Issues
-
-<AccordionGroup>
-  <Accordion title="Build fails with 'STRINGBOOT_API_TOKEN not configured'">
-    **Cause:** API token not in gradle.properties
-
-    **Solution:**
-
-    1. Create `gradle.properties` in project root (next to settings.gradle.kts)
-    2. Add `STRINGBOOT_API_TOKEN=your_token_here`
-    3. Add `gradle.properties` to `.gitignore`
-    4. Sync project
-  </Accordion>
-  <Accordion title="Analytics handler not called">
-    **Possible causes:**
-
-    1. No experiments running in dashboard
-    2. Analytics handler not passed to `autoInitialize()`
-    3. Device not assigned to any experiments
-
-    **Solutions:**
-
-    - Create test experiment in dashboard
-    - Verify `analyticsHandler` parameter is set
-    - Check device ID is being sent with requests
-  </Accordion>
-  <Accordion title="Strings show '??key??' pattern">
-    **Causes:**
-
-    1. API token invalid
-    2. No network connectivity
-    3. Strings not created in dashboard
-
-    **Solutions:**
-
-    - Verify API token in dashboard
-    - Check internet permission in manifest
-    - Ensure strings exist for your app
-  </Accordion>
-  <Accordion title="Device ID changes on each launch">
-    **Cause:** Using non-persistent ID or regenerating UUID
-
-    **Solution:**
-
-    - Use default SDK-generated UUID (it persists automatically)
-    - If using custom ID, store it in SharedPreferences
-    - Don't generate new UUID on each launch
-  </Accordion>
-</AccordionGroup>
-
----
+<Tip>
+  This single initialization block sets up the core SDK. Uncomment the specific lines to enable A/B Testing tracking or custom logging.
+</Tip>
 
 ## Next Steps
 
-Now that setup is complete, learn how to use the three core features:
+Now that you've installed the SDK, learn how to use it in your app.
 
-<CardGroup cols={3}>
-  <Card title="Dynamic Strings" icon="text" href="/android-sdk/dynamic-strings">
-    Update app copy without releases
-  </Card>
-  <Card title="Translations" icon="language" href="/android-sdk/translations">
-    Multi-language support and switching
-  </Card>
-  <Card title="A/B Testing" icon="flask" href="/android-sdk/ab-testing">
-    Run experiments to optimize messaging
-  </Card>
-</CardGroup>
-
-### Additional Resources
-
-<CardGroup cols={2}>
-  <Card title="Best Practices" icon="star" href="/android-sdk/best-practices">
-    Production-ready patterns
-  </Card>
-  <Card title="Advanced Usage" icon="code" href="/android-sdk/advanced-usage">
-    FAQ management, caching, optimization
-  </Card>
-  <Card title="Core Concepts" icon="book" href="/core-concepts">
-    Architecture and offline behavior
-  </Card>
-  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
-    Common issues and solutions
-  </Card>
-</CardGroup>
-
----
-
-**Questions?** Contact [developer@stringboot.com](mailto:developer@stringboot.com)
+<Card title="Basic Usage" icon="arrow-right" href="/android-sdk/usage">
+  Fetch strings and update your UI
+</Card>

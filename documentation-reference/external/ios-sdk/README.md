@@ -1,128 +1,551 @@
-# Stringboot iOS SDK - Integration Guide
+# Stringboot iOS SDK
 
-**Verified for:** v2.0 (String-Sync v2 Protocol)
-**Last verified on:** 2025-11-07
-**Audience:** iOS developers integrating the SDK
-**Source:** Based on verified demo app implementation
+> High-performance internationalization (i18n) SDK for iOS implementing String-Sync v2 protocol
 
----
+The Stringboot iOS SDK provides a sophisticated multi-layered caching system with smart memory management, offline support, and network synchronization to minimize API calls and provide fast string lookups.
 
-## Table of Contents
+## Features
 
-1. [Overview](#overview)
-2. [Installation & Setup](#installation--setup)
-3. [Initialization](#initialization)
-4. [Usage Examples](#usage-examples)
-5. [Error Handling](#error-handling)
-6. [Caching & Offline Behavior](#caching--offline-behavior)
-7. [Best Practices](#best-practices)
-8. [FAQ / Troubleshooting](#faq--troubleshooting)
-9. [Changelog](#changelog)
+- ✅ **Smart Caching** - LRU cache with language-aware and frequency-based eviction
+- ✅ **Offline Support** - Full functionality without network via Core Data
+- ✅ **SwiftUI Integration** - Native property wrappers and view modifiers
+- ✅ **UIKit Integration** - Extensions and custom components with automatic updates
+- ✅ **Memory Management** - Automatic cache size adjustment and memory pressure handling
+- ✅ **Network Optimization** - ETag-based conditional requests for bandwidth optimization
+- ✅ **Integrity Verification** - SHA-256 verification of network responses
+- ✅ **Reactive Updates** - Combine publishers for real-time UI updates
 
----
+## Requirements
 
-## Overview
+- iOS 14.0+ / macOS 11.0+
+- Swift 5.9+
+- Xcode 15.0+
 
-The **Stringboot iOS SDK** provides high-performance internationalization (i18n) for iOS applications. It implements a sophisticated multi-layered caching system with offline support and smart memory management to deliver fast string lookups while minimizing network usage.
+## Installation
 
-### Key Features
+### Swift Package Manager
 
-- **Offline-First:** Works seamlessly without network connectivity
-- **Smart Caching:** LRU memory cache with frequency-based prioritization
-- **Delta Sync:** Only downloads changed strings to save bandwidth
-- **Fast Lookups:** Target <300ms on 4G networks
-- **Memory Efficient:** Automatic cache management based on memory pressure
-- **Reactive Updates:** Combine publishers and SwiftUI @ObservedObject integration
-- **Async/Await Support:** Modern concurrency patterns with Swift 5.9+
-- **SwiftUI Native:** Auto-updating SBText components
-- **Language Change:** Seamless language switching with loading states
-
-### Platform Support
-
-| Feature | Requirement |
-|---------|------------|
-| **Min iOS** | 14.0+ |
-| **Min macOS** | 11.0+ |
-| **Swift** | 5.9+ |
-| **Xcode** | 15.0+ |
-| **SDK Version** | 2.0 |
-
----
-
-## Installation & Setup
-
-### Step 1: Add Swift Package Dependency
-
-In Xcode: **File → Add Packages → Enter repository URL**
-
-```
-https://github.com/Stringboot-SDK/stringboot-ios-sdk.git
-```
-
-Or add to `Package.swift`:
+Add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(
-        url: "https://github.com/Stringboot-SDK/stringboot-ios-sdk.git",
-        from: "2.0.0"
-    )
+    .package(url: "https://github.com/your-org/stringboot-ios-sdk.git", from: "2.0.0")
 ]
 ```
 
-### Step 2: Add Target Dependency
+Or in Xcode:
+1. File > Add Package Dependencies
+2. Enter the repository URL
+3. Select version and add to your target
 
-In Xcode: Select your app target → **Build Phases → Link Binary With Libraries → Add StringbootSDK**
+## Quick Start
 
-Or in `Package.swift`:
+### 1. Initialize the SDK
 
-```swift
-targets: [
-    .target(
-        name: "YourApp",
-        dependencies: ["StringbootSDK"]
-    )
-]
-```
-
-### Step 3: Import in Your Code
+In your `App` or `AppDelegate`:
 
 ```swift
 import StringbootSDK
+
+// In SwiftUI App
+@main
+struct MyApp: App {
+    init() {
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_API_TOKEN",
+            baseURL: "https://api.stringboot.com"
+        )
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+
+// In UIKit AppDelegate
+func application(_ application: UIApplication,
+                 didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    StringProvider.shared.initialize(
+        cacheSize: 1000,
+        apiToken: "YOUR_API_TOKEN",
+        baseURL: "https://api.stringboot.com"
+    )
+    return true
+}
 ```
 
----
-
-## Initialization
-
-### SwiftUI App Initialization (Verified Pattern)
-
-This is the **exact initialization pattern** from the working demo app:
+### 2. SwiftUI Usage
 
 ```swift
 import SwiftUI
 import StringbootSDK
 
-@main
-struct StringbootDemoApp: App {
+struct ContentView: View {
+    @StateObject private var languageManager = StringbootLanguageManager()
+    @State private var selectedLanguage = "en"
+
+    var body: some View {
+        VStack {
+            // Using SBText (automatic localization)
+            SBText("welcome_message", lang: selectedLanguage)
+                .font(.title)
+
+            SBText("description", lang: selectedLanguage)
+                .font(.body)
+
+            // Language picker
+            Picker("Language", selection: $selectedLanguage) {
+                ForEach(languageManager.availableLanguages, id: \.code) { lang in
+                    Text(lang.name).tag(lang.code)
+                }
+            }
+            .onChange(of: selectedLanguage) { newLang in
+                languageManager.setLanguage(newLang)
+            }
+        }
+    }
+}
+```
+
+### 3. UIKit Usage
+
+```swift
+import UIKit
+import StringbootSDK
+
+class ViewController: UIViewController {
+
+    // Using SBLabel (automatic updates on language change)
+    let titleLabel = SBLabel(key: "welcome_message")
+    let descriptionLabel = SBLabel(key: "description")
+
+    // Manual integration
+    let manualLabel = UILabel()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Configure automatic labels
+        titleLabel.font = .systemFont(ofSize: 24, weight: .bold)
+
+        // Manual string loading
+        manualLabel.setStringboot(key: "manual_text", lang: "en")
+
+        setupUI()
+    }
+
+    @objc func changeLanguage() {
+        StringbootLanguageNotifier.shared.changeLanguage(to: "es")
+        // All SBLabel instances will update automatically
+    }
+}
+```
+
+### 4. Manual String Access
+
+```swift
+// Async/await
+Task {
+    let text = await StringProvider.shared.get("welcome_message", lang: "en")
+    print(text)
+}
+
+// With reactive updates
+let publisher = StringProvider.shared.publisher(for: "welcome_message", lang: "en")
+publisher.sink { text in
+    print(text)
+}.store(in: &cancellables)
+```
+
+## Architecture
+
+### Multi-Layered Repository
+
+```
+StringProvider → Smart Cache → Core Data → Network (String-Sync v2 API) → "??key??"
+```
+
+1. **Smart Cache** - In-memory LRU cache with language priority and access frequency tracking
+2. **Core Data** - Local persistence for offline support
+3. **Network** - String-Sync v2 API with ETag-based conditional requests
+4. **Fallback** - Returns `??key??` for missing strings
+
+### String-Sync v2 Protocol
+
+The SDK implements the high-performance String-Sync v2 protocol:
+
+1. **ManifestInterceptor** - Checks for changes using ETags (`/meta` endpoint)
+2. **DeltaSyncWorker** - Downloads only changed strings (`/updates` endpoint)
+3. **StringProvider** - Multi-layered repository with smart caching
+4. **Core Data** - Local persistence with proper indexing
+
+### Performance Targets
+
+- ≤2 network requests per cold start (P95)
+- <300ms strings ready in memory on 4G
+- <2kB download when nothing changed
+- 100% offline functionality
+
+## API Reference
+
+### StringProvider
+
+Main entry point for the SDK:
+
+```swift
+// Initialization
+StringProvider.shared.initialize(
+    cacheSize: Int = 1000,
+    apiToken: String? = nil,
+    baseURL: String = "https://api.stringboot.com"
+)
+
+// String access
+await StringProvider.shared.get(_ key: String, lang: String? = nil, allowNetworkFetch: Bool = false) -> String
+
+// Language management
+StringProvider.shared.setLocale(_ lang: String)
+StringProvider.shared.deviceLocale() -> String
+StringProvider.shared.getAvailableLanguages() -> [String]
+await StringProvider.shared.getAvailableLanguagesFromServer() -> [ActiveLanguage]
+
+// Cache management
+StringProvider.shared.clearMemoryCache()
+StringProvider.shared.clearLanguageCache(_ lang: String)
+StringProvider.shared.getCacheStats() -> CacheStats
+StringProvider.shared.getSmartCacheStats() -> SmartCacheStats?
+
+// Network operations
+await StringProvider.shared.refreshFromNetwork(lang: String? = nil) -> Bool
+
+// Memory pressure handling
+StringProvider.shared.handleMemoryPressure(level: MemoryPressureLevel)
+```
+
+### SwiftUI Components
+
+```swift
+// Property wrapper
+@StringbootString("welcome_message")
+var welcomeText: String
+
+// Text view
+SBText("key", lang: "en")
+
+// Language manager
+@StateObject var languageManager = StringbootLanguageManager()
+languageManager.setLanguage("es")
+languageManager.loadAvailableLanguages()
+await languageManager.refresh()
+```
+
+### UIKit Components
+
+```swift
+// Custom labels and buttons
+let label = SBLabel(key: "welcome_message", lang: "en")
+let button = SBButton(key: "button_text", lang: "en")
+
+// Extensions
+label.setStringboot(key: "text", lang: "en")
+button.setStringbootTitle(key: "button", for: .normal, lang: "en")
+textField.setStringbootPlaceholder(key: "placeholder", lang: "en")
+
+// Language notification
+StringbootLanguageNotifier.shared.changeLanguage(to: "es")
+```
+
+## Configuration
+
+### Info.plist Configuration (Optional)
+
+You can configure the SDK via `Info.plist`:
+
+```xml
+<key>StringbootAPIURL</key>
+<string>https://api.stringboot.com</string>
+<key>StringbootAPIToken</key>
+<string>YOUR_API_TOKEN</string>
+<key>StringbootCacheSize</key>
+<integer>1000</integer>
+<key>StringbootDefaultLocale</key>
+<string>en</string>
+```
+
+### Security
+
+The SDK includes SSL certificate pinning for production security:
+
+```swift
+// Certificate pinning is enabled by default in Release builds
+// It's automatically disabled in Debug builds for development convenience
+
+// To customize (advanced use case):
+let session = SecurityConfig.createSecureURLSession(enablePinning: true)
+
+// Validate API URLs
+let isValid = SecurityConfig.validateAPIURL("https://api.stringboot.com")
+```
+
+**Certificate Pinning:**
+- Automatically enabled in **Release builds**
+- Disabled in **Debug builds** for easier local development
+- Pins are configured in `SecurityConfig.swift` (replace placeholder pins before production)
+- Supports both RSA and EC certificates
+
+**To update certificate pins:**
+```bash
+# Get current certificate pin
+echo | openssl s_client -servername api.stringboot.com -connect api.stringboot.com:443 2>/dev/null | \
+openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
+
+# Get backup certificate pin (intermediate CA)
+echo | openssl s_client -servername api.stringboot.com -connect api.stringboot.com:443 -showcerts 2>/dev/null | \
+awk '/BEGIN CERT/,/END CERT/ {if (++cert==2) print}' | \
+openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
+```
+
+### Logging
+
+The SDK includes comprehensive logging that can be controlled by developers:
+
+```swift
+// Enable or disable all SDK logs (useful for production)
+StringbootLogger.isLoggingEnabled = true  // Default: true in Debug, false in Release
+
+// Set log level (when logging is enabled)
+StringbootLogger.logLevel = .debug // .verbose, .debug, .info, .warning, .error, .none
+
+// Example: Disable all logs in production
+#if DEBUG
+StringbootLogger.isLoggingEnabled = true
+StringbootLogger.logLevel = .debug
+#else
+StringbootLogger.isLoggingEnabled = false  // No logs in production
+#endif
+
+// Manual logging (for SDK developers)
+StringbootLogger.d("Debug message")
+StringbootLogger.i("Info message")
+StringbootLogger.w("Warning message")
+StringbootLogger.e("Error message", error: someError)
+```
+
+**Default Behavior:**
+- **Debug builds**: Logging enabled with `.debug` level
+- **Release builds**: Logging completely disabled (no logs at all)
+
+**Recommended Production Setup:**
+```swift
+// Disable all logs for production apps
+StringbootLogger.isLoggingEnabled = false
+```
+
+## Advanced Usage
+
+### Memory Pressure Handling
+
+The SDK automatically responds to memory pressure. You can also manually trigger it:
+
+```swift
+// Listen to system memory warnings
+NotificationCenter.default.addObserver(
+    forName: UIApplication.didReceiveMemoryWarningNotification,
+    object: nil,
+    queue: .main
+) { _ in
+    StringProvider.shared.handleMemoryPressure(level: .critical)
+}
+```
+
+### Preloading Languages
+
+For better performance, preload languages on app start:
+
+```swift
+Task {
+    await StringProvider.shared.preloadLanguage("en", maxStrings: 500)
+    await StringProvider.shared.preloadLanguage("es", maxStrings: 500)
+}
+```
+
+### Cache Statistics
+
+Monitor cache performance:
+
+```swift
+let stats = StringProvider.shared.getCacheStats()
+print("Hit rate: \(stats.hitRate)")
+print("Size: \(stats.memorySize) / \(stats.memoryMaxSize)")
+
+if let smartStats = StringProvider.shared.getSmartCacheStats() {
+    print("Language distribution: \(smartStats.languageDistribution)")
+    print("Average access frequency: \(smartStats.averageAccessFrequency)")
+    print("Dominant language: \(smartStats.dominantLanguage ?? "none")")
+}
+```
+
+### Force Refresh
+
+Force refresh strings from network:
+
+```swift
+Task {
+    let success = await StringProvider.shared.refreshFromNetwork(lang: "en")
+    if success {
+        print("Refresh successful")
+    }
+}
+```
+
+## Testing
+
+### Unit Tests
+
+```swift
+import XCTest
+@testable import StringbootSDK
+
+class StringProviderTests: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        StringProvider.shared.initialize(cacheSize: 100)
+    }
+
+    func testStringRetrieval() async {
+        let text = await StringProvider.shared.get("test_key", lang: "en")
+        XCTAssertNotEqual(text, "??test_key??")
+    }
+
+    func testCacheHitRate() async {
+        _ = await StringProvider.shared.get("key1", lang: "en")
+        _ = await StringProvider.shared.get("key1", lang: "en")
+
+        let stats = StringProvider.shared.getCacheStats()
+        XCTAssertGreaterThan(stats.hitRate, 0)
+    }
+}
+```
+
+## Migration from Android SDK
+
+The iOS SDK mirrors the Android SDK architecture for consistency:
+
+| Android | iOS |
+|---------|-----|
+| `StringProvider.kt` | `StringProvider.swift` |
+| `SmartStringCache` (LruCache) | `SmartStringCache` (custom LRU) |
+| `Room Database` | `Core Data` |
+| `DataStore` | `UserDefaults` |
+| `Jetpack Compose` | `SwiftUI` |
+| `View extensions` | `UIKit extensions` |
+
+## Performance Tips
+
+1. **Initialize early** - Call `initialize()` in `App.init()` or `AppDelegate`
+2. **Preload languages** - Preload expected languages on app start
+3. **Use smart cache** - Let the SDK manage cache based on usage patterns
+4. **Monitor stats** - Use cache statistics to optimize cache size
+5. **Handle memory pressure** - Respond to system memory warnings
+
+## Troubleshooting
+
+### Strings not loading
+
+- Check API token configuration
+- Verify network connectivity
+- Check log output with `StringbootLogger.logLevel = .debug`
+
+### Cache not working
+
+- Ensure `initialize()` is called before first use
+- Check cache stats to verify hits/misses
+- Verify sufficient cache size for your use case
+
+### Memory issues
+
+- Reduce cache size in `initialize(cacheSize:)`
+- Implement memory pressure handling
+- Clear cache periodically if needed
+
+## A/B Testing Integration
+
+### Overview
+
+The SDK supports A/B testing for strings, allowing you to test different copy variations and track performance.
+
+### How It Works
+
+1. **Device ID**: SDK generates a unique UUID per device installation
+2. **X-Device-ID Header**: Automatically sent with all API requests
+3. **Backend Assignment**: Backend assigns device to experiment variant
+4. **Consistent Delivery**: Same device always gets same variant
+5. **Analytics Integration**: Track experiments in your analytics platform
+
+### Basic Setup
+
+The SDK handles A/B testing automatically - no code changes required!
+
+```swift
+// User calls this normally
+let text = await StringProvider.shared.get("welcome_message", lang: "en")
+
+// Backend might return different variants:
+// - "Welcome!" (control)
+// - "Hey there!" (variant A)
+// - "Hello friend!" (variant B)
+```
+
+### Analytics Integration (Optional)
+
+Track experiment assignments in Firebase Analytics:
+
+#### Step 1: Create Analytics Handler
+
+```swift
+import StringbootSDK
+import FirebaseAnalytics
+
+class FirebaseAnalyticsHandler: StringbootAnalyticsHandler {
+    private let analytics: Analytics
 
     init() {
-        // Configure SDK logging
-        StringbootLogger.isLoggingEnabled = true  // Set to false to disable all SDK logs
-        StringbootLogger.logLevel = .debug        // Verbosity level when logging is enabled
+        self.analytics = Analytics.analytics()
+    }
 
-        // Initialize Stringboot SDK
+    func onExperimentsAssigned(experiments: [String: ExperimentAssignment]) {
+        for (_, experiment) in experiments {
+            // Set user property: stringboot_exp_{experimentKey}
+            analytics.setUserProperty(
+                experiment.variantName,
+                forName: "stringboot_exp_\(experiment.experimentKey)"
+            )
+
+            print("Experiment: \(experiment.experimentKey) = \(experiment.variantName)")
+        }
+    }
+}
+```
+
+#### Step 2: Initialize with Analytics Handler
+
+```swift
+import StringbootSDK
+
+@main
+struct MyApp: App {
+    init() {
+        let analyticsHandler = FirebaseAnalyticsHandler()
+
         StringProvider.shared.initialize(
             cacheSize: 1000,
-            apiToken: "YOUR_STRINGBOOT_API_TOKEN",
-            baseURL: "https://api.stringboot.com",
-            autoSync: true  // Auto-fetch strings on startup
+            apiToken: "your-api-token",
+            analyticsHandler: analyticsHandler  // Add this
         )
-
-        // Set saved language or use device locale
-        let currentLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
-            ?? StringProvider.shared.deviceLocale()
-        StringProvider.shared.setLocale(currentLang)
     }
 
     var body: some Scene {
@@ -133,1175 +556,370 @@ struct StringbootDemoApp: App {
 }
 ```
 
-### Initialization Parameters Explained
+### Advanced: Custom Device ID
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `cacheSize` | Int | Maximum number of strings in memory cache (recommended: 1000) |
-| `apiToken` | String | Your Stringboot API token from the dashboard |
-| `baseURL` | String | API endpoint (default: `https://api.stringboot.com`) |
-| `autoSync` | Bool | Automatically sync strings on app launch (recommended: true) |
-
-### Logger Configuration
+Use your app's existing device identifier for consistency:
 
 ```swift
-// Enable detailed logging for debugging
-StringbootLogger.isLoggingEnabled = true
-StringbootLogger.logLevel = .debug  // Options: .debug, .info, .warning, .error
+import StringbootSDK
+import FirebaseAnalytics
 
-// Disable logging for production
-StringbootLogger.isLoggingEnabled = false
+StringProvider.shared.initialize(
+    cacheSize: 1000,
+    apiToken: "your-api-token",
+    providedDeviceId: Analytics.appInstanceID(),  // Use Firebase ID
+    analyticsHandler: analyticsHandler
+)
 ```
 
----
+### Property Naming Convention
 
-## Usage Examples
+```
+stringboot_exp_{experimentKey}
+```
 
-### Example 1: Complete ContentView with Loading States (Production-Ready)
+**Example:**
+- Experiment: `welcome_test`
+- Property: `stringboot_exp_welcome_test`
+- Value: `control`, `variant-a`, `variant-b`
 
-This is the **exact pattern** from the demo app showing all three states:
+### Debugging Experiments
+
+```swift
+// Get current experiments
+let experiments = await StringProvider.shared.getExperiments()
+for (stringKey, exp) in experiments {
+    print("""
+        String: \(stringKey)
+        Experiment: \(exp.experimentKey)
+        Variant: \(exp.variantName)
+        Assigned: \(exp.assignedAt)
+    """)
+}
+```
+
+### Key Points
+
+✅ **Automatic** - A/B testing works without code changes
+✅ **Consistent** - Same device always gets same variant
+✅ **Persistent** - Assignments survive app restarts
+✅ **Optional** - Analytics integration is completely optional
+✅ **Backward Compatible** - No breaking changes
+
+For complete details, see [AB_TESTING_CLIENT_SDK_INTEGRATION.md](../AB_TESTING_CLIENT_SDK_INTEGRATION.md)
+
+## FAQ Provider
+
+### Overview
+
+The FAQ Provider feature enables you to deliver dynamic, multilingual FAQ content to your iOS app with offline-first caching and automatic updates.
+
+**Key Features:**
+- 📦 **Offline-First**: FAQs cached locally with Core Data
+- 🌍 **Multilingual**: Language fallback to English
+- 🏷️ **Tag-Based**: Organize FAQs by tags and sub-tags
+- 🔄 **Reactive**: Combine publishers for auto-updating UI
+- ⚡ **High Performance**: Three-tier caching (memory → Core Data → network)
+
+### Quick Start
+
+#### 1. Initialize FAQ Provider
+
+**IMPORTANT:** FAQProvider requires separate initialization from StringProvider.
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        // Initialize StringProvider first
+        StringProvider.shared.initialize(
+            cacheSize: 1000,
+            apiToken: "YOUR_API_TOKEN",
+            baseURL: "https://api.stringboot.com"
+        )
+
+        // Initialize FAQProvider separately - REQUIRED!
+        FAQProvider.shared.initialize(
+            cacheSize: 200,
+            apiToken: "YOUR_API_TOKEN",
+            baseURL: "https://api.stringboot.com"
+        )
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+#### 2. SwiftUI Usage
+
+```swift
+import SwiftUI
+import StringbootSDK
+
+struct FAQListView: View {
+    @State private var faqs: [FAQ] = []
+    @State private var loading = true
+
+    var body: some View {
+        Group {
+            if loading {
+                ProgressView("Loading FAQs...")
+            } else {
+                List(faqs) { faq in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(faq.question)
+                            .font(.headline)
+                        Text(faq.answer)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+        .onAppear {
+            loadFAQs()
+        }
+    }
+
+    func loadFAQs() {
+        Task {
+            faqs = await FAQProvider.shared.getFAQs(tag: "payments", lang: "en")
+            loading = false
+        }
+    }
+}
+```
+
+#### 3. UIKit Usage
+
+```swift
+import UIKit
+import StringbootSDK
+
+class FAQViewController: UITableViewController {
+    private var faqs: [FAQ] = []
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "FAQs"
+        loadFAQs()
+    }
+
+    func loadFAQs() {
+        Task {
+            faqs = await FAQProvider.shared.getFAQs(tag: "payments", lang: "en")
+            tableView.reloadData()
+        }
+    }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return faqs.count
+    }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "FAQCell") ?? UITableViewCell(style: .subtitle, reuseIdentifier: "FAQCell")
+        let faq = faqs[indexPath.row]
+        cell.textLabel?.text = faq.question
+        cell.detailTextLabel?.text = faq.answer
+        cell.detailTextLabel?.numberOfLines = 2
+        return cell
+    }
+}
+```
+
+### API Reference
+
+#### Initialize
+
+```swift
+FAQProvider.shared.initialize(
+    cacheSize: Int = 200,
+    apiToken: String? = nil,
+    baseURL: String = "https://api.stringboot.com"
+)
+```
+
+#### Fetch FAQs
+
+```swift
+// Get FAQs by tag
+let faqs = await FAQProvider.shared.getFAQs(
+    tag: "payments",
+    lang: "en"
+)
+
+// Get single FAQ by ID
+let faq = await FAQProvider.shared.getFAQ(
+    id: "faq-123",
+    lang: "en"
+)
+
+// Get all tags
+let tags = await FAQProvider.shared.getAllTags(lang: "en")
+```
+
+#### Reactive Updates with Combine
+
+```swift
+import Combine
+
+class FAQViewModel: ObservableObject {
+    @Published var faqs: [FAQ] = []
+    private var cancellables = Set<AnyCancellable>()
+
+    func subscribeTo(tag: String, lang: String) {
+        FAQProvider.shared.getFAQsPublisher(tag: tag, lang: lang)
+            .sink { [weak self] faqs in
+                self?.faqs = faqs
+            }
+            .store(in: &cancellables)
+    }
+}
+```
+
+#### Manual Sync
+
+```swift
+// Sync FAQs from network
+let success = await FAQProvider.shared.syncFAQs(lang: "en")
+
+// Clear cache
+FAQProvider.shared.clearCache()
+```
+
+### Filtering by Sub-Tags
+
+```swift
+// Get all payment FAQs
+let allPaymentFAQs = await FAQProvider.shared.getFAQs(tag: "payments", lang: "en")
+
+// Filter by sub-tag
+let refundFAQs = allPaymentFAQs.filter { faq in
+    faq.subTags?.contains("refunds") ?? false
+}
+```
+
+### Complete Example: FAQ Screen
 
 ```swift
 import SwiftUI
 import Combine
-import StringbootSDK
 
-struct ContentView: View {
+struct FAQScreen: View {
+    @StateObject private var viewModel = FAQViewModel()
+    @State private var selectedTag = "payments"
 
-    @ObservedObject var stringProvider = StringProvider.shared
-    @State private var selectedLanguage: String = ""
-
-    var body: some View {
-        NavigationView {
-            Group {
-                if stringProvider.isReady {
-                    mainContent
-                } else if let error = stringProvider.initializationError {
-                    errorView(error)
-                } else {
-                    loadingView
-                }
-            }
-            .navigationTitle("Stringboot Demo")
-            .onAppear {
-                selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
-            }
-            .onChange(of: stringProvider.currentLanguage) { _, newLang in
-                if let newLang = newLang {
-                    selectedLanguage = newLang
-                }
-            }
-        }
-    }
-
-    private var loadingView: some View {
-        VStack(spacing: 20) {
-            ProgressView()
-                .scaleEffect(2.0)
-                .padding()
-
-            Text("Loading strings...")
-                .font(.headline)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    private func errorView(_ message: String) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.orange)
-                .padding()
-
-            Text("Initialization Failed")
-                .font(.title2)
-                .fontWeight(.bold)
-
-            Text(message)
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-
-            Button {
-                Task {
-                    await stringProvider.retryInitialization()
-                }
-            } label: {
-                HStack {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Retry")
-                }
-                .font(.headline)
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.top)
-        }
-    }
-
-    private var mainContent: some View {
-        VStack(spacing: 20) {
-            // Your app content here
-            Text("SDK Ready!")
-        }
-    }
-}
-```
-
-### Example 2: Language Change with Full-Screen Overlay (Production Pattern)
-
-This shows the **exact language change handling** from the demo app:
-
-```swift
-struct ContentView: View {
-
-    @ObservedObject var stringProvider = StringProvider.shared
-    @State private var selectedLanguage: String = ""
-
-    var body: some View {
-        NavigationView {
-            VStack {
-                // Your content here
-            }
-            .alert("Language Change Failed", isPresented: .constant(stringProvider.languageChangeError != nil)) {
-                Button("OK") {
-                    selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
-                }
-            } message: {
-                Text(stringProvider.languageChangeError ?? "Unknown error")
-            }
-            .overlay {
-                if stringProvider.isChangingLanguage {
-                    ZStack {
-                        Color.black.opacity(0.4)
-                            .ignoresSafeArea()
-
-                        VStack(spacing: 16) {
-                            ProgressView()
-                                .scaleEffect(1.5)
-                                .tint(.white)
-
-                            Text("Changing language...")
-                                .foregroundColor(.white)
-                                .font(.headline)
-                        }
-                        .padding(32)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(16)
-                        .shadow(radius: 20)
-                    }
-                }
-            }
-        }
-    }
-}
-```
-
-### Example 3: Language Picker with Disabled State (Production Pattern)
-
-This is the **exact Picker integration** from the demo app:
-
-```swift
-struct ContentView: View {
-
-    @ObservedObject var stringProvider = StringProvider.shared
-    @State private var selectedLanguage: String = ""
+    let tags = ["payments", "account", "shipping", "returns"]
 
     var body: some View {
         VStack {
-            // Language Picker - Just observe and call SDK
-            Picker("Language", selection: $selectedLanguage) {
-                ForEach(stringProvider.availableLanguages, id: \.code) { language in
-                    Text(language.name).tag(language.code)
+            // Tag selector
+            Picker("Category", selection: $selectedTag) {
+                ForEach(tags, id: \.self) { tag in
+                    Text(tag.capitalized).tag(tag)
                 }
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(SegmentedPickerStyle())
             .padding()
-            .disabled(stringProvider.isChangingLanguage)
-            .onChange(of: selectedLanguage) { _, newLanguage in
-                Task {
-                    await stringProvider.changeLanguage(to: newLanguage)
-                }
-            }
-        }
-        .onAppear {
-            selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
-        }
-        .onChange(of: stringProvider.currentLanguage) { _, newLang in
-            if let newLang = newLang {
-                selectedLanguage = newLang
-            }
-        }
-    }
-}
-```
 
-### Example 4: SBText Usage (Auto-Updating Strings)
-
-This shows the **actual SBText usage** from the demo app:
-
-```swift
-import SwiftUI
-import StringbootSDK
-
-struct ContentView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
-
-            // Using SBText - SDK handles everything automatically:
-            // - Language detection (follows picker selection)
-            // - Auto-updates when strings refresh from network
-            // - Falls back to Localizable.xcstrings if backend offline
-            SBText("welcome_message")
-                .font(.title)
-                .fontWeight(.bold)
-
-            SBText("title_activity_main")
-                .font(.body)
-                .foregroundColor(.secondary)
-
-            SBText("app_description")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-        }
-        .padding()
-    }
-}
-```
-
-### Example 5: Refresh from Network Button
-
-This is the **exact refresh button** from the demo app:
-
-```swift
-struct ContentView: View {
-
-    @ObservedObject var stringProvider = StringProvider.shared
-    @State private var selectedLanguage: String = ""
-
-    var body: some View {
-        VStack {
-            Button("Refresh from Network") {
-                Task {
-                    let lang = selectedLanguage.isEmpty ? nil : selectedLanguage
-                    StringbootLogger.i("Refresh button: fetching \(lang ?? "device locale")")
-                    let success = await stringProvider.refreshFromNetwork(lang: lang, forceRefresh: true)
-                    StringbootLogger.i("Refresh button: result = \(success)")
-                    // No need to toggle refreshTrigger - SDK auto-updates via lastUpdate
-                }
-            }
-            .buttonStyle(.borderedProminent)
-
-            Button("Clear Cache") {
-                stringProvider.clearCache(clearDatabase: false)
-                // No need to toggle refreshTrigger - SDK auto-updates
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
-    }
-}
-```
-
-### Example 6: Cache Statistics View (Production Component)
-
-This is the **complete CacheStatsView** from the demo app:
-
-```swift
-import SwiftUI
-import StringbootSDK
-
-struct CacheStatsView: View {
-
-    @State private var stats: CacheStats?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Cache Statistics")
-                .font(.headline)
-
-            if let stats = stats {
-                HStack {
-                    Text("Size:")
-                    Spacer()
-                    Text("\(stats.memorySize) / \(stats.memoryMaxSize)")
-                }
-
-                HStack {
-                    Text("Hit Rate:")
-                    Spacer()
-                    Text(String(format: "%.2f%%", stats.hitRate * 100))
-                }
-
-                HStack {
-                    Text("Hits:")
-                    Spacer()
-                    Text("\(stats.memoryHitCount)")
-                }
-
-                HStack {
-                    Text("Misses:")
-                    Spacer()
-                    Text("\(stats.memoryMissCount)")
-                }
-
-                HStack {
-                    Text("Evictions:")
-                    Spacer()
-                    Text("\(stats.memoryEvictionCount)")
-                }
-            }
-        }
-        .font(.caption)
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(8)
-        .padding(.horizontal)
-        .onAppear {
-            updateStats()
-        }
-        .onReceive(Timer.publish(every: 2.0, on: .main, in: .common).autoconnect()) { _ in
-            updateStats()
-        }
-    }
-
-    private func updateStats() {
-        stats = StringProvider.shared.getCacheStats()
-    }
-}
-```
-
-### Example 7: Complete App Structure (All Patterns Combined)
-
-Here's a **production-ready example** combining all the verified patterns:
-
-```swift
-import SwiftUI
-import StringbootSDK
-
-@main
-struct MyApp: App {
-
-    init() {
-        // Configure logging
-        StringbootLogger.isLoggingEnabled = true
-        StringbootLogger.logLevel = .debug
-
-        // Initialize SDK
-        StringProvider.shared.initialize(
-            cacheSize: 1000,
-            apiToken: "YOUR_API_TOKEN_HERE",
-            baseURL: "https://api.stringboot.com",
-            autoSync: true
-        )
-
-        // Restore saved language
-        let savedLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
-            ?? StringProvider.shared.deviceLocale()
-        StringProvider.shared.setLocale(savedLang)
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            MainView()
-        }
-    }
-}
-
-struct MainView: View {
-
-    @ObservedObject var stringProvider = StringProvider.shared
-    @State private var selectedLanguage: String = ""
-
-    var body: some View {
-        NavigationView {
-            Group {
-                if stringProvider.isReady {
-                    contentView
-                } else if let error = stringProvider.initializationError {
-                    errorView(error)
-                } else {
-                    loadingView
-                }
-            }
-            .navigationTitle("My App")
-            .onAppear {
-                selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
-            }
-            .onChange(of: stringProvider.currentLanguage) { _, newLang in
-                if let newLang = newLang {
-                    selectedLanguage = newLang
-                    UserDefaults.standard.set(newLang, forKey: "com.stringboot.currentLanguage")
-                }
-            }
-            .alert("Language Change Failed", isPresented: .constant(stringProvider.languageChangeError != nil)) {
-                Button("OK") {
-                    selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
-                }
-            } message: {
-                Text(stringProvider.languageChangeError ?? "Unknown error")
-            }
-            .overlay {
-                if stringProvider.isChangingLanguage {
-                    languageChangeOverlay
-                }
-            }
-        }
-    }
-
-    private var loadingView: some View {
-        VStack(spacing: 20) {
-            ProgressView()
-                .scaleEffect(2.0)
-                .padding()
-
-            Text("Loading strings...")
-                .font(.headline)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    private func errorView(_ message: String) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.orange)
-                .padding()
-
-            Text("Initialization Failed")
-                .font(.title2)
-                .fontWeight(.bold)
-
-            Text(message)
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-
-            Button {
-                Task {
-                    await stringProvider.retryInitialization()
-                }
-            } label: {
-                HStack {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Retry")
-                }
-                .font(.headline)
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.top)
-        }
-    }
-
-    private var contentView: some View {
-        VStack(spacing: 20) {
-
-            // Language Picker
-            Picker("Language", selection: $selectedLanguage) {
-                ForEach(stringProvider.availableLanguages, id: \.code) { language in
-                    Text(language.name).tag(language.code)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding()
-            .disabled(stringProvider.isChangingLanguage)
-            .onChange(of: selectedLanguage) { _, newLanguage in
-                Task {
-                    await stringProvider.changeLanguage(to: newLanguage)
-                }
-            }
-
-            Divider()
-
-            // Auto-updating string views
-            VStack(alignment: .leading, spacing: 15) {
-                SBText("welcome_message")
-                    .font(.title)
-                    .fontWeight(.bold)
-
-                SBText("app_description")
-                    .font(.body)
+            // FAQ list
+            if viewModel.loading {
+                ProgressView("Loading FAQs...")
+            } else if viewModel.faqs.isEmpty {
+                Text("No FAQs available")
                     .foregroundColor(.secondary)
-            }
-            .padding()
-
-            Spacer()
-
-            // Cache Statistics
-            CacheStatsView()
-
-            // Actions
-            VStack(spacing: 10) {
-                Button("Refresh from Network") {
-                    Task {
-                        let lang = selectedLanguage.isEmpty ? nil : selectedLanguage
-                        _ = await stringProvider.refreshFromNetwork(lang: lang, forceRefresh: true)
+            } else {
+                List(viewModel.faqs) { faq in
+                    DisclosureGroup {
+                        Text(faq.answer)
+                            .font(.body)
+                            .padding(.top, 8)
+                    } label: {
+                        Text(faq.question)
+                            .font(.headline)
                     }
                 }
-                .buttonStyle(.borderedProminent)
-
-                Button("Clear Cache") {
-                    stringProvider.clearCache(clearDatabase: false)
-                }
-                .buttonStyle(.bordered)
             }
-            .padding()
         }
-    }
-
-    private var languageChangeOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .tint(.white)
-
-                Text("Changing language...")
-                    .foregroundColor(.white)
-                    .font(.headline)
-            }
-            .padding(32)
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .shadow(radius: 20)
+        .navigationTitle("Help & FAQs")
+        .onAppear {
+            viewModel.loadFAQs(tag: selectedTag)
+        }
+        .onChange(of: selectedTag) { newTag in
+            viewModel.loadFAQs(tag: newTag)
         }
     }
 }
-```
 
-### Example 8: Async/Await String Retrieval
+class FAQViewModel: ObservableObject {
+    @Published var faqs: [FAQ] = []
+    @Published var loading = false
 
-For cases where you need direct string access:
-
-```swift
-struct MyView: View {
-    @State private var welcomeText = ""
-
-    var body: some View {
-        Text(welcomeText)
-            .task {
-                // Get string with async/await
-                welcomeText = await StringProvider.shared.get(
-                    "welcome_message",
-                    lang: "en"
-                )
-            }
-    }
-}
-```
-
----
-
-## Error Handling
-
-### Three States Pattern (From Demo App)
-
-The SDK provides three distinct states:
-
-1. **Loading State** - SDK is initializing
-2. **Error State** - Initialization failed
-3. **Ready State** - SDK is ready to use
-
-```swift
-@ObservedObject var stringProvider = StringProvider.shared
-
-var body: some View {
-    Group {
-        if stringProvider.isReady {
-            // SDK ready - show main content
-            mainContent
-        } else if let error = stringProvider.initializationError {
-            // SDK initialization failed
-            errorView(error)
-        } else {
-            // SDK still loading
-            loadingView
-        }
-    }
-}
-```
-
-### Retry Failed Initialization
-
-```swift
-Button("Retry") {
-    Task {
-        await stringProvider.retryInitialization()
-    }
-}
-```
-
-### Handle Language Change Errors
-
-```swift
-.alert("Language Change Failed", isPresented: .constant(stringProvider.languageChangeError != nil)) {
-    Button("OK") {
-        // Reset to current language
-        selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
-    }
-} message: {
-    Text(stringProvider.languageChangeError ?? "Unknown error")
-}
-```
-
-### Disable UI During Language Change
-
-```swift
-.disabled(stringProvider.isChangingLanguage)
-```
-
-### Observable Properties
-
-The StringProvider exposes these @Published properties for reactive UI:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `isReady` | Bool | SDK successfully initialized |
-| `initializationError` | String? | Initialization error message |
-| `isChangingLanguage` | Bool | Language change in progress |
-| `languageChangeError` | String? | Language change error message |
-| `currentLanguage` | String? | Current active language code |
-| `availableLanguages` | [ActiveLanguage] | List of available languages |
-
----
-
-## Caching & Offline Behavior
-
-### Three-Layer Cache System
-
-```
-┌─────────────────────────────────┐
-│  Layer 1: In-Memory Cache       │  Access: <1ms
-│  (LRU, 1000 entries by default) │
-└─────────────────────────────────┘
-         ↓ (miss)
-┌─────────────────────────────────┐
-│  Layer 2: Core Data             │  Access: 5-20ms
-│  (Persistent, SQLite-based)     │
-└─────────────────────────────────┘
-         ↓ (miss)
-┌─────────────────────────────────┐
-│  Layer 3: Network Sync          │  Access: 100-500ms
-│  (String-Sync v2 with ETag)     │
-└─────────────────────────────────┘
-```
-
-### Cache Management (From Demo App)
-
-**Get cache statistics:**
-
-```swift
-let stats = StringProvider.shared.getCacheStats()
-print("Memory: \(stats.memorySize) / \(stats.memoryMaxSize)")
-print("Hit rate: \(String(format: "%.2f%%", stats.hitRate * 100))")
-print("Hits: \(stats.memoryHitCount)")
-print("Misses: \(stats.memoryMissCount)")
-print("Evictions: \(stats.memoryEvictionCount)")
-```
-
-**Clear cache:**
-
-```swift
-// Clear memory cache only (database intact)
-stringProvider.clearCache(clearDatabase: false)
-
-// Clear everything (memory + database)
-stringProvider.clearCache(clearDatabase: true)
-```
-
-**Refresh from network:**
-
-```swift
-Task {
-    let success = await stringProvider.refreshFromNetwork(
-        lang: "en",
-        forceRefresh: true  // Bypass ETag check
-    )
-    if success {
-        print("Strings refreshed")
-    }
-}
-```
-
-### Offline Behavior
-
-**Complete offline functionality:**
-
-1. **No Network Required:** SDK works entirely offline if data is cached
-2. **Persistent Storage:** Core Data survives app restarts
-3. **Graceful Degradation:** Network errors automatically fall back to cache
-4. **Auto-sync on Launch:** When `autoSync: true`, attempts sync but never blocks
-
-**Offline example:**
-
-```swift
-// After initial sync, strings are cached permanently
-// Turn off network → Open app → All strings load from cache instantly
-
-let text = await StringProvider.shared.get("welcome_message", lang: "en")
-// Returns cached value, no error thrown, no network request
-```
-
----
-
-## Best Practices
-
-### 1. Initialize in App Init (Not in View)
-
-**✅ Good:**
-
-```swift
-@main
-struct MyApp: App {
-    init() {
-        StringProvider.shared.initialize(
-            cacheSize: 1000,
-            apiToken: "token",
-            baseURL: "https://api.stringboot.com",
-            autoSync: true
-        )
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
-}
-```
-
-**❌ Bad:**
-
-```swift
-struct ContentView: View {
-    var body: some View {
-        VStack {
-            Text("Loading...")
-                .onAppear {
-                    // Too late - blocks UI
-                    StringProvider.shared.initialize(...)
-                }
-        }
-    }
-}
-```
-
-### 2. Use @ObservedObject for Reactive UI
-
-**✅ Good:**
-
-```swift
-struct ContentView: View {
-    @ObservedObject var stringProvider = StringProvider.shared
-
-    var body: some View {
-        if stringProvider.isReady {
-            // Automatically updates when state changes
-        }
-    }
-}
-```
-
-**❌ Bad:**
-
-```swift
-struct ContentView: View {
-    var body: some View {
-        if StringProvider.shared.isReady {
-            // Won't update automatically
-        }
-    }
-}
-```
-
-### 3. Use SBText for Auto-Updating Strings
-
-**✅ Good:**
-
-```swift
-SBText("welcome_message")
-    .font(.title)
-// Auto-updates on language change or network sync
-```
-
-**❌ Bad:**
-
-```swift
-@State var text = ""
-
-Text(text)
-    .onAppear {
+    func loadFAQs(tag: String, lang: String = "en") {
+        loading = true
         Task {
-            text = await StringProvider.shared.get("welcome_message", lang: "en")
-            // Won't update if language changes
+            faqs = await FAQProvider.shared.getFAQs(tag: tag, lang: lang)
+            loading = false
         }
     }
-```
-
-### 4. Handle All Three States
-
-**✅ Good:**
-
-```swift
-Group {
-    if stringProvider.isReady {
-        mainContent
-    } else if let error = stringProvider.initializationError {
-        errorView(error)
-    } else {
-        loadingView
-    }
 }
 ```
 
-**❌ Bad:**
+### Performance Tips
 
-```swift
-if stringProvider.isReady {
-    mainContent
-}
-// No loading or error states
-```
-
-### 5. Disable UI During Language Change
-
-**✅ Good:**
-
-```swift
-Picker("Language", selection: $selectedLanguage) {
-    // ...
-}
-.disabled(stringProvider.isChangingLanguage)
-.overlay {
-    if stringProvider.isChangingLanguage {
-        languageChangeOverlay
-    }
-}
-```
-
-**❌ Bad:**
-
-```swift
-Picker("Language", selection: $selectedLanguage) {
-    // ...
-}
-// User can tap multiple times, causing issues
-```
-
-### 6. Persist Language Selection
-
-**✅ Good:**
-
-```swift
-.onChange(of: stringProvider.currentLanguage) { _, newLang in
-    if let newLang = newLang {
-        selectedLanguage = newLang
-        UserDefaults.standard.set(newLang, forKey: "com.stringboot.currentLanguage")
-    }
-}
-
-// On app launch
-init() {
-    let savedLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
-        ?? StringProvider.shared.deviceLocale()
-    StringProvider.shared.setLocale(savedLang)
-}
-```
-
-**❌ Bad:**
-
-```swift
-// No persistence - language resets on app restart
-```
-
-### 7. Use forceRefresh Sparingly
-
-**✅ Good:**
-
-```swift
-// Only force refresh when user explicitly requests it
-Button("Refresh from Network") {
-    Task {
-        await stringProvider.refreshFromNetwork(lang: lang, forceRefresh: true)
-    }
-}
-```
-
-**❌ Bad:**
-
-```swift
-// Force refresh on every view appear
-.onAppear {
-    Task {
-        await stringProvider.refreshFromNetwork(lang: "en", forceRefresh: true)
-    }
-}
-// Wastes bandwidth, battery, and data
-```
-
-### 8. Monitor Cache Health
-
-**✅ Good:**
-
-```swift
-// Display cache stats for debugging
-CacheStatsView()
-
-// In production, log periodically
-let stats = StringProvider.shared.getCacheStats()
-if stats.hitRate < 0.8 {
-    print("Cache hit rate low: \(stats.hitRate)")
-}
-```
-
----
-
-## FAQ / Troubleshooting
-
-### Q: Strings show "??key??" instead of translations
-
-**A:** This means the string is not found in cache, Core Data, or network.
-
-**Solutions:**
-
-1. Check if SDK is initialized:
+1. **Cache Size**: Adjust based on your FAQ volume
    ```swift
-   if StringProvider.shared.isReady {
-       // Safe to use
-   }
+   FAQProvider.shared.initialize(cacheSize: 500)  // For large FAQ sets
    ```
 
-2. Trigger manual sync:
+2. **Preload FAQs**: Load FAQs on app start
    ```swift
    Task {
-       await StringProvider.shared.refreshFromNetwork(lang: "en", forceRefresh: true)
+       await FAQProvider.shared.syncFAQs(lang: "en")
    }
    ```
 
-3. Verify the key exists in your Stringboot dashboard
-
-4. Check network connectivity and API token validity
-
-5. Check console logs:
+3. **Use Tags Wisely**: Keep tags organized and specific
    ```swift
-   StringbootLogger.isLoggingEnabled = true
-   StringbootLogger.logLevel = .debug
+   let paymentFAQs = await FAQProvider.shared.getFAQs(tag: "payments")
+   let shippingFAQs = await FAQProvider.shared.getFAQs(tag: "shipping")
    ```
 
----
+### Troubleshooting
 
-### Q: View doesn't update after language change
+**FAQs not loading?**
+- Ensure `FAQProvider.initialize()` was called (separate from StringProvider)
+- Check network connectivity
+- Verify API token is correct
+- Enable debug logging: `StringbootLogger.logLevel = .debug`
 
-**A:** You must use `@ObservedObject` with StringProvider.
+**Performance issues?**
+- Increase cache size for large FAQ sets
+- Use lazy loading in SwiftUI (`LazyVStack`)
+- Implement pagination for 100+ FAQs
 
-**Solution:**
+For more details, see [FAQ_PROVIDER.md](FAQ_PROVIDER.md) and [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
-```swift
-// Correct
-@ObservedObject var stringProvider = StringProvider.shared
+## License
 
-// Incorrect
-let stringProvider = StringProvider.shared
-```
+MIT License - See LICENSE file for details
 
----
+## Additional Resources
 
-### Q: How do I test offline behavior?
-
-**A:** Enable Airplane Mode after initial sync:
-
-1. Launch app with network → SDK syncs data
-2. Enable Airplane Mode
-3. Force quit and relaunch app
-4. All strings load from cache (no network needed)
-
----
-
-### Q: Language picker triggers multiple times
-
-**A:** Disable picker during language change:
-
-```swift
-Picker("Language", selection: $selectedLanguage) {
-    // ...
-}
-.disabled(stringProvider.isChangingLanguage)
-```
-
----
-
-### Q: How to show loading overlay during language change?
-
-**A:** Use the exact pattern from the demo app:
-
-```swift
-.overlay {
-    if stringProvider.isChangingLanguage {
-        ZStack {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .tint(.white)
-
-                Text("Changing language...")
-                    .foregroundColor(.white)
-                    .font(.headline)
-            }
-            .padding(32)
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .shadow(radius: 20)
-        }
-    }
-}
-```
-
----
-
-### Q: How to handle language change failures?
-
-**A:** Use alert with error recovery:
-
-```swift
-.alert("Language Change Failed", isPresented: .constant(stringProvider.languageChangeError != nil)) {
-    Button("OK") {
-        selectedLanguage = stringProvider.currentLanguage ?? stringProvider.deviceLocale()
-    }
-} message: {
-    Text(stringProvider.languageChangeError ?? "Unknown error")
-}
-```
-
----
-
-### Q: Cache stats not updating
-
-**A:** Use Timer to refresh periodically:
-
-```swift
-.onReceive(Timer.publish(every: 2.0, on: .main, in: .common).autoconnect()) { _ in
-    stats = StringProvider.shared.getCacheStats()
-}
-```
-
----
-
-### Q: How to log SDK activity?
-
-**A:** Enable logging in app initialization:
-
-```swift
-init() {
-    StringbootLogger.isLoggingEnabled = true
-    StringbootLogger.logLevel = .debug
-
-    StringProvider.shared.initialize(...)
-}
-```
-
-Log levels:
-- `.debug` - All SDK activity
-- `.info` - Important operations
-- `.warning` - Potential issues
-- `.error` - Errors only
-
----
-
-### Q: Does clearCache affect Core Data?
-
-**A:** Depends on the parameter:
-
-```swift
-// Clear memory only (Core Data intact)
-stringProvider.clearCache(clearDatabase: false)
-
-// Clear everything (memory + Core Data)
-stringProvider.clearCache(clearDatabase: true)
-```
-
----
-
-### Q: How to restore language on app restart?
-
-**A:** Save to UserDefaults and restore in init:
-
-```swift
-// Save on change
-.onChange(of: stringProvider.currentLanguage) { _, newLang in
-    if let newLang = newLang {
-        UserDefaults.standard.set(newLang, forKey: "com.stringboot.currentLanguage")
-    }
-}
-
-// Restore on launch
-init() {
-    StringProvider.shared.initialize(...)
-
-    let savedLang = UserDefaults.standard.string(forKey: "com.stringboot.currentLanguage")
-        ?? StringProvider.shared.deviceLocale()
-    StringProvider.shared.setLocale(savedLang)
-}
-```
-
----
-
-## Changelog
-
-### v2.0 (November 2025) - Current
-
-**New Features:**
-- Implemented String-Sync v2 protocol with delta sync
-- ETag-based conditional requests for bandwidth optimization
-- Async/await support throughout (Swift 5.9+)
-- @Published properties for SwiftUI @ObservedObject integration
-- `isReady`, `initializationError`, `isChangingLanguage`, `languageChangeError` states
-- SwiftUI-first design with SBText component
-- Language change with loading states and error handling
-- Cache statistics with hit rate, evictions, and size tracking
-- Retry failed initialization with `retryInitialization()`
-- Device locale detection with `deviceLocale()`
-- Persistent language selection support
-
-**Performance:**
-- <300ms string lookups on 4G networks
-- <100ms delta sync for metadata checks
-- <1ms in-memory cache hits
-- ~5-20ms Core Data lookups
-- Intelligent language prioritization in LRU cache
-
-**Breaking Changes:**
-- Changed initialization API (now uses `initialize()` method)
-- Added required `@ObservedObject` for reactive UI updates
-
----
-
-### v1.0 (October 2025)
-
-**Initial Release:**
-- Multi-layered caching system (memory + Core Data)
-- String localization with fallback to app bundle
-- Basic network sync
-- Offline support
-
----
+- 🚀 [Quick Start Guide](../docs/QUICKSTART.md) - Get started in 5 minutes
+- 💻 [Implementation Examples](../docs/IMPLEMENTATION_EXAMPLES.md) - Android & iOS code samples
+- 📖 [API Reference](../docs/API_REFERENCE.md) - Complete endpoint documentation
+- 🔄 [Delta Sync Protocol](../docs/DELTA_SYNC_PROTOCOL.md) - How syncing works
+- 🔧 [Setup Guide](SETUP.md) - Detailed installation instructions
+- 🐛 [Troubleshooting](TROUBLESHOOTING.md) - Common issues and solutions
 
 ## Support
 
-**Documentation:** https://docs.stringboot.com
-
-**GitHub:** https://github.com/stringboot/ios-sdk
-
-**Issues:** https://github.com/stringboot/ios-sdk/issues
-
-**Email:** support@stringboot.com
-
----
-
-**Copyright:** © 2025 Stringboot Inc.
+- Documentation: https://docs.stringboot.com
+- Issues: https://github.com/your-org/stringboot-ios-sdk/issues
+- Email: support@stringboot.com

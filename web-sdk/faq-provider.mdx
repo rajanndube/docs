@@ -1,0 +1,101 @@
+---
+title: FAQ Provider
+description: 'Render dynamic FAQs in your Web app'
+icon: 'circle-question'
+---
+
+---
+
+The **FAQ Provider** delivers cached, searchable FAQs to your web app.
+
+## Initialization
+
+Ensure the SDK is initialized before fetching FAQs.
+
+### React
+
+Wrap your application with `StringBootProvider`:
+
+```jsx
+import { StringBootProvider } from '@stringboot/web-sdk/react';
+
+function App() {
+  return (
+    <StringBootProvider 
+      apiToken="YOUR_API_TOKEN"
+      faqOptions={{ enable: true }}
+    >
+      <YourApp />
+    </StringBootProvider>
+  );
+}
+```
+
+### Vanilla JS
+
+Initialize the global instance:
+
+```javascript
+import { Stringboot, FAQProvider } from '@stringboot/web-sdk';
+
+// Initialize main SDK
+await Stringboot.initialize({
+  apiToken: 'YOUR_API_TOKEN'
+});
+
+// Initialize FAQs separately
+await FAQProvider.init({ 
+  apiToken: 'YOUR_API_TOKEN' 
+});
+```
+
+## Usage
+
+### React
+
+Use the `useFAQs` hook:
+
+```jsx
+import { useFAQs } from '@stringboot/web-sdk/react';
+
+function FAQList() {
+  const { faqs, loading, error } = useFAQs({ tag: 'payments' });
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error loading FAQs</div>;
+
+  return (
+    <div>
+      {faqs.map((faq) => (
+        <div key={faq.id}>
+          <h3>{faq.question}</h3>
+          <p>{faq.answer}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Vanilla JS
+
+```javascript
+import { FAQProvider } from '@stringboot/web-sdk';
+
+// Initialize
+await FAQProvider.init({ apiToken: 'YOUR_TOKEN' });
+
+// Fetch
+const faqs = await FAQProvider.getFAQs({ tag: 'payments' });
+```
+
+## Filtering
+
+You can filter by multiple tags:
+
+```jsx
+const { faqs } = useFAQs({ 
+  tag: 'payments',
+  subTags: ['refunds', 'credit-card'] 
+});
+```

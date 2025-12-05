@@ -1,75 +1,46 @@
 ---
-title: "Web SDK"
-description: "High-performance string localization for web applications"
+title: Overview
+description: 'Integrate Stringboot into your Web application'
+icon: 'js'
 ---
 
-## Overview
+---
 
-The Stringboot Web SDK provides high-performance string localization for web applications with offline-first architecture, IndexedDB persistence, and optimized React hooks for seamless integration.
+The Stringboot Web SDK is a high-performance, offline-first library for managing dynamic strings in your web applications. It supports **React**, **Vue**, **Next.js**, and **Vanilla JS**.
 
-### Core Features
-
-<CardGroup cols={3}>
-  <Card title="Dynamic Strings" icon="font">
-    Update app text instantly without releasing new versions
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/web-sdk/installation">
+    Add the SDK to your project.
   </Card>
-  <Card title="Multi-Language" icon="language">
-    Seamless translations and language switching
+  <Card title="Usage" icon="code" href="/web-sdk/usage">
+    Learn how to fetch and use strings.
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="High Performance" icon="rocket">
+    Sub-millisecond string lookups from memory cache.
+  </Card>
+  <Card title="Offline-First" icon="database">
+    Full functionality without network via IndexedDB.
+  </Card>
+  <Card title="React Hooks" icon="react">
+    Native `useString` and `useStringboot` hooks.
+  </Card>
+  <Card title="Next.js Support" icon="server">
+    Full support for App Router and Server Components.
+  </Card>
+  <Card title="Multi-Language" icon="globe">
+    Runtime language switching with instant UI updates.
   </Card>
   <Card title="A/B Testing" icon="flask">
-    Optimize messaging with built-in experiment tracking
+    Native support for copy testing and experiments.
   </Card>
 </CardGroup>
 
-### Browser Support
+## Requirements
 
-| Browser         | Minimum Version |
-| --------------- | --------------- |
-| **Chrome**      | 87+             |
-| **Firefox**     | 78+             |
-| **Safari**      | 14+             |
-| **Edge**        | 88+             |
-
----
-
-## Start Integration
-
-To get started with the Web SDK, follow our complete installation guide which covers:
-- Package installation
-- Analytics integration (Required for A/B testing)
-- Device ID configuration
-- Initialization and usage
-
-<Card title="Start Installation Guide" icon="play" href="/web-sdk/installation">
-  Step-by-step guide to integrate Stringboot Web SDK
-</Card>
-
----
-
-## Framework Support
-
-<CardGroup cols={2}>
-  <Card title="React" icon="react" href="/web-sdk/react-hooks">
-    7 optimized hooks for state management and string updates
-  </Card>
-  <Card title="Next.js" icon="window" href="/web-sdk/nextjs">
-    Server-side rendering and App Router support
-  </Card>
-</CardGroup>
-
-## Next Steps
-
-<CardGroup cols={2}>
-  <Card title="Dynamic Strings" icon="font" href="/web-sdk/dynamic-strings">
-    Update text without releases
-  </Card>
-  <Card title="Translations" icon="language" href="/web-sdk/translations">
-    Multi-language support
-  </Card>
-  <Card title="A/B Testing" icon="flask" href="/web-sdk/ab-testing">
-    Experiment tracking setup
-  </Card>
-  <Card title="Best Practices" icon="star" href="/web-sdk/best-practices">
-    Production patterns
-  </Card>
-</CardGroup>
+- **Node.js**: 16+
+- **Browsers**: All modern browsers (Chrome, Firefox, Safari, Edge)
