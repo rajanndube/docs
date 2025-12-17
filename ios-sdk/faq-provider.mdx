@@ -6,7 +6,7 @@ icon: 'circle-question'
 
 ---
 
-The **FAQ Provider** delivers cached, searchable FAQs to your iOS app.
+The **FAQ Provider** delivers cached, searchable FAQs to your iOS app with automatic sync and offline support.
 
 ## Initialization
 
@@ -18,7 +18,22 @@ FAQProvider.shared.initialize(
     apiToken: "YOUR_API_TOKEN",
     baseURL: "https://api.stringboot.com"
 )
+
+// Setup auto-sync (recommended)
+Task {
+    let locale = StringProvider.shared.deviceLocale()
+
+    // Preload FAQs from cache for instant access
+    await FAQProvider.shared.preloadFromDatabase(lang: locale, maxFAQs: 100)
+
+    // Sync latest FAQs from server in background
+    await FAQProvider.shared.refreshFromNetwork(lang: locale)
+}
 ```
+
+<Note>
+  The preload step ensures FAQs are available immediately when your app opens, while the background sync fetches the latest updates.
+</Note>
 
 ## Usage
 
@@ -28,12 +43,23 @@ FAQProvider.shared.initialize(
 Task {
     // Get FAQs for a specific tag
     let faqs = await FAQProvider.shared.getFAQs(tag: "payments")
-    
+
     for faq in faqs {
         print("Q: \(faq.question)")
         print("A: \(faq.answer)")
     }
 }
+```
+
+### Filtering by SubTags
+
+```swift
+// Get FAQs with specific subtags
+let faqs = await FAQProvider.shared.getFAQs(
+    tag: "payments",
+    subTags: ["refunds", "disputes"],
+    lang: "en"
+)
 ```
 
 ### SwiftUI Integration
@@ -58,19 +84,39 @@ struct FAQListView: View {
 }
 ```
 
-### Reactive Updates
+### Manual Refresh
 
-Use Combine to listen for updates:
+Manually refresh FAQs from the server (e.g., on pull-to-refresh):
 
 ```swift
+Button("Refresh FAQs") {
+    Task {
+        let success = await FAQProvider.shared.refreshFromNetwork(lang: "en")
+        if success {
+            // FAQs updated successfully
+            faqs = await FAQProvider.shared.getFAQs(tag: "payments")
+        }
+    }
+}
+```
+
+### Reactive Updates with Combine
+
+Use Combine to automatically update your UI when FAQs change:
+
+```swift
+import Combine
+
 class FAQViewModel: ObservableObject {
     @Published var faqs: [FAQ] = []
     private var cancellables = Set<AnyCancellable>()
 
     func subscribe(tag: String) {
-        FAQProvider.shared.getFAQsPublisher(tag: tag, lang: "en")
-            .receive(on: RunLoop.main)
-            .assign(to: \.faqs, on: self)
+        FAQProvider.shared.observeFAQs(tag: tag, lang: "en")
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] updatedFAQs in
+                self?.faqs = updatedFAQs
+            }
             .store(in: &cancellables)
     }
 }

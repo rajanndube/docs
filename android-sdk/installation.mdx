@@ -46,7 +46,7 @@ Add your API credentials to `AndroidManifest.xml` inside the `<application>` tag
 We recommend initializing the SDK in your `Application` class. This "Production-Ready" snippet includes setup for all features (A/B Testing, FAQs, Logging).
 
 <Tabs>
-  <Tab title="Basic">
+  <Tab title=" Basic (Strings only)">
     ```kotlin
     class MyApplication : Application() {
         override fun onCreate() {
@@ -65,7 +65,7 @@ We recommend initializing the SDK in your `Application` class. This "Production-
     }
     ```
   </Tab>
-  <Tab title="Production Ready">
+  <Tab title="Production Ready (Strings + Dynamic FAQs)">
     ```kotlin
     class MyApplication : Application() {
         override fun onCreate() {

@@ -49,10 +49,22 @@ Initialize the SDK in your `App` struct (SwiftUI) or `AppDelegate` (UIKit). This
             // 3. Initialize FAQ Provider
             FAQProvider.shared.initialize(
                 cacheSize: 200,
-                apiToken: "YOUR_API_TOKEN"
+                apiToken: "YOUR_API_TOKEN",
+                baseURL: "https://api.stringboot.com"
             )
 
-            // 4. Configure Logging
+            // 4. Setup FAQ Auto-Sync (Recommended)
+            Task {
+                let locale = StringProvider.shared.deviceLocale()
+
+                // Preload FAQs from cache for instant access
+                await FAQProvider.shared.preloadFromDatabase(lang: locale, maxFAQs: 100)
+
+                // Sync latest FAQs from server in background
+                await FAQProvider.shared.refreshFromNetwork(lang: locale)
+            }
+
+            // 5. Configure Logging
             #if DEBUG
             StringbootLogger.isLoggingEnabled = true
             StringbootLogger.logLevel = .debug
@@ -84,9 +96,21 @@ Initialize the SDK in your `App` struct (SwiftUI) or `AppDelegate` (UIKit). This
         // 3. Initialize FAQ Provider
         FAQProvider.shared.initialize(
             cacheSize: 200,
-            apiToken: "YOUR_API_TOKEN"
+            apiToken: "YOUR_API_TOKEN",
+            baseURL: "https://api.stringboot.com"
         )
-        
+
+        // 4. Setup FAQ Auto-Sync (Recommended)
+        Task {
+            let locale = StringProvider.shared.deviceLocale()
+
+            // Preload FAQs from cache for instant access
+            await FAQProvider.shared.preloadFromDatabase(lang: locale, maxFAQs: 100)
+
+            // Sync latest FAQs from server in background
+            await FAQProvider.shared.refreshFromNetwork(lang: locale)
+        }
+
         return true
     }
     ```
