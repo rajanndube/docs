@@ -1,7 +1,7 @@
 ---
-title: Installation
-description: 'Add the Stringboot SDK to your Android project'
-icon: 'download'
+title: "Installation"
+description: "Add the Stringboot SDK to your Android project"
+icon: "download"
 ---
 
 ---
@@ -12,7 +12,7 @@ Add the Stringboot SDK to your app-level `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.stringboot:stringboot-android-sdk:1.1.0")
+    implementation("com.stringboot:stringboot-android-sdk:1.2.3")
 }
 ```
 
@@ -51,7 +51,7 @@ We recommend initializing the SDK in your `Application` class. This "Production-
     class MyApplication : Application() {
         override fun onCreate() {
             super.onCreate()
-
+    
             StringProvider.initialize(
                 context = this,
                 cacheSize = 1000
@@ -70,7 +70,7 @@ We recommend initializing the SDK in your `Application` class. This "Production-
     class MyApplication : Application() {
         override fun onCreate() {
             super.onCreate()
-
+    
             // 1. Define Analytics Handler (for A/B Testing)
             val analyticsHandler = object : StringbootAnalyticsHandler {
                 override fun onExperimentAssigned(assignment: ExperimentAssignment) {
@@ -84,7 +84,7 @@ We recommend initializing the SDK in your `Application` class. This "Production-
                      Firebase.analytics.logEvent("experiment_viewed") { ... }
                 }
             }
-
+    
             // 2. Initialize Stringboot
             StringProvider.initialize(
                 context = this,
@@ -92,13 +92,13 @@ We recommend initializing the SDK in your `Application` class. This "Production-
                 analyticsHandler = analyticsHandler,
                 providedDeviceId = "USER_ID" // Optional: Custom User ID
             )
-
+    
             // 3. Initialize FAQ Provider
             FAQProvider.initialize(
                 context = this,
                 cacheSize = 200
             )
-
+    
             // 4. Configure Logging (Debug builds only)
             if (BuildConfig.DEBUG) {
                 StringbootLogger.logLevel = StringbootLogger.Level.DEBUG

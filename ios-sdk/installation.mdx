@@ -1,23 +1,23 @@
 ---
-title: Installation
-description: 'Add the Stringboot SDK to your iOS project'
-icon: 'download'
+title: "Installation"
+description: "Add the Stringboot SDK to your iOS project"
+icon: "download"
 ---
 
 ---
 
 ## Swift Package Manager
 
-1.  Open your project in Xcode.
-2.  Go to **File > Add Package Dependencies**.
-3.  Enter the repository URL: `https://github.com/your-org/stringboot-ios-sdk.git`
-4.  Select the version (e.g., `2.0.0`) and add it to your target.
+1. Open your project in Xcode.
+2. Go to **File \> Add Package Dependencies**.
+3. Enter the repository URL: `https://github.com/your-org/stringboot-ios-sdk.git`
+4. Select the version (e.g., `1.2.2`) and add it to your target.
 
 Alternatively, add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/your-org/stringboot-ios-sdk.git", from: "2.0.0")
+    .package(url: "https://github.com/your-org/stringboot-ios-sdk.git", from: "1.2.2")
 ]
 ```
 
@@ -30,13 +30,13 @@ Initialize the SDK in your `App` struct (SwiftUI) or `AppDelegate` (UIKit). This
     ```swift
     import SwiftUI
     import StringbootSDK
-
+    
     @main
     struct MyApp: App {
         init() {
             // 1. Setup Analytics (for A/B Testing)
             let analyticsHandler = MyAnalyticsHandler()
-
+    
             // 2. Initialize Core SDK
             StringProvider.shared.initialize(
                 cacheSize: 1000,
@@ -45,32 +45,32 @@ Initialize the SDK in your `App` struct (SwiftUI) or `AppDelegate` (UIKit). This
                 analyticsHandler: analyticsHandler,
                 providedDeviceId: "USER_ID" // Optional
             )
-
+    
             // 3. Initialize FAQ Provider
             FAQProvider.shared.initialize(
                 cacheSize: 200,
                 apiToken: "YOUR_API_TOKEN",
                 baseURL: "https://api.stringboot.com"
             )
-
+    
             // 4. Setup FAQ Auto-Sync (Recommended)
             Task {
                 let locale = StringProvider.shared.deviceLocale()
-
+    
                 // Preload FAQs from cache for instant access
                 await FAQProvider.shared.preloadFromDatabase(lang: locale, maxFAQs: 100)
-
+    
                 // Sync latest FAQs from server in background
                 await FAQProvider.shared.refreshFromNetwork(lang: locale)
             }
-
+    
             // 5. Configure Logging
             #if DEBUG
             StringbootLogger.isLoggingEnabled = true
             StringbootLogger.logLevel = .debug
             #endif
         }
-
+    
         var body: some Scene {
             WindowGroup {
                 ContentView()
@@ -84,7 +84,7 @@ Initialize the SDK in your `App` struct (SwiftUI) or `AppDelegate` (UIKit). This
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // 1. Setup Analytics
         let analyticsHandler = MyAnalyticsHandler()
-
+    
         // 2. Initialize Core SDK
         StringProvider.shared.initialize(
             cacheSize: 1000,
@@ -92,25 +92,25 @@ Initialize the SDK in your `App` struct (SwiftUI) or `AppDelegate` (UIKit). This
             baseURL: "https://api.stringboot.com",
             analyticsHandler: analyticsHandler
         )
-
+    
         // 3. Initialize FAQ Provider
         FAQProvider.shared.initialize(
             cacheSize: 200,
             apiToken: "YOUR_API_TOKEN",
             baseURL: "https://api.stringboot.com"
         )
-
+    
         // 4. Setup FAQ Auto-Sync (Recommended)
         Task {
             let locale = StringProvider.shared.deviceLocale()
-
+    
             // Preload FAQs from cache for instant access
             await FAQProvider.shared.preloadFromDatabase(lang: locale, maxFAQs: 100)
-
+    
             // Sync latest FAQs from server in background
             await FAQProvider.shared.refreshFromNetwork(lang: locale)
         }
-
+    
         return true
     }
     ```

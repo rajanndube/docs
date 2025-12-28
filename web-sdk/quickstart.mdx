@@ -1,7 +1,7 @@
 ---
-title: Quick Start
-description: 'Get up and running with Stringboot in under 10 minutes'
-icon: 'bolt'
+title: "Quick Start"
+description: "Get up and running with Stringboot in under 10 minutes"
+icon: "bolt"
 ---
 
 Get up and running with Stringboot in **under 10 minutes**. This guide will walk you through adding dynamic string management to your web application.
@@ -31,7 +31,7 @@ pnpm add @stringboot/web-sdk
   <Tab title="Vanilla JS / TS">
     ```javascript
     import StringBoot from '@stringboot/web-sdk';
-
+    
     // Initialize once at app startup
     await StringBoot.initialize({
       apiToken: 'YOUR_API_TOKEN_HERE',
@@ -39,7 +39,7 @@ pnpm add @stringboot/web-sdk
       defaultLanguage: 'en',                    // Optional - defaults to browser language
       debug: true                               // Optional - enable console logs
     });
-
+    
     console.log('✅ Stringboot initialized!');
     ```
   </Tab>
@@ -47,7 +47,7 @@ pnpm add @stringboot/web-sdk
     ```tsx
     import React from 'react';
     import { useStringBoot } from '@stringboot/web-sdk/react';
-
+    
     function App() {
       const { initialized, error } = useStringBoot({
         apiToken: 'YOUR_API_TOKEN_HERE',
@@ -55,18 +55,19 @@ pnpm add @stringboot/web-sdk
         defaultLanguage: 'en',
         debug: true
       });
-
+    
       if (!initialized) {
         return <div>Loading Stringboot...</div>;
       }
-
+    
       if (error) {
         return <div>Error: {error}</div>;
       }
-
+    
       return <MainApp />;
     }
     ```
+
     <Warning>
       **Security Note:** Store your API token in environment variables (`.env.local`) rather than hardcoding it.
     </Warning>
@@ -81,10 +82,10 @@ pnpm add @stringboot/web-sdk
     // Get a single string
     const welcomeText = await StringBoot.get('welcome_message');
     document.getElementById('title').textContent = welcomeText;
-
+    
     // Get string with specific language
     const spanishText = await StringBoot.get('welcome_message', 'es');
-
+    
     // Watch for updates (reactive)
     StringBoot.watch('welcome_message', (newValue) => {
       document.getElementById('title').textContent = newValue;
@@ -94,20 +95,20 @@ pnpm add @stringboot/web-sdk
   <Tab title="React Hooks">
     ```tsx
     import { useString, useLanguage } from '@stringboot/web-sdk/react';
-
+    
     function WelcomeComponent() {
       // Auto-updating string (updates when language changes)
       const welcomeText = useString('welcome_message');
       const description = useString('app_description');
-
+    
       // Language management
       const [currentLang, setLanguage] = useLanguage();
-
+    
       return (
         <div>
           <h1>{welcomeText}</h1>
           <p>{description}</p>
-
+    
           <select value={currentLang} onChange={(e) => setLanguage(e.target.value)}>
             <option value="en">English</option>
             <option value="es">Español</option>
@@ -121,7 +122,7 @@ pnpm add @stringboot/web-sdk
   <Tab title="TypeScript">
     ```typescript
     import StringBoot, { StringBootConfig } from '@stringboot/web-sdk';
-
+    
     // Initialize with type safety
     const config: StringBootConfig = {
       apiToken: process.env.STRINGBOOT_API_TOKEN!,
@@ -129,12 +130,12 @@ pnpm add @stringboot/web-sdk
       defaultLanguage: 'en',
       debug: true
     };
-
+    
     await StringBoot.initialize(config);
-
+    
     // Type-safe string access
     const welcomeText: string = await StringBoot.get('welcome_message');
-
+    
     // Type-safe language codes
     type SupportedLanguage = 'en' | 'es' | 'fr' | 'de';
     await StringBoot.changeLanguage('es' as SupportedLanguage);
@@ -234,30 +235,30 @@ function FAQSection() {
 ```
 
 <Tip>
-**Key FAQ Features:**
-- **2-level filtering**: Mandatory tag + optional sub-tags
-- **"All" tag**: Use `tag: 'all'` to fetch entire catalog
-- **Offline-first**: Memory → IndexedDB → Network
-- **Multi-language**: Automatic fallback to English
-- **Delta sync**: Only downloads changed FAQs
+  **Key FAQ Features:**
+
+  - **2-level filtering**: Mandatory tag + optional sub-tags
+  - **"All" tag**: Use `tag: 'all'` to fetch entire catalog
+  - **Offline-first**: Memory → IndexedDB → Network
+  - **Multi-language**: Automatic fallback to English
+  - **Delta sync**: Only downloads changed FAQs
 </Tip>
 
 ## Step 5: Test It Out!
 
 1. **Run your development server**:
+
    ```bash
    npm run dev
    ```
-
 2. **Open browser console** - look for Stringboot logs:
+
    ```
    [StringBoot] Initializing...
    [StringBoot] ✅ Sync complete: 42 strings loaded
    [StringBoot] Current language: en
    ```
-
 3. **Verify strings appear** in your UI
-
 4. **Test language switching** (if implemented)
 
 ## Next Steps
