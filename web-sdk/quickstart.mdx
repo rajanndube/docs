@@ -1,0 +1,278 @@
+---
+title: Quick Start
+description: 'Get up and running with Stringboot in under 10 minutes'
+icon: 'bolt'
+---
+
+Get up and running with Stringboot in **under 10 minutes**. This guide will walk you through adding dynamic string management to your web application.
+
+## Prerequisites
+
+- Node.js 16+ and npm/yarn
+- A Stringboot API token([Get one here](https://stringboot.com/signup))
+- Basic knowledge of JavaScript/TypeScript
+
+## Step 1: Install Package
+
+```bash
+# npm
+npm install @stringboot/web-sdk
+
+# yarn
+yarn add @stringboot/web-sdk
+
+# pnpm
+pnpm add @stringboot/web-sdk
+```
+
+## Step 2: Initialize SDK
+
+<Tabs>
+  <Tab title="Vanilla JS / TS">
+    ```javascript
+    import StringBoot from '@stringboot/web-sdk';
+
+    // Initialize once at app startup
+    await StringBoot.initialize({
+      apiToken: 'YOUR_API_TOKEN_HERE',
+      baseUrl: 'https://api.stringboot.com',  // Optional
+      defaultLanguage: 'en',                    // Optional - defaults to browser language
+      debug: true                               // Optional - enable console logs
+    });
+
+    console.log('✅ Stringboot initialized!');
+    ```
+  </Tab>
+  <Tab title="React">
+    ```tsx
+    import React from 'react';
+    import { useStringBoot } from '@stringboot/web-sdk/react';
+
+    function App() {
+      const { initialized, error } = useStringBoot({
+        apiToken: 'YOUR_API_TOKEN_HERE',
+        baseUrl: 'https://api.stringboot.com',
+        defaultLanguage: 'en',
+        debug: true
+      });
+
+      if (!initialized) {
+        return <div>Loading Stringboot...</div>;
+      }
+
+      if (error) {
+        return <div>Error: {error}</div>;
+      }
+
+      return <MainApp />;
+    }
+    ```
+    <Warning>
+      **Security Note:** Store your API token in environment variables (`.env.local`) rather than hardcoding it.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Step 3: Use Strings in Your App
+
+<Tabs>
+  <Tab title="Vanilla JS">
+    ```javascript
+    // Get a single string
+    const welcomeText = await StringBoot.get('welcome_message');
+    document.getElementById('title').textContent = welcomeText;
+
+    // Get string with specific language
+    const spanishText = await StringBoot.get('welcome_message', 'es');
+
+    // Watch for updates (reactive)
+    StringBoot.watch('welcome_message', (newValue) => {
+      document.getElementById('title').textContent = newValue;
+    });
+    ```
+  </Tab>
+  <Tab title="React Hooks">
+    ```tsx
+    import { useString, useLanguage } from '@stringboot/web-sdk/react';
+
+    function WelcomeComponent() {
+      // Auto-updating string (updates when language changes)
+      const welcomeText = useString('welcome_message');
+      const description = useString('app_description');
+
+      // Language management
+      const [currentLang, setLanguage] = useLanguage();
+
+      return (
+        <div>
+          <h1>{welcomeText}</h1>
+          <p>{description}</p>
+
+          <select value={currentLang} onChange={(e) => setLanguage(e.target.value)}>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+          </select>
+        </div>
+      );
+    }
+    ```
+  </Tab>
+  <Tab title="TypeScript">
+    ```typescript
+    import StringBoot, { StringBootConfig } from '@stringboot/web-sdk';
+
+    // Initialize with type safety
+    const config: StringBootConfig = {
+      apiToken: process.env.STRINGBOOT_API_TOKEN!,
+      baseUrl: 'https://api.stringboot.com',
+      defaultLanguage: 'en',
+      debug: true
+    };
+
+    await StringBoot.initialize(config);
+
+    // Type-safe string access
+    const welcomeText: string = await StringBoot.get('welcome_message');
+
+    // Type-safe language codes
+    type SupportedLanguage = 'en' | 'es' | 'fr' | 'de';
+    await StringBoot.changeLanguage('es' as SupportedLanguage);
+    ```
+  </Tab>
+</Tabs>
+
+## Step 4: Using FAQs (Optional)
+
+The FAQ Provider lets you deliver dynamic, multilingual FAQ content with offline-first caching.
+
+### Initialize FAQ Provider
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+// After initializing StringBoot, initialize FAQ Provider
+await StringBoot.FAQ.initialize({
+  apiToken: 'YOUR_API_TOKEN',
+  baseUrl: 'https://api.stringboot.com',
+  cacheSize: 200  // Optional: default is 200
+});
+```
+
+### Fetch FAQs
+
+```javascript
+// Get all FAQs regardless of tag
+const allFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'all',
+  lang: 'en',
+  allowNetworkFetch: true
+});
+
+// Get FAQs by specific tag
+const paymentFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'payments',
+  lang: 'en',
+  allowNetworkFetch: true
+});
+
+// Get FAQs with sub-tag filtering (2-level filtering)
+const refundFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'payments',
+  subTags: ['refunds', 'disputes'],
+  lang: 'en',
+  allowNetworkFetch: true
+});
+```
+
+### React FAQ Integration
+
+```tsx
+import { useState, useEffect } from 'react';
+import StringBoot from '@stringboot/web-sdk';
+
+function FAQSection() {
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadFAQs() {
+      // Initialize FAQ Provider first
+      await StringBoot.FAQ.initialize({
+        apiToken: 'YOUR_API_TOKEN',
+        baseUrl: 'https://api.stringboot.com'
+      });
+
+      // Fetch FAQs
+      const fetchedFAQs = await StringBoot.FAQ.getFAQs({
+        tag: 'all',
+        lang: 'en',
+        allowNetworkFetch: true
+      });
+
+      setFaqs(fetchedFAQs);
+      setLoading(false);
+    }
+
+    loadFAQs();
+  }, []);
+
+  if (loading) return <div>Loading FAQs...</div>;
+
+  return (
+    <div>
+      {faqs.map(faq => (
+        <div key={faq.id}>
+          <h3>{faq.question}</h3>
+          <p dangerouslySetInnerHTML={{ __html: faq.answer }} />
+          <span className="tag">{faq.tag}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+<Tip>
+**Key FAQ Features:**
+- **2-level filtering**: Mandatory tag + optional sub-tags
+- **"All" tag**: Use `tag: 'all'` to fetch entire catalog
+- **Offline-first**: Memory → IndexedDB → Network
+- **Multi-language**: Automatic fallback to English
+- **Delta sync**: Only downloads changed FAQs
+</Tip>
+
+## Step 5: Test It Out!
+
+1. **Run your development server**:
+   ```bash
+   npm run dev
+   ```
+
+2. **Open browser console** - look for Stringboot logs:
+   ```
+   [StringBoot] Initializing...
+   [StringBoot] ✅ Sync complete: 42 strings loaded
+   [StringBoot] Current language: en
+   ```
+
+3. **Verify strings appear** in your UI
+
+4. **Test language switching** (if implemented)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="React Integration" icon="react" href="/web-sdk/react">
+    Deep dive into React hooks and components.
+  </Card>
+  <Card title="Vue Integration" icon="vuejs" href="/web-sdk/vue">
+    Learn about Vue composition API support.
+  </Card>
+  <Card title="Advanced Usage" icon="layer-group" href="/web-sdk/advanced">
+    Performance, A/B Testing, and more.
+  </Card>
+  <Card title="Troubleshooting" icon="bug" href="/web-sdk/troubleshooting">
+    Resolve common integration issues.
+  </Card>
+</CardGroup>

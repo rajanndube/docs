@@ -1,45 +1,83 @@
 ---
 title: Troubleshooting
-description: 'Common issues and solutions for Web SDK'
-icon: 'wrench'
+description: 'Resolve common issues with the Web SDK'
+icon: 'bug'
 ---
 
----
+Common pitfalls and solutions when integrating the Stringboot Web SDK.
 
-## Initialization Issues
+## Common Issues
 
-<AccordionGroup>
-  <Accordion title="SDK Not Initialized">
-    **Error**: `Stringboot SDK is not initialized`
+### Strings return empty or "undefined"
 
-    **Solution**: Ensure you are wrapping your app with `StringbootProvider` (React) or calling `Stringboot.init()` (Vanilla) before accessing any strings.
-  </Accordion>
-  <Accordion title="CORS Errors">
-    **Error**: `Access to fetch at ... has been blocked by CORS policy`
+**Symptoms:** `StringBoot.get()` returns `undefined` or empty strings.
 
-    **Solution**: This usually happens if you are using a development token in a production environment or vice versa. Check your allowed domains in the Stringboot Dashboard settings.
-  </Accordion>
-</AccordionGroup>
+**Solutions:**
+- Ensure you have awaited `StringBoot.initialize()` before calling `.get()`.
+- Check browser console for initialization errors (enable `debug: true`).
+- Verify your API token is correct.
+- Check the network tab in DevTools; look for 401 or 403 errors on `api.stringboot.com` requests.
 
-## String Issues
+### TypeScript errors: "Module not found"
 
-<AccordionGroup>
-  <Accordion title="Strings showing as ??key??">
-    **Cause**: The string key was not found in the local cache.
+**Symptoms:** `Cannot find module '@stringboot/web-sdk'`
 
-    **Solutions**:
-    1.  Ensure the key exists in the dashboard.
-    2.  Check if the SDK has finished initializing (`loading` state).
-    3.  Clear your browser's IndexedDB and reload to force a fresh sync.
-  </Accordion>
-</AccordionGroup>
+**Solutions:**
+- Ensure you have installed the package: `npm install @stringboot/web-sdk`.
+- Install node type definitions: `npm install --save-dev @types/node`.
+- Update your `tsconfig.json`:
+  ```json
+  {
+    "compilerOptions": {
+      "moduleResolution": "bundler",
+      "allowSyntheticDefaultImports": true
+    }
+  }
+  ```
 
-## Next.js Issues
+### "Cannot use import statement outside a module"
 
-<AccordionGroup>
-  <Accordion title="Hydration Mismatch">
-    **Error**: `Text content does not match server-rendered HTML`
+**Symptoms:** Crash on startup or build time error.
 
-    **Solution**: Ensure you are using the `StringbootProvider` correctly in your `layout.tsx` or `_app.tsx`. For Server Components, ensure you are awaiting the string fetch properly. See the [Next.js Guide](/web-sdk/nextjs) for details.
-  </Accordion>
-</AccordionGroup>
+**Solutions:**
+- If using basic HTML/JS, ensure your script tag has `type="module"`.
+- If using Node.js/SSR, add `"type": "module"` to your `package.json`.
+- Or use the CommonJS import syntax: `const StringBoot = require('@stringboot/web-sdk').default;`.
+
+### Strings don't update when changing language
+
+**Symptoms:** Calling `changeLanguage` updates the internal state, but the UI remains in the old language.
+
+**Solutions:**
+- **Vanilla JS**: Ensure you are using `StringBoot.watch()` or manually updating DOM elements after the promise resolves.
+- **React**: Ensure you are using the `useString()` hook, which subscribes to updates.
+- **Vue**: Ensure you are using reactive refs or the composition API hooks.
+
+### Large bundle size warning
+
+**Symptoms:** Build tools warn about the SDK size.
+
+**Solutions:**
+- The SDK is lightweight (~6.6kB gzipped).
+- Ensure you are using named imports to allow tree-shaking:
+  ```javascript
+  // ✅ Good
+  import { useString } from '@stringboot/web-sdk/react';
+  
+  // ❌ Bad (imports everything)
+  import * as StringBootReact from '@stringboot/web-sdk/react';
+  ```
+
+### Offline mode not working
+
+**Symptoms:** App fails to load strings when network is disabled.
+
+**Solutions:**
+- Strings are cache-first. They must be loaded at least once with a network connection to populate the cache.
+- Clear your browser data to reset the test state: DevTools → Application → Clear storage.
+- Verify that `IndexedDB` contains a database starting with `stringboot_`.
+
+## Need more help?
+
+- [Contact Support](mailto:support@stringboot.com)
+- [Report specific issues on GitHub](https://github.com/stringboot/web-sdk/issues)

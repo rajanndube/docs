@@ -1,0 +1,110 @@
+---
+title: Advanced Usage
+description: 'Language switching, Performance, and A/B Testing'
+icon: 'layer-group'
+---
+
+This guide covers advanced topics for getting the most out of the Stringboot Web SDK.
+
+## Language Switching
+
+Stringboot makes it easy to switch languages dynamically without reloading the page.
+
+### Vanilla JS
+
+```javascript
+// Switch language
+await StringBoot.changeLanguage('es');
+// All watched strings and cache are automatically updated!
+```
+
+### React
+
+```tsx
+const [lang, setLang] = useLanguage();
+setLang('es'); // Automatically triggers re-render of all useString hooks
+```
+
+### Getting Available Languages
+
+You can fetch the list of active languages configured in your dashboard.
+
+```javascript
+const languages = await StringBoot.getActiveLanguages();
+
+languages.forEach(lang => {
+  console.log(`${lang.code}: ${lang.name} (Default: ${lang.isDefault})`);
+});
+```
+
+### Multi-Tab Synchronization
+
+The SDK automatically synchronizes language changes across browser tabs using the BroadcastChannel API. If a user changes the language in one tab, all other open tabs for your application will instantly update to match.
+
+```javascript
+// Tab 1: Change language
+await StringBoot.changeLanguage('es');
+
+// Tab 2: Automatically receives update!
+// All watched strings update across all tabs
+```
+
+## Performance Optimization
+
+Stringboot is designed for high performance with minimal impact on your application's load time.
+
+### Caching Strategy
+
+1.  **Memory Cache**: Sub-millisecond access for frequently used strings.
+2.  **IndexedDB**: Persistent offline storage. Strings are loaded from here on startup.
+3.  **Network**: Only used for initial fetch or delta updates.
+
+### Monitoring Cache Stats
+
+You can inspect the cache usage to debug performance issues.
+
+```javascript
+// Get cache statistics
+const stats = await StringBoot.getCacheStats();
+
+console.log('Memory cache:', stats.memory);
+console.log('Database stats:', stats.db);
+```
+
+### Parallel Loading
+
+When fetching strings dynamically (outside of hooks), use `Promise.all` to fetch them in parallel.
+
+```javascript
+// ❌ Sequential (Slower)
+const name = await StringBoot.get('name');
+const desc = await StringBoot.get('desc');
+
+// ✅ Parallel (Faster)
+const [name, desc] = await Promise.all([
+  StringBoot.get('name'),
+  StringBoot.get('desc')
+]);
+```
+
+## A/B Testing Integration
+
+Stringboot supports native A/B testing for string variations. You can pass an `analyticsHandler` during initialization to track experiment exposure.
+
+```javascript
+await StringBoot.initialize({
+  apiToken: 'YOUR_API_TOKEN',
+  analyticsHandler: (experiment) => {
+    // Integrate with your analytics provider (Google Analytics, Mixpanel, etc.)
+    console.log('User exposed to experiment:', experiment);
+    
+    // Example: Mixpanel
+    // mixpanel.track('Experiment Viewed', experiment);
+  }
+});
+```
+
+When a user requests a string that is part of an experiment, Stringboot will:
+1.  Deterministically assign a variant (Control or Variant B) based on the user's session.
+2.  Return the appropriate string value.
+3.  Trigger the `analyticsHandler` callback so you can log the exposure.

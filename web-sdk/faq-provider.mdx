@@ -1,75 +1,106 @@
 ---
 title: FAQ Provider
-description: 'Render dynamic FAQs in your Web app'
+description: 'Integrate dynamic FAQs with offline support'
 icon: 'circle-question'
 ---
 
----
-
-The **FAQ Provider** delivers cached, searchable FAQs to your web app.
+The FAQ Provider lets you deliver dynamic, multilingual FAQ content with offline-first caching.
 
 ## Initialization
 
-Ensure the SDK is initialized before fetching FAQs.
-
-### React
-
-Wrap your application with `StringBootProvider`:
-
-```jsx
-import { StringBootProvider } from '@stringboot/web-sdk/react';
-
-function App() {
-  return (
-    <StringBootProvider 
-      apiToken="YOUR_API_TOKEN"
-      faqOptions={{ enable: true }}
-    >
-      <YourApp />
-    </StringBootProvider>
-  );
-}
-```
-
-### Vanilla JS
-
-Initialize the global instance:
+After initializing the main Stringboot SDK, you need to initialize the FAQ module.
 
 ```javascript
-import { Stringboot, FAQProvider } from '@stringboot/web-sdk';
+import StringBoot from '@stringboot/web-sdk';
 
-// Initialize main SDK
-await Stringboot.initialize({
-  apiToken: 'YOUR_API_TOKEN'
-});
-
-// Initialize FAQs separately
-await FAQProvider.init({ 
-  apiToken: 'YOUR_API_TOKEN' 
+// After initializing StringBoot, initialize FAQ Provider
+await StringBoot.FAQ.initialize({
+  apiToken: 'YOUR_API_TOKEN',
+  baseUrl: 'https://api.stringboot.com',
+  cacheSize: 200  // Optional: default is 200
 });
 ```
 
-## Usage
+## Fetching FAQs
 
-### React
+The `getFAQs` method provides a flexible way to query your FAQ content.
 
-Use the `useFAQs` hook:
+### Get All FAQs
+```javascript
+// Get all FAQs regardless of tag
+const allFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'all',
+  lang: 'en',
+  allowNetworkFetch: true
+});
+```
 
-```jsx
-import { useFAQs } from '@stringboot/web-sdk/react';
+### Filter by Tag
+```javascript
+// Get FAQs by specific tag
+const paymentFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'payments',
+  lang: 'en',
+  allowNetworkFetch: true
+});
+```
 
-function FAQList() {
-  const { faqs, loading, error } = useFAQs({ tag: 'payments' });
+### Advanced Filtering (Sub-tags)
+Stringboot supports 2-level filtering using mandatory tags and optional sub-tags.
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error loading FAQs</div>;
+```javascript
+// Get FAQs with sub-tag filtering (2-level filtering)
+const refundFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'payments',
+  subTags: ['refunds', 'disputes'],
+  lang: 'en',
+  allowNetworkFetch: true
+});
+```
+
+## React Integration
+
+Here is a complete example of how to build an FAQ section in React.
+
+```tsx
+import { useState, useEffect } from 'react';
+import StringBoot from '@stringboot/web-sdk';
+
+function FAQSection() {
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadFAQs() {
+      // Initialize FAQ Provider first
+      await StringBoot.FAQ.initialize({
+        apiToken: 'YOUR_API_TOKEN',
+        baseUrl: 'https://api.stringboot.com'
+      });
+
+      // Fetch FAQs
+      const fetchedFAQs = await StringBoot.FAQ.getFAQs({
+        tag: 'all',
+        lang: 'en',
+        allowNetworkFetch: true
+      });
+
+      setFaqs(fetchedFAQs);
+      setLoading(false);
+    }
+
+    loadFAQs();
+  }, []);
+
+  if (loading) return <div>Loading FAQs...</div>;
 
   return (
     <div>
-      {faqs.map((faq) => (
+      {faqs.map(faq => (
         <div key={faq.id}>
           <h3>{faq.question}</h3>
-          <p>{faq.answer}</p>
+          <p dangerouslySetInnerHTML={{ __html: faq.answer }} />
+          <span className="tag">{faq.tag}</span>
         </div>
       ))}
     </div>
@@ -77,25 +108,10 @@ function FAQList() {
 }
 ```
 
-### Vanilla JS
+## Key Features
 
-```javascript
-import { FAQProvider } from '@stringboot/web-sdk';
-
-// Initialize
-await FAQProvider.init({ apiToken: 'YOUR_TOKEN' });
-
-// Fetch
-const faqs = await FAQProvider.getFAQs({ tag: 'payments' });
-```
-
-## Filtering
-
-You can filter by multiple tags:
-
-```jsx
-const { faqs } = useFAQs({ 
-  tag: 'payments',
-  subTags: ['refunds', 'credit-card'] 
-});
-```
+- **2-level filtering**: Organize content with a primary Tag and multiple Sub-tags.
+- **"All" tag**: Use `tag: 'all'` to fetch your entire FAQ catalog.
+- **Offline-first**: Content is served from memory first, then IndexedDB, and finally Network.
+- **Multi-language**: Automatic fallback to the default language if a translation is missing.
+- **Delta sync**: bandwidth-efficient updates that only download changed FAQs.

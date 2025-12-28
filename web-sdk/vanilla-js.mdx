@@ -1,0 +1,150 @@
+---
+title: Vanilla JS
+description: 'Integrate Stringboot with Vanilla JavaScript or TypeScript'
+icon: 'js'
+---
+
+Stringboot works seamlessly with Vanilla JavaScript and TypeScript, providing a powerful API for managing dynamic content.
+
+## Basic Usage
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>StringBoot Example</title>
+</head>
+<body>
+  <h1 id="title"></h1>
+  <p id="description"></p>
+  <button id="languageToggle">Switch to Spanish</button>
+
+  <script type="module">
+    import StringBoot from '@stringboot/web-sdk';
+
+    // Initialize
+    await StringBoot.initialize({
+      apiToken: 'YOUR_API_TOKEN',
+      baseUrl: 'https://api.stringboot.com',
+      defaultLanguage: 'en'
+    });
+
+    // Update UI with strings
+    async function updateUI() {
+      const title = await StringBoot.get('page_title');
+      const description = await StringBoot.get('page_description');
+
+      document.getElementById('title').textContent = title;
+      document.getElementById('description').textContent = description;
+    }
+
+    // Initial render
+    await updateUI();
+
+    // Language switcher
+    document.getElementById('languageToggle').addEventListener('click', async () => {
+      const currentLang = StringBoot.getCurrentLanguage();
+      const newLang = currentLang === 'en' ? 'es' : 'en';
+
+      await StringBoot.changeLanguage(newLang);
+      await updateUI();
+
+      document.getElementById('languageToggle').textContent =
+        newLang === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés';
+    });
+  </script>
+</body>
+</html>
+```
+
+## TypeScript Integration
+
+For TypeScript users, StringBoot provides built-in type definitions for enhanced type safety.
+
+```typescript
+import StringBoot from '@stringboot/web-sdk';
+
+interface Config {
+  apiToken: string;
+  baseUrl: string;
+  defaultLanguage: string;
+  cacheSize?: number;
+}
+
+async function initializeApp(config: Config): Promise<void> {
+  await StringBoot.initialize(config);
+
+  // Type-safe string retrieval
+  const welcomeMessage: string = await StringBoot.get('welcome_message');
+  console.log(welcomeMessage);
+}
+
+// Usage
+await initializeApp({
+  apiToken: 'YOUR_API_TOKEN',
+  baseUrl: 'https://api.stringboot.com',
+  defaultLanguage: 'en',
+  cacheSize: 1000
+});
+```
+
+## Event Listeners
+
+You can subscribe to various events to react to changes in the SDK state.
+
+### Language Changes
+
+```javascript
+// Language change event
+const unsubscribe = StringBoot.onLanguageChange((newLanguage) => {
+  console.log(`Language changed to: ${newLanguage}`);
+  updateUIForLanguage(newLanguage);
+});
+
+// Cleanup when done
+unsubscribe();
+```
+
+### String Updates
+
+Watch specific strings for real-time updates. This is useful for building reactive UIs without a framework.
+
+```javascript
+// String update event (watch specific string)
+const unwatch = StringBoot.watch('welcome_message', (newValue) => {
+  console.log('String updated:', newValue);
+  document.getElementById('title').textContent = newValue;
+});
+
+// Cleanup when done
+unwatch();
+```
+
+## Dynamic String Loading
+
+You can load strings sequentially or in parallel depending on your application's needs.
+
+```javascript
+// Load multiple strings sequentially
+async function loadProductDetails(productId) {
+  const name = await StringBoot.get(`product_${productId}_name`);
+  const description = await StringBoot.get(`product_${productId}_description`);
+  const price = await StringBoot.get(`product_${productId}_price`);
+
+  return { name, description, price };
+}
+
+// Or load in parallel for better performance
+async function loadProductDetailsParallel(productId) {
+  const [name, description, price] = await Promise.all([
+    StringBoot.get(`product_${productId}_name`),
+    StringBoot.get(`product_${productId}_description`),
+    StringBoot.get(`product_${productId}_price`)
+  ]);
+
+  return { name, description, price };
+}
+
+// Usage
+const product = await loadProductDetails(123);
+```

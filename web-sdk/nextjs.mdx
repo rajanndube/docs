@@ -1,91 +1,34 @@
 ---
-title: "Next.js Integration"
-description: "Complete guide for integrating Stringboot in Next.js applications"
+title: Next.js
+description: 'Integrate Stringboot with Next.js App Router and Pages Router'
 icon: 'server'
 ---
 
----
-
-## Overview
-
-This guide covers integrating the Stringboot Web SDK in Next.js applications for both the App Router (Next.js 13+) and Pages Router.
-
-## Installation
-
-```bash
-npm install @stringboot/web-sdk
-```
+Stringboot fully supports Next.js, including the new App Router (React Server Components) and the classic Pages Router.
 
 ## App Router (Next.js 13+)
 
-### Setup Provider Component
+### Server Component Layout
 
-Create a client-side provider component for Stringboot:
-
-```tsx
-// app/providers/stringboot-provider.tsx
-'use client';
-
-import { useStringBoot } from '@stringboot/web-sdk/react';
-
-const isDev = process.env.NODE_ENV === 'development';
-
-export function StringBootProvider({ children }: { children: React.ReactNode }): React.ReactNode {
-  const { initialized, error } = useStringBoot({
-    apiToken: process.env.NEXT_PUBLIC_STRINGBOOT_API_TOKEN!,
-    baseUrl: process.env.NEXT_PUBLIC_STRINGBOOT_API_URL || 'https://api.stringboot.com',
-    defaultLanguage: 'en',
-    debug: isDev,
-  });
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-red-600">
-          <h1 className="text-xl font-bold">StringBoot Error</h1>
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!initialized) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-gray-600">Loading StringBoot...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-}
-```
-
-<Note>
-The provider handles loading and error states with proper UI feedback. This prevents the app from rendering before strings are ready.
-</Note>
-
-### Add to Root Layout
-
-Wrap your application with the StringBoot provider:
+Initialize the provider in your root layout.
 
 ```tsx
 // app/layout.tsx
-import { StringBootProvider } from './providers/stringboot-provider';
-import './globals.css';
+import { StringBootProvider } from '@stringboot/web-sdk/nextjs';
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.Node;
 }) {
   return (
     <html lang="en">
       <body>
-        <StringBootProvider>
+        <StringBootProvider
+          apiToken={process.env.NEXT_PUBLIC_STRINGBOOT_TOKEN!}
+          baseUrl="https://api.stringboot.com"
+          defaultLanguage="en"
+        >
           {children}
         </StringBootProvider>
       </body>
@@ -94,433 +37,58 @@ export default function RootLayout({
 }
 ```
 
-### Use in Client Components
+### Client Components
 
-Create client components that use Stringboot hooks:
+Use hooks inside any Client Component marked with `'use client'`.
 
 ```tsx
-// app/page.tsx
+// app/components/WelcomeSection.tsx
 'use client';
 
 import { useString, useLanguage } from '@stringboot/web-sdk/react';
 
-export default function Home() {
-  const text = useString('welcome_message');
+export default function WelcomeSection() {
+  const title = useString('welcome_title');
+  const subtitle = useString('welcome_subtitle');
   const [lang, setLang] = useLanguage();
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <main className="flex flex-col items-center gap-8">
-        {/* Language Switcher */}
-        <div className="mb-8">
-          <select
-            value={lang}
-            onChange={(e) => setLang(e.target.value)}
-            className="border rounded px-4 py-2"
-          >
-            <option value="en">English</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
-          </select>
-        </div>
-
-        {/* Dynamic String */}
-        <h1 className="text-3xl font-semibold">
-          {text || 'Loading...'}
-        </h1>
-      </main>
-    </div>
+    <section>
+      <h1>{title}</h1>
+      <p>{subtitle}</p>
+      <button onClick={() => setLang(lang === 'en' ? 'es' : 'en')}>
+        Switch Language
+      </button>
+    </section>
   );
 }
 ```
 
-<Tip>
-Use the `||` operator to provide a fallback value while strings are loading. The hooks automatically update the UI when strings become available.
-</Tip>
+## Pages Router (Next.js 12-)
 
-## Pages Router (Next.js 12 and below)
-
-### Create Provider Component
-
-```tsx
-// components/StringBootProvider.tsx
-import { useStringBoot } from '@stringboot/web-sdk/react';
-import { ReactNode } from 'react';
-
-interface StringBootProviderProps {
-  children: ReactNode;
-}
-
-export function StringBootProvider({ children }: StringBootProviderProps) {
-  const { initialized, error } = useStringBoot({
-    apiToken: process.env.NEXT_PUBLIC_STRINGBOOT_API_TOKEN!,
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en',
-    debug: process.env.NODE_ENV === 'development',
-  });
-
-  if (error) {
-    console.error('StringBoot initialization error:', error);
-  }
-
-  return <>{children}</>;
-}
-```
-
-### Add to _app.tsx
+For older Next.js applications, initialize the SDK in `_app.tsx`.
 
 ```tsx
 // pages/_app.tsx
 import type { AppProps } from 'next/app';
-import { StringBootProvider } from '../components/StringBootProvider';
-import '../styles/globals.css';
+import { useStringBoot } from '@stringboot/web-sdk/react';
 
-export default function App({ Component, pageProps }: AppProps) {
-  return (
-    <StringBootProvider>
-      <Component {...pageProps} />
-    </StringBootProvider>
-  );
-}
-```
-
-### Use in Pages
-
-```tsx
-// pages/index.tsx
-import { useString, useLanguage } from '@stringboot/web-sdk/react';
-
-export default function Home() {
-  const title = useString('home_title');
-  const description = useString('home_description');
-  const [lang, setLang] = useLanguage();
-
-  return (
-    <div>
-      <h1>{title}</h1>
-      <p>{description}</p>
-
-      <select value={lang} onChange={(e) => setLang(e.target.value)}>
-        <option value="en">English</option>
-        <option value="es">Español</option>
-      </select>
-    </div>
-  );
-}
-```
-
-### Server-Side Rendering
-
-Use `getServerSideProps` for dynamic server-side rendering:
-
-```tsx
-import { GetServerSideProps } from 'next';
-import StringBoot from '@stringboot/web-sdk';
-
-interface PageProps {
-  title: string;
-  description: string;
-}
-
-export const getServerSideProps: GetServerSideProps<PageProps> = async () => {
-  await StringBoot.initialize({
-    apiToken: process.env.STRINGBOOT_API_TOKEN!,
+function MyApp({ Component, pageProps }: AppProps) {
+  const { initialized, error } = useStringBoot({
+    apiToken: process.env.NEXT_PUBLIC_STRINGBOOT_TOKEN!,
     baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en',
+    defaultLanguage: 'en'
   });
 
-  return {
-    props: {
-      title: await StringBoot.get('page_title'),
-    },
-  };
-};
+  if (!initialized) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
-export default function Page({ title, description }: PageProps) {
-  return (
-    <div>
-      <h1>{title}</h1>
-      <p>{description}</p>
-    </div>
-  );
-}
-```
-
-### Static Generation
-
-Use `getStaticProps` for static generation with revalidation:
-
-```tsx
-import { GetStaticProps } from 'next';
-import StringBoot from '@stringboot/web-sdk';
-
-interface PageProps {
-  strings: {
-    [key: string]: string;
-  };
+  return <Component {...pageProps} />;
 }
 
-export const getStaticProps: GetStaticProps<PageProps> = async () => {
-  await StringBoot.initialize({
-    apiToken: process.env.STRINGBOOT_API_TOKEN!,
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en',
-  });
-
-  return {
-    props: {
-      strings: {
-        title: await StringBoot.get('page_title'),
-        subtitle: await StringBoot.get('page_subtitle'),
-        cta: await StringBoot.get('cta_button'),
-      },
-    },
-    revalidate: 3600, // Revalidate every hour
-  };
-};
-
-export default function Page({ strings }: PageProps) {
-  return (
-    <div>
-      <h1>{strings.title}</h1>
-      <h2>{strings.subtitle}</h2>
-      <button>{strings.cta}</button>
-    </div>
-  );
-}
+export default MyApp;
 ```
 
-## Environment Variables
-
-Create a `.env.local` file in your project root:
-
-```bash
-# Required: API Token (client-side)
-NEXT_PUBLIC_STRINGBOOT_API_TOKEN=your_token_here
-
-# Optional: Custom API URL (defaults to https://api.stringboot.com)
-NEXT_PUBLIC_STRINGBOOT_API_URL=https://api.stringboot.com
-
-# Optional: Server-side only token (more secure for SSR/SSG)
-STRINGBOOT_API_TOKEN=your_token_here
-```
-
-<Warning>
-- Use `NEXT_PUBLIC_*` prefix for client-side usage (required for client components)
-- Use regular env vars for server-side only (SSR, SSG, API routes) to keep tokens secure
-- Never commit `.env.local` to version control - add it to `.gitignore`
-</Warning>
-
-## Common Patterns
-
-### Language Switcher
-
-```tsx
-'use client'; // for App Router
-
-import { useLanguage, useActiveLanguages } from '@stringboot/web-sdk/react';
-
-export function LanguageSwitcher() {
-  const [currentLang, setLanguage] = useLanguage();
-  const { languages, loading, error } = useActiveLanguages();
-
-  if (loading) return <div>Loading languages...</div>;
-  if (error) return null;
-
-  return (
-    <select
-      value={currentLang}
-      onChange={(e) => setLanguage(e.target.value)}
-      className="border rounded px-3 py-2"
-    >
-      {languages.map((lang) => (
-        <option key={lang.code} value={lang.code}>
-          {lang.name}
-        </option>
-      ))}
-    </select>
-  );
-}
-```
-
-### Multiple Strings
-
-```tsx
-'use client';
-
-import { useStrings } from '@stringboot/web-sdk/react';
-
-export function ProductCard() {
-  const strings = useStrings([
-    'product_name',
-    'product_description',
-    'add_to_cart',
-    'price_label',
-  ]);
-
-  return (
-    <div className="card">
-      <h3>{strings.product_name}</h3>
-      <p>{strings.product_description}</p>
-      <div>
-        <span>{strings.price_label}</span>
-        <button>{strings.add_to_cart}</button>
-      </div>
-    </div>
-  );
-}
-```
-
-### Dynamic Metadata (App Router)
-
-```tsx
-// app/page.tsx
-import { Metadata } from 'next';
-import StringBoot from '@stringboot/web-sdk';
-
-export async function generateMetadata(): Promise<Metadata> {
-  await StringBoot.initialize({
-    apiToken: process.env.STRINGBOOT_API_TOKEN!,
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en',
-  });
-
-  return {
-    title: await StringBoot.get('meta_title'),
-    description: await StringBoot.get('meta_description'),
-  };
-}
-
-export default function Page() {
-  return <div>Page content</div>;
-}
-```
-
-## Troubleshooting
-
-### Hydration Mismatch Error
-
-**Cause:** Server-rendered content doesn't match client-rendered content.
-
-**Solution:** Ensure consistent initialization on both server and client, or use client-only rendering for dynamic content.
-
-### Strings Not Updating
-
-**Cause:** Not using reactive hooks.
-
-**Solution:** Use `useString` instead of direct `StringBoot.get()`:
-
-<CodeGroup>
-
-```tsx Bad
-const [text, setText] = useState('');
-useEffect(() => {
-  StringBoot.get('key').then(setText);
-}, []); // Won't update on language change
-```
-
-```tsx Good
-const text = useString('key'); // Auto-updates
-```
-
-</CodeGroup>
-
-### Environment Variables Undefined
-
-**Cause:** Missing `NEXT_PUBLIC_` prefix for client-side usage.
-
-**Solution:**
-- Use `NEXT_PUBLIC_*` for client components
-- Use regular env vars for server components
-
-### Module Not Found Error
-
-**Cause:** Trying to import React hooks in server component.
-
-**Solution:** Add `'use client'` directive:
-
-```tsx
-'use client';
-
-import { useString } from '@stringboot/web-sdk/react';
-```
-
-## Performance Tips
-
-### Preload Critical Strings
-
-```tsx
-// app/layout.tsx
-import StringBoot from '@stringboot/web-sdk';
-
-async function preloadStrings() {
-  await StringBoot.initialize({
-    apiToken: process.env.STRINGBOOT_API_TOKEN!,
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en',
-  });
-
-  // Preload critical strings
-  await Promise.all([
-    StringBoot.get('nav_home'),
-    StringBoot.get('nav_about'),
-    StringBoot.get('nav_contact'),
-  ]);
-}
-
-export default async function RootLayout({ children }) {
-  await preloadStrings();
-
-  return (
-    <html>
-      <body>
-        <StringBootProvider>{children}</StringBootProvider>
-      </body>
-    </html>
-  );
-}
-```
-
-### Use Static Generation
-
-For content that doesn't change frequently:
-
-```tsx
-export const revalidate = 3600; // Revalidate every hour
-
-export default async function Page() {
-  const title = await StringBoot.get('title');
-  return <h1>{title}</h1>;
-}
-```
-
-## Best Practices
-
-<AccordionGroup>
-  <Accordion title="Initialize Once in Root">
-    Initialize the SDK once in your root layout or _app file, not in every component.
-  </Accordion>
-
-  <Accordion title="Use React Hooks for Reactive Updates">
-    Always use `useString` and other hooks for automatic updates when language changes.
-  </Accordion>
-
-  <Accordion title="Separate Client/Server Env Vars">
-    Use `NEXT_PUBLIC_*` for client-side and regular env vars for server-side for better security.
-  </Accordion>
-
-  <Accordion title="Handle Errors Gracefully">
-    Always check for initialization errors and provide fallback UI or default strings.
-  </Accordion>
-</AccordionGroup>
-
-## What's Next?
-
-<CardGroup cols={2}>
-  <Card title="React Hooks" icon="react" href="/web-sdk/react-hooks">
-    Learn about all available React hooks
-  </Card>
-  <Card title="Best Practices" icon="star" href="/web-sdk/best-practices">
-    Production-ready patterns and tips
-  </Card>
-</CardGroup>
+<Note>
+**Environment Variables**: Remember to start your environment variables with `NEXT_PUBLIC_` if they need to be accessed on the client side.
+</Note>

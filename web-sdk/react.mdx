@@ -1,0 +1,180 @@
+---
+title: React
+description: 'Integrate Stringboot with React applications'
+icon: 'react'
+---
+
+The Stringboot React adapter provides a set of hooks to make string management easy and efficient.
+
+## Initialization
+
+Initialize StringBoot in your root App component using the `useStringBoot` hook.
+
+```tsx
+import React from 'react';
+import { useStringBoot } from '@stringboot/web-sdk/react';
+
+function App() {
+  const { initialized, error } = useStringBoot({
+    apiToken: process.env.REACT_APP_STRINGBOOT_TOKEN!,
+    baseUrl: 'https://api.stringboot.com',
+    defaultLanguage: 'en',
+    debug: true  // Enable debug logging
+  });
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <h1>Failed to initialize StringBoot</h1>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!initialized) {
+    return (
+      <div className="loading-container">
+        <div className="spinner" />
+        <p>Initializing StringBoot...</p>
+      </div>
+    );
+  }
+
+  return <MyApp />;
+}
+
+export default App;
+```
+
+## Using Strings
+
+### Single String (`useString`)
+
+The `useString` hook automatically updates your component when the language changes or when the string value is updated remotely.
+
+```tsx
+import { useString } from '@stringboot/web-sdk/react';
+
+function WelcomeScreen() {
+  const title = useString('welcome_title');
+  const subtitle = useString('welcome_subtitle');
+  const ctaButton = useString('cta_button');
+
+  return (
+    <div className="welcome-screen">
+      <h1>{title}</h1>
+      <p>{subtitle}</p>
+      <button>{ctaButton}</button>
+    </div>
+  );
+}
+```
+
+You can also request a specific language for a string:
+
+```tsx
+function LocalizedContent({ language }: { language: string }) {
+  // Always returns 'fr' version regardless of current app language
+  const title = useString('title', 'fr');
+
+  return <h2>{title}</h2>;
+}
+```
+
+### Multiple Strings (`useStrings`)
+
+Load multiple strings at once. This returns a key-value object.
+
+```tsx
+import { useStrings } from '@stringboot/web-sdk/react';
+
+function ProductCard({ productId }: { productId: number }) {
+  // Keys can be dynamic
+  const strings = useStrings([
+    `product_${productId}_name`,
+    `product_${productId}_description`,
+    `product_${productId}_price`
+  ]);
+
+  return (
+    <div className="product-card">
+      <h3>{strings[`product_${productId}_name`]}</h3>
+      <p>{strings[`product_${productId}_description`]}</p>
+      <span className="price">{strings[`product_${productId}_price`]}</span>
+    </div>
+  );
+}
+```
+
+## Language Management
+
+### Switching Language (`useLanguage`)
+
+```tsx
+import { useLanguage, useString } from '@stringboot/web-sdk/react';
+
+function LanguageSwitcher() {
+  const [currentLang, setLanguage] = useLanguage();
+  const switchingLabel = useString('select_language');
+
+  return (
+    <div className="language-switcher">
+      <label>{switchingLabel}</label>
+      <select
+        value={currentLang}
+        onChange={(e) => setLanguage(e.target.value)}
+      >
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+      </select>
+    </div>
+  );
+}
+```
+
+### Listing Available Languages (`useActiveLanguages`)
+
+Fetch the list of active languages configured in your Stringboot dashboard.
+
+```tsx
+import { useActiveLanguages } from '@stringboot/web-sdk/react';
+
+function LanguageSelector() {
+  const { languages, loading, error } = useActiveLanguages();
+
+  if (loading) return <div>Loading languages...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <select>
+      {languages.map(lang => (
+        <option key={lang.code} value={lang.code}>
+          {lang.name} {lang.isDefault && '(Default)'}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+## Manual Synchronization
+
+If you need to manually trigger a sync (e.g., "Check for updates" button), use the `useSync` hook.
+
+```tsx
+import { useSync } from '@stringboot/web-sdk/react';
+
+function SyncButton() {
+  const { sync, syncing } = useSync();
+
+  return (
+    <button onClick={() => sync()} disabled={syncing}>
+      {syncing ? 'Syncing...' : 'Sync Now'}
+    </button>
+  );
+}
+```

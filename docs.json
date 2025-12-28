@@ -49,12 +49,13 @@
             "group": "Web SDK",
             "pages": [
               "web-sdk/index",
-              "web-sdk/installation",
-              "web-sdk/usage",
-              "web-sdk/react-hooks",
+              "web-sdk/quickstart",
+              "web-sdk/vanilla-js",
+              "web-sdk/react",
+              "web-sdk/vue",
               "web-sdk/nextjs",
-              "web-sdk/ab-testing",
               "web-sdk/faq-provider",
+              "web-sdk/advanced",
               "web-sdk/troubleshooting"
             ]
           },
