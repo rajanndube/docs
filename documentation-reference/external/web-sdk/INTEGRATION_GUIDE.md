@@ -35,22 +35,7 @@ Or with Yarn:
 yarn add @stringboot/web-sdk
 ```
 
-### Step 2: Configuration
-
-Create `stringboot-config.json` in your project root:
-
-```json
-{
-  "apiToken": "YOUR_API_TOKEN",
-  "baseUrl": "https://api.stringboot.com",
-  "appId": "your_app_id",
-  "defaultLanguage": "en",
-  "cacheSize": 1000,
-  "autoSync": true
-}
-```
-
-### Step 3: Initialization
+### Step 2: Initialization
 
 #### Vanilla JavaScript / TypeScript
 
@@ -60,16 +45,27 @@ import StringBoot from '@stringboot/web-sdk';
 // Initialize the SDK
 await StringBoot.initialize({
   apiToken: 'YOUR_API_TOKEN',
-  baseUrl: 'https://api.stringboot.com',
-  defaultLanguage: 'en',
-  cacheSize: 1000,
-  autoSync: true
+  baseUrl: 'https://api.stringboot.com',  // Optional, defaults to api.stringboot.com
+  defaultLanguage: 'en',                   // Optional, defaults to browser language
+  debug: false,                             // Optional, enables debug logging
+  enableIntegrityCheck: false               // Optional, enables HMAC verification
 });
 
 // Get strings
 const welcomeMessage = await StringBoot.get('welcome_message');
 console.log(welcomeMessage); // "Welcome to our app!"
 ```
+
+**Configuration Options:**
+
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `apiToken` | `string` | Yes | - | Your Stringboot API token |
+| `baseUrl` | `string` | No | `https://api.stringboot.com` | API base URL |
+| `defaultLanguage` | `string` | No | Browser language | Initial language code |
+| `debug` | `boolean` | No | `false` | Enable debug logging |
+| `enableIntegrityCheck` | `boolean` | No | `false` | Enable HMAC signature verification |
+| `analyticsHandler` | `object` | No | - | A/B testing analytics callback |
 
 #### React
 
@@ -90,46 +86,23 @@ function App() {
 }
 ```
 
-#### Vue 3
-
-```vue
-<script setup>
-import { ref, onMounted } from 'vue';
-import StringBoot from '@stringboot/web-sdk';
-
-const isReady = ref(false);
-
-onMounted(async () => {
-  await StringBoot.initialize({
-    apiToken: 'YOUR_API_TOKEN',
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en'
-  });
-  isReady.value = true;
-});
-</script>
-
-<template>
-  <div v-if="isReady">
-    <MyApp />
-  </div>
-</template>
-```
-
-### Step 4: Use Strings
+### Step 3: Use Strings
 
 ```javascript
-// Simple get
-const text = await StringBoot.get('key');
+// Get a single string
+const text = await StringBoot.get('welcome_message');
 
-// With custom language
-const spanishText = await StringBoot.get('key', { lang: 'es' });
+// Get string with specific language
+const spanishText = await StringBoot.get('welcome_message', 'es');
 
-// Batch retrieval
-const strings = await StringBoot.getBatch(['key1', 'key2', 'key3']);
+// Watch for updates (reactive)
+const unsubscribe = StringBoot.watch('welcome_message', (newValue) => {
+  console.log('String updated:', newValue);
+});
 
-// React Hook
-const text = useString('key');
+// React Hook (auto-updates on language change)
+import { useString } from '@stringboot/web-sdk/react';
+const text = useString('welcome_message');
 ```
 
 ---
@@ -222,33 +195,40 @@ Listen for string updates and language changes:
 
 ```javascript
 // Language change event
-StringBoot.on('languageChange', (newLanguage) => {
+const unsubscribe = StringBoot.onLanguageChange((newLanguage) => {
   console.log(`Language changed to: ${newLanguage}`);
   updateUIForLanguage(newLanguage);
 });
 
-// String update event
-StringBoot.on('stringsUpdated', () => {
-  console.log('Strings updated from network');
-  refreshUI();
+// String update event (watch specific string)
+const unwatch = StringBoot.watch('welcome_message', (newValue) => {
+  console.log('String updated:', newValue);
+  document.getElementById('title').textContent = newValue;
 });
 
-// Error handling
-StringBoot.on('error', (error) => {
-  console.error('StringBoot error:', error);
-  showErrorNotification(error.message);
-});
+// Cleanup when done
+unsubscribe();
+unwatch();
 ```
 
 ### Dynamic String Loading
 
 ```javascript
-// Load strings on demand
+// Load multiple strings sequentially
 async function loadProductDetails(productId) {
-  const [name, description, price] = await StringBoot.getBatch([
-    `product_${productId}_name`,
-    `product_${productId}_description`,
-    `product_${productId}_price`
+  const name = await StringBoot.get(`product_${productId}_name`);
+  const description = await StringBoot.get(`product_${productId}_description`);
+  const price = await StringBoot.get(`product_${productId}_price`);
+
+  return { name, description, price };
+}
+
+// Or load in parallel
+async function loadProductDetailsParallel(productId) {
+  const [name, description, price] = await Promise.all([
+    StringBoot.get(`product_${productId}_name`),
+    StringBoot.get(`product_${productId}_description`),
+    StringBoot.get(`product_${productId}_price`)
   ]);
 
   return { name, description, price };
@@ -271,21 +251,12 @@ import React from 'react';
 import { useStringBoot } from '@stringboot/web-sdk/react';
 
 function App() {
-  const { initialized, error, loading } = useStringBoot({
+  const { initialized, error } = useStringBoot({
     apiToken: process.env.REACT_APP_STRINGBOOT_TOKEN!,
     baseUrl: 'https://api.stringboot.com',
     defaultLanguage: 'en',
-    cacheSize: 1000
+    debug: true  // Enable debug logging
   });
-
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="spinner" />
-        <p>Loading application...</p>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -300,13 +271,26 @@ function App() {
   }
 
   if (!initialized) {
-    return <div>Initializing...</div>;
+    return (
+      <div className="loading-container">
+        <div className="spinner" />
+        <p>Initializing StringBoot...</p>
+      </div>
+    );
   }
 
   return <MyApp />;
 }
 
 export default App;
+```
+
+**Hook Signature:**
+```typescript
+useStringBoot(config: StringBootConfig): {
+  initialized: boolean;
+  error: string | null;
+}
 ```
 
 ### useString Hook
@@ -331,12 +315,17 @@ function WelcomeScreen() {
 }
 ```
 
+**Hook Signature:**
+```typescript
+useString(key: string, lang?: string): string
+```
+
 With custom language:
 
 ```tsx
 function LocalizedContent({ language }: { language: string }) {
-  const title = useString('title', { lang: language });
-  const description = useString('description', { lang: language });
+  const title = useString('title', language);
+  const description = useString('description', language);
 
   return (
     <div>
@@ -347,6 +336,35 @@ function LocalizedContent({ language }: { language: string }) {
 }
 ```
 
+### useStrings Hook
+
+Load multiple strings with auto-updates:
+
+```tsx
+import { useStrings } from '@stringboot/web-sdk/react';
+
+function ProductCard({ productId }: { productId: number }) {
+  const strings = useStrings([
+    `product_${productId}_name`,
+    `product_${productId}_description`,
+    `product_${productId}_price`
+  ]);
+
+  return (
+    <div className="product-card">
+      <h3>{strings[`product_${productId}_name`]}</h3>
+      <p>{strings[`product_${productId}_description`]}</p>
+      <span className="price">{strings[`product_${productId}_price`]}</span>
+    </div>
+  );
+}
+```
+
+**Hook Signature:**
+```typescript
+useStrings(keys: string[], lang?: string): Record<string, string>
+```
+
 ### useLanguage Hook
 
 Manage language switching:
@@ -355,96 +373,100 @@ Manage language switching:
 import { useLanguage, useString } from '@stringboot/web-sdk/react';
 
 function LanguageSwitcher() {
-  const [currentLang, setLanguage, availableLanguages] = useLanguage();
-  const switchingLabel = useString('switching_language');
-
-  const handleLanguageChange = async (newLang: string) => {
-    await setLanguage(newLang);
-    console.log(`Switched to ${newLang}`);
-  };
+  const [currentLang, setLanguage] = useLanguage();
+  const switchingLabel = useString('select_language');
 
   return (
     <div className="language-switcher">
-      <label>Language:</label>
+      <label>{switchingLabel}</label>
       <select
         value={currentLang}
-        onChange={(e) => handleLanguageChange(e.target.value)}
+        onChange={(e) => setLanguage(e.target.value)}
       >
-        {availableLanguages.map(lang => (
-          <key={lang.code} value={lang.code}>
-            {lang.name}
-          </option>
-        ))}
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
       </select>
     </div>
   );
 }
 ```
 
-### useBatchStrings Hook
+**Hook Signature:**
+```typescript
+useLanguage(): [string, (lang: string) => Promise<void>]
+```
 
-Load multiple strings efficiently:
+### useActiveLanguages Hook
+
+Get available languages from backend:
 
 ```tsx
-import { useBatchStrings } from '@stringboot/web-sdk/react';
+import { useActiveLanguages } from '@stringboot/web-sdk/react';
 
-function ProductCard({ productId }: { productId: number }) {
-  const strings = useBatchStrings([
-    `product_${productId}_name`,
-    `product_${productId}_description`,
-    `product_${productId}_price`
-  ]);
+function LanguageSelector() {
+  const { languages, loading, error } = useActiveLanguages();
 
-  const [name, description, price] = strings;
+  if (loading) return <div>Loading languages...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="product-card">
-      <h3>{name}</h3>
-      <p>{description}</p>
-      <span className="price">{price}</span>
-    </div>
+    <select>
+      {languages.map(lang => (
+        <option key={lang.code} value={lang.code}>
+          {lang.name} {lang.isDefault && '(Default)'}
+        </option>
+      ))}
+    </select>
   );
 }
 ```
 
-### StringProvider Component
+**Hook Signature:**
+```typescript
+useActiveLanguages(): {
+  languages: ActiveLanguage[];
+  loading: boolean;
+  error: string | null;
+}
+```
 
-Alternative provider-based approach:
+### useSync Hook
+
+Manually trigger synchronization:
 
 ```tsx
-import { StringProvider, StringText } from '@stringboot/web-sdk/react';
+import { useSync } from '@stringboot/web-sdk/react';
 
-function App() {
+function SyncButton() {
+  const { sync, syncing } = useSync();
+
   return (
-    <StringProvider
-      apiToken="YOUR_API_TOKEN"
-      baseUrl="https://api.stringboot.com"
-      defaultLanguage="en"
-    >
-      <MyApp />
-    </StringProvider>
+    <button onClick={() => sync()} disabled={syncing}>
+      {syncing ? 'Syncing...' : 'Sync Now'}
+    </button>
   );
 }
+```
 
-function MyApp() {
-  return (
-    <div>
-      <StringText stringKey="welcome_message" />
-      <StringText stringKey="subtitle" className="subtitle" />
-    </div>
-  );
+**Hook Signature:**
+```typescript
+useSync(): {
+  sync: (lang?: string) => Promise<void>;
+  syncing: boolean;
 }
 ```
 
 ### Complete React Example
 
 ```tsx
-import React, { useState } from 'react';
+import React from 'react';
 import {
   useStringBoot,
   useString,
   useLanguage,
-  useBatchStrings
+  useStrings,
+  useActiveLanguages
 } from '@stringboot/web-sdk/react';
 
 function App() {
@@ -454,8 +476,8 @@ function App() {
     defaultLanguage: 'en'
   });
 
-  if (!initialized) return <LoadingScreen />;
   if (error) return <ErrorScreen error={error} />;
+  if (!initialized) return <LoadingScreen />;
 
   return (
     <div className="app">
@@ -467,23 +489,26 @@ function App() {
 }
 
 function Header() {
-  const [currentLang, setLanguage, availableLanguages] = useLanguage();
+  const [currentLang, setLanguage] = useLanguage();
+  const { languages, loading } = useActiveLanguages();
   const appTitle = useString('app_title');
 
   return (
     <header>
       <h1>{appTitle}</h1>
-      <select value={currentLang} onChange={(e) => setLanguage(e.target.value)}>
-        {availableLanguages.map(lang => (
-          <option key={lang.code} value={lang.code}>{lang.name}</option>
-        ))}
-      </select>
+      {!loading && (
+        <select value={currentLang} onChange={(e) => setLanguage(e.target.value)}>
+          {languages.map(lang => (
+            <option key={lang.code} value={lang.code}>{lang.name}</option>
+          ))}
+        </select>
+      )}
     </header>
   );
 }
 
 function MainContent() {
-  const [welcomeMsg, subtitle, cta] = useBatchStrings([
+  const strings = useStrings([
     'welcome_message',
     'welcome_subtitle',
     'cta_button'
@@ -491,9 +516,9 @@ function MainContent() {
 
   return (
     <main>
-      <h2>{welcomeMsg}</h2>
-      <p>{subtitle}</p>
-      <button>{cta}</button>
+      <h2>{strings.welcome_message}</h2>
+      <p>{strings.welcome_subtitle}</p>
+      <button>{strings.cta_button}</button>
     </main>
   );
 }
@@ -1368,47 +1393,77 @@ FAQProvider offers:
 
 ### Initialization
 
-FAQ Provider is automatically initialized when you initialize StringBoot:
+**IMPORTANT:** FAQ Provider requires **separate initialization** after StringBoot:
 
 ```javascript
 import StringBoot from '@stringboot/web-sdk';
 
-// This initializes both StringBoot AND FAQ Provider
+// Step 1: Initialize StringBoot
 await StringBoot.initialize({
   apiToken: 'YOUR_API_TOKEN',
   baseUrl: 'https://api.stringboot.com',
   defaultLanguage: 'en'
 });
 
-// FAQ Provider is now ready to use
-const faqs = await StringBoot.FAQ.getFAQs({ tag: 'payments' });
-```
-
-### Basic Usage
-
-#### Fetching FAQs
-
-```javascript
-// Get FAQs by tag
-const faqs = await StringBoot.FAQ.getFAQs({
-  tag: 'Identity Verification',
-  lang: 'en'
+// Step 2: Initialize FAQ Provider separately
+await StringBoot.FAQ.initialize({
+  apiToken: 'YOUR_API_TOKEN',
+  baseUrl: 'https://api.stringboot.com',
+  cacheSize: 200  // Optional: LRU cache size (default: 200)
 });
 
-// Get FAQs with sub-tag filtering
+// Now FAQ Provider is ready to use
+const faqs = await StringBoot.FAQ.getFAQs({ tag: 'payments', lang: 'en', allowNetworkFetch: true });
+```
+
+**FAQ Configuration Options:**
+
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `apiToken` | `string` | Yes | - | Your Stringboot API token |
+| `baseUrl` | `string` | No | `https://api.stringboot.com` | API base URL |
+| `cacheSize` | `number` | No | `200` | Memory LRU cache size |
+
+### Tag-Based Filtering (2-Level System)
+
+**Tags are MANDATORY, sub-tags are OPTIONAL:**
+
+```javascript
+// Fetch ALL FAQs (use "all" tag)
+const allFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'all',
+  lang: 'en',
+  allowNetworkFetch: true
+});
+
+// Fetch FAQs by specific tag
+const identityFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'Identity Verification',
+  lang: 'en',
+  allowNetworkFetch: true
+});
+
+// Fetch with sub-tag filtering (2-level filtering)
 const documentFAQs = await StringBoot.FAQ.getFAQs({
   tag: 'Identity Verification',
-  subTags: ['Document Upload'],
+  subTags: ['Document Upload', 'Liveness Check'],
   lang: 'en',
   allowNetworkFetch: true
 });
 
 // Display FAQs
-faqs.forEach(faq => {
+identityFAQs.forEach(faq => {
   console.log(`Q: ${faq.question}`);
   console.log(`A: ${faq.answer}`);
+  console.log(`Tag: ${faq.tag}, Sub-tags: ${faq.subTags.join(', ')}`);
 });
 ```
+
+**Key Points:**
+- Use `tag: 'all'` to fetch the entire FAQ catalog
+- Tag parameter is mandatory (cannot be empty)
+- Sub-tags are optional and filter within the tag
+- `allowNetworkFetch: true` enables network fallback if cache is empty
 
 #### FAQ Data Model
 
@@ -1477,18 +1532,25 @@ interface FAQ {
     let currentTag = 'Identity Verification';
     let selectedSubTags = [];
 
-    // Initialize
+    // Initialize StringBoot first
     await StringBoot.initialize({
       apiToken: 'YOUR_API_TOKEN',
       baseUrl: 'https://api.stringboot.com',
       defaultLanguage: 'en'
     });
 
+    // Then initialize FAQ Provider
+    await StringBoot.FAQ.initialize({
+      apiToken: 'YOUR_API_TOKEN',
+      baseUrl: 'https://api.stringboot.com',
+      cacheSize: 200
+    });
+
     // Load and render FAQs
     async function loadFAQs() {
       const faqs = await StringBoot.FAQ.getFAQs({
         tag: currentTag,
-        subTags: selectedSubTags,
+        subTags: selectedSubTags.length > 0 ? selectedSubTags : undefined,
         lang: 'en',
         allowNetworkFetch: true
       });
@@ -1531,6 +1593,7 @@ interface FAQ {
 
 ```tsx
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@stringboot/web-sdk/react';
 import StringBoot from '@stringboot/web-sdk';
 
 interface FAQ {
@@ -1541,29 +1604,54 @@ interface FAQ {
   subTags: string[];
 }
 
-function FAQScreen() {
+function FAQSection() {
+  const [currentLang] = useLanguage();
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [faqInitialized, setFaqInitialized] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [selectedTag, setSelectedTag] = useState<string>('all');
   const [selectedSubTags, setSelectedSubTags] = useState<string[]>([]);
 
-  const currentTag = 'Identity Verification';
+  const availableTags = ['all', 'Identity Verification', 'Transfers', 'Referrals'];
   const availableSubTags = ['Document Upload', 'Verification Failed', 'Liveness Check'];
 
+  // Initialize FAQ Provider once
   useEffect(() => {
-    loadFAQs();
-  }, [selectedSubTags]);
+    async function initializeFAQ() {
+      await StringBoot.FAQ.initialize({
+        apiToken: 'YOUR_API_TOKEN',
+        baseUrl: 'https://api.stringboot.com',
+        cacheSize: 200
+      });
+      setFaqInitialized(true);
+    }
+    initializeFAQ();
+  }, []);
+
+  // Load FAQs when tag, sub-tags, or language changes
+  useEffect(() => {
+    if (faqInitialized) {
+      loadFAQs();
+    }
+  }, [selectedTag, selectedSubTags, currentLang, faqInitialized]);
 
   async function loadFAQs() {
     setIsLoading(true);
-    const fetchedFAQs = await StringBoot.FAQ.getFAQs({
-      tag: currentTag,
-      subTags: selectedSubTags,
-      lang: 'en',
-      allowNetworkFetch: true
-    });
-    setFaqs(fetchedFAQs);
-    setIsLoading(false);
+    try {
+      const fetchedFAQs = await StringBoot.FAQ.getFAQs({
+        tag: selectedTag,
+        subTags: selectedSubTags.length > 0 ? selectedSubTags : undefined,
+        lang: currentLang,
+        allowNetworkFetch: true
+      });
+      setFaqs(fetchedFAQs);
+    } catch (error) {
+      console.error('Failed to load FAQs:', error);
+      setFaqs([]);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   function toggleExpanded(id: number) {
@@ -1589,26 +1677,39 @@ function FAQScreen() {
   return (
     <div className="faq-screen">
       <h1>Frequently Asked Questions</h1>
-      <p>Tag: {currentTag}</p>
 
-      {/* Filter Chips */}
-      <div className="filter-chips">
-        <button
-          className={selectedSubTags.length === 0 ? 'active' : ''}
-          onClick={() => setSelectedSubTags([])}
-        >
-          All FAQs
-        </button>
-        {availableSubTags.map(subTag => (
+      {/* Tag Selector */}
+      <div className="tag-selector">
+        <label>Category:</label>
+        {availableTags.map(tag => (
           <button
-            key={subTag}
-            className={selectedSubTags.includes(subTag) ? 'active' : ''}
-            onClick={() => toggleSubTag(subTag)}
+            key={tag}
+            className={selectedTag === tag ? 'active' : ''}
+            onClick={() => {
+              setSelectedTag(tag);
+              setSelectedSubTags([]);
+            }}
           >
-            {subTag}
+            {tag}
           </button>
         ))}
       </div>
+
+      {/* Sub-tag Filter Chips */}
+      {selectedTag !== 'all' && (
+        <div className="filter-chips">
+          <label>Filter:</label>
+          {availableSubTags.map(subTag => (
+            <button
+              key={subTag}
+              className={selectedSubTags.includes(subTag) ? 'active' : ''}
+              onClick={() => toggleSubTag(subTag)}
+            >
+              {subTag}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* FAQ List */}
       <div className="faq-list">
@@ -1918,9 +2019,6 @@ For complete details, see [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md)
 - [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) - Advanced SDK features
 - [API_REFERENCE.md](API_REFERENCE.md) - Complete API documentation
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues & solutions
-- [Backend API Reference](../docs/API_REFERENCE.md) - Backend API endpoints
-- [Delta Sync Protocol](../docs/DELTA_SYNC_PROTOCOL.md) - How sync works under the hood
-
 ---
 
 ## 🆘 Support

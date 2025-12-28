@@ -65,69 +65,6 @@ function App() {
 }
 ```
 
-### Vue 3
-
-```vue
-<script setup>
-import { ref, onMounted } from 'vue';
-import StringBoot from '@stringboot/web-sdk';
-
-const initialized = ref(false);
-
-onMounted(async () => {
-  await StringBoot.initialize({
-    apiToken: 'YOUR_API_TOKEN_HERE',
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en'
-  });
-  initialized.value = true;
-});
-</script>
-
-<template>
-  <div v-if="initialized">
-    <!-- Your app content -->
-  </div>
-  <div v-else>
-    Loading...
-  </div>
-</template>
-```
-
-### Next.js (App Router)
-
-```tsx
-// app/providers.tsx
-'use client';
-
-import { useStringBoot } from '@stringboot/web-sdk/react';
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  const { initialized } = useStringBoot({
-    apiToken: process.env.NEXT_PUBLIC_STRINGBOOT_TOKEN!,
-    baseUrl: 'https://api.stringboot.com',
-    defaultLanguage: 'en'
-  });
-
-  if (!initialized) return <div>Loading...</div>;
-
-  return <>{children}</>;
-}
-
-// app/layout.tsx
-import { Providers } from './providers';
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html>
-      <body>
-        <Providers>{children}</Providers>
-      </body>
-    </html>
-  );
-}
-```
-
 **⚠️ Security Note:** Store your API token in environment variables (`.env.local`) rather than hardcoding it.
 
 ## Step 3: Use Strings in Your App (5 minutes)
@@ -176,56 +113,7 @@ function WelcomeComponent() {
 }
 ```
 
-### Method 3: Vue 3 Composition API
-
-```vue
-<script setup>
-import { ref, onMounted } from 'vue';
-import StringBoot from '@stringboot/web-sdk';
-
-const welcomeText = ref('');
-const description = ref('');
-const currentLang = ref('en');
-
-// Load strings
-onMounted(async () => {
-  await StringBoot.initialize({
-    apiToken: 'YOUR_API_TOKEN',
-    baseUrl: 'https://api.stringboot.com'
-  });
-
-  // Watch for string updates
-  StringBoot.watch('welcome_message', (value) => {
-    welcomeText.value = value;
-  });
-
-  StringBoot.watch('app_description', (value) => {
-    description.value = value;
-  });
-});
-
-// Change language
-const changeLanguage = async (lang) => {
-  await StringBoot.changeLanguage(lang);
-  currentLang.value = lang;
-};
-</script>
-
-<template>
-  <div>
-    <h1>{{ welcomeText }}</h1>
-    <p>{{ description }}</p>
-
-    <select :value="currentLang" @change="changeLanguage($event.target.value)">
-      <option value="en">English</option>
-      <option value="es">Español</option>
-      <option value="fr">Français</option>
-    </select>
-  </div>
-</template>
-```
-
-### Method 4: TypeScript (Type-Safe)
+### Method 3: TypeScript (Type-Safe)
 
 ```typescript
 import StringBoot, { StringBootConfig } from '@stringboot/web-sdk';
@@ -248,7 +136,112 @@ type SupportedLanguage = 'en' | 'es' | 'fr' | 'de';
 await StringBoot.changeLanguage('es' as SupportedLanguage);
 ```
 
-## Step 4: Test It Out! (1 minute)
+## Step 4: Using FAQs (Optional - 3 minutes)
+
+The FAQ Provider lets you deliver dynamic, multilingual FAQ content with offline-first caching.
+
+### Initialize FAQ Provider
+
+```javascript
+import StringBoot from '@stringboot/web-sdk';
+
+// After initializing StringBoot, initialize FAQ Provider
+await StringBoot.FAQ.initialize({
+  apiToken: 'YOUR_API_TOKEN',
+  baseUrl: 'https://api.stringboot.com',
+  cacheSize: 200  // Optional: default is 200
+});
+```
+
+### Fetch FAQs
+
+```javascript
+// Get all FAQs regardless of tag
+const allFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'all',
+  lang: 'en',
+  allowNetworkFetch: true
+});
+
+// Get FAQs by specific tag
+const paymentFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'payments',
+  lang: 'en',
+  allowNetworkFetch: true
+});
+
+// Get FAQs with sub-tag filtering (2-level filtering)
+const refundFAQs = await StringBoot.FAQ.getFAQs({
+  tag: 'payments',
+  subTags: ['refunds', 'disputes'],
+  lang: 'en',
+  allowNetworkFetch: true
+});
+
+// Display FAQs
+allFAQs.forEach(faq => {
+  console.log(`Q: ${faq.question}`);
+  console.log(`A: ${faq.answer}`);
+  console.log(`Tags: ${faq.tag}, ${faq.subTags.join(', ')}`);
+});
+```
+
+### React FAQ Integration
+
+```tsx
+import { useState, useEffect } from 'react';
+import StringBoot from '@stringboot/web-sdk';
+
+function FAQSection() {
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadFAQs() {
+      // Initialize FAQ Provider first
+      await StringBoot.FAQ.initialize({
+        apiToken: 'YOUR_API_TOKEN',
+        baseUrl: 'https://api.stringboot.com'
+      });
+
+      // Fetch FAQs
+      const fetchedFAQs = await StringBoot.FAQ.getFAQs({
+        tag: 'all',
+        lang: 'en',
+        allowNetworkFetch: true
+      });
+
+      setFaqs(fetchedFAQs);
+      setLoading(false);
+    }
+
+    loadFAQs();
+  }, []);
+
+  if (loading) return <div>Loading FAQs...</div>;
+
+  return (
+    <div>
+      {faqs.map(faq => (
+        <div key={faq.id}>
+          <h3>{faq.question}</h3>
+          <p dangerouslySetInnerHTML={{ __html: faq.answer }} />
+          <span className="tag">{faq.tag}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Key FAQ Features:**
+- **2-level filtering**: Mandatory tag + optional sub-tags
+- **"All" tag**: Use `tag: 'all'` to fetch entire catalog
+- **Offline-first**: Memory → IndexedDB → Network
+- **Multi-language**: Automatic fallback to English
+- **Delta sync**: Only downloads changed FAQs
+
+## Step 5: Test It Out! (1 minute)
 
 1. **Run your development server**:
    ```bash
@@ -257,9 +250,9 @@ await StringBoot.changeLanguage('es' as SupportedLanguage);
 
 2. **Open browser console** - look for Stringboot logs:
    ```
-   [Stringboot] Initializing...
-   [Stringboot] ✅ Sync complete: 42 strings loaded
-   [Stringboot] Current language: en
+   [StringBoot] Initializing...
+   [StringBoot] ✅ Sync complete: 42 strings loaded
+   [StringBoot] Current language: en
    ```
 
 3. **Verify strings appear** in your UI
@@ -355,59 +348,24 @@ languages.forEach(lang => {
 ### Build Language Selector
 
 ```tsx
-import { useLanguage } from '@stringboot/web-sdk/react';
-import { useState, useEffect } from 'react';
-import StringBoot from '@stringboot/web-sdk';
+import { useLanguage, useActiveLanguages } from '@stringboot/web-sdk/react';
 
 function LanguageSelector() {
   const [currentLang, setLanguage] = useLanguage();
-  const [availableLanguages, setAvailableLanguages] = useState([]);
+  const { languages, loading, error } = useActiveLanguages();
 
-  useEffect(() => {
-    async function loadLanguages() {
-      const langs = await StringBoot.getActiveLanguages();
-      setAvailableLanguages(langs);
-    }
-    loadLanguages();
-  }, []);
+  if (loading) return <div>Loading languages...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <select value={currentLang} onChange={(e) => setLanguage(e.target.value)}>
-      {availableLanguages.map(lang => (
+      {languages.map(lang => (
         <option key={lang.code} value={lang.code}>
           {lang.name}
         </option>
       ))}
     </select>
   );
-}
-```
-
-### Server-Side Rendering (SSR)
-
-For Next.js or other SSR frameworks:
-
-```tsx
-'use client'; // Next.js 13+
-
-import { useEffect, useState } from 'react';
-import StringBoot from '@stringboot/web-sdk';
-
-export function ClientOnlyStringBoot({ children }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    StringBoot.initialize({
-      apiToken: process.env.NEXT_PUBLIC_STRINGBOOT_TOKEN!,
-      baseUrl: 'https://api.stringboot.com'
-    }).then(() => {
-      setMounted(true);
-    });
-  }, []);
-
-  if (!mounted) return <div>Loading...</div>;
-
-  return <>{children}</>;
 }
 ```
 
@@ -429,30 +387,23 @@ await StringBoot.changeLanguage('es');
 // Get cache statistics
 const stats = await StringBoot.getCacheStats();
 
-console.log('Memory cache size:', stats.memorySize);
-console.log('IndexedDB entries:', stats.dbSize);
-console.log('Hit rate:', stats.hitRate);
+console.log('Memory cache:', stats.memory);
+console.log('Database stats:', stats.db);
 ```
 
 ## Learn More
 
 | Resource | Description |
 |----------|-------------|
-| **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** | Comprehensive integration walkthrough |
-| **[NEXTJS_INTEGRATION.md](NEXTJS_INTEGRATION.md)** | Next.js-specific integration guide |
-| **[AB_TESTING.md](AB_TESTING.md)** | A/B testing and analytics integration |
-| **[ADVANCED_FEATURES.md](ADVANCED_FEATURES.md)** | IndexedDB caching, multi-tab sync, FAQ provider |
-| **[API_REFERENCE.md](API_REFERENCE.md)** | Complete API documentation |
-| **[FAQ.md](FAQ.md)** | Frequently asked questions |
-| **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Common issues and solutions |
+| **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** | Comprehensive integration guide for all frameworks |
+| **[Backend API Reference](../docs/API_REFERENCE.md)** | Backend API endpoints documentation |
+| **[Delta Sync Protocol](../docs/DELTA_SYNC_PROTOCOL.md)** | How synchronization works |
 
 ## Framework-Specific Guides
 
 - **React:** [React Integration](INTEGRATION_GUIDE.md#react-integration)
-- **Next.js:** [NEXTJS_INTEGRATION.md](NEXTJS_INTEGRATION.md)
-- **Vue 3:** [Vue Integration](INTEGRATION_GUIDE.md#vue-integration)
-- **Angular:** [Angular Integration](INTEGRATION_GUIDE.md#angular-integration)
-- **Svelte:** [Svelte Integration](INTEGRATION_GUIDE.md#svelte-integration)
+- **Vue 3:** [Vue Integration](INTEGRATION_GUIDE.md#vue-3-integration)
+- **Next.js:** [Next.js Integration](INTEGRATION_GUIDE.md#nextjs-integration)
 
 ## Need Help?
 
